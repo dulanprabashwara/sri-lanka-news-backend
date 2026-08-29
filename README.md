@@ -4,9 +4,9 @@ Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform
 
 ## Current Phase
 
-**Phase 1 — Requirements + Architecture Foundation**
+**Phase 2 — Source + Article Domain Foundation**
 
-This phase establishes backend conventions, configuration, error handling, request correlation, MongoDB connectivity, and test infrastructure. It intentionally contains no news business domains or ingestion behavior.
+This phase adds the minimum Source and Article persistence domains, service boundaries, validation, timestamps, and indexes needed before ingestion and public APIs.
 
 ## Technology
 
@@ -85,6 +85,8 @@ Automated tests do not require an Atlas connection. Their test context excludes 
 - Controllers use request/response DTOs and never expose MongoDB persistence documents directly.
 - Controllers stay thin, services own business logic, and repositories only handle persistence.
 - Bean Validation is applied at API boundaries.
+- Source and Article documents are stored in separate `sources` and `articles` collections. MongoDB creates unique indexes for source slugs and canonical article URLs at application startup.
+- Domain services use UTC `Instant` timestamps supplied by an injectable UTC clock.
 - REST errors use one centralized structure containing a timestamp, HTTP status, stable application code, safe message, request path, request ID, and optional field details.
 - Requests accept a safe `X-Request-ID` value or receive a generated one. The ID is returned in the same response header and included in application logs.
 - Normal HTTP status codes and response bodies are preferred over a generic success envelope.
@@ -93,6 +95,6 @@ Automated tests do not require an Atlas connection. Their test context excludes 
 
 ## Planned Next Phase
 
-**Phase 2 — Source + Article Domain Foundation**
+**Phase 3 — Basic Public Article API**
 
-Phase 2 is documented here only; it has not been implemented.
+Phase 3 will add public read-only Source and Article endpoints using dedicated API DTOs. No public business endpoints exist yet.

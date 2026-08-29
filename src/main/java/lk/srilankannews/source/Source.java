@@ -1,0 +1,33 @@
+package lk.srilankannews.source;
+
+import java.time.Instant;
+import lk.srilankannews.common.domain.Language;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+@Document(collection = "sources")
+public record Source(
+        @Id String id,
+        String name,
+        @Indexed(name = "uk_sources_slug", unique = true) String slug,
+        String baseUrl,
+        Language defaultLanguage,
+        IngestionType ingestionType,
+        boolean enabled,
+        Instant createdAt,
+        Instant updatedAt
+) {
+    static Source create(CreateSourceCommand command, Instant now) {
+        return new Source(
+                null,
+                command.name(),
+                command.slug(),
+                command.baseUrl(),
+                command.defaultLanguage(),
+                command.ingestionType(),
+                command.enabled(),
+                now,
+                now);
+    }
+}
