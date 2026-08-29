@@ -3,7 +3,7 @@ spring:
     name: sri-lanka-news-backend
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/sri_lanka_news}
+      uri: ${MONGODB_URI}
 
 server:
   error:

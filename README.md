@@ -22,33 +22,31 @@ This phase establishes backend conventions, configuration, error handling, reque
 
 - JDK 17
 - Maven 3.6.3 or later
-- MongoDB, either locally installed or run through Docker Compose
-- Docker Desktop (optional, for the provided local MongoDB service)
+- A MongoDB Atlas account and development cluster
 
 ## Local Setup
 
-1. Copy `.env.example` to `.env` if you want a local reference for environment values. Spring Boot does not load `.env` files automatically; export the variables in your shell or configure them in your IDE.
-2. Start MongoDB locally. With Docker:
-
-   ```bash
-   docker compose up -d mongodb
-   ```
-
-3. Set `MONGODB_URI` if the default local URI is not suitable.
+1. Create or select a development cluster in MongoDB Atlas.
+2. Create an Atlas database user with access to the development database. Do not reuse your Atlas account password.
+3. In Atlas Network Access, add the IP address of each developer who needs to connect. Avoid unrestricted network access for routine development.
+4. Obtain the application connection string from Atlas and replace its username, password, and cluster-host placeholders with the database user's values.
+5. Set the completed connection string locally as `MONGODB_URI`. Spring Boot does not load `.env` files automatically, so export the variable in your shell or configure it in your IDE.
 
    PowerShell:
 
    ```powershell
-   $env:MONGODB_URI = "mongodb://localhost:27017/sri_lanka_news"
+   $env:MONGODB_URI = "mongodb+srv://<username>:<password>@<cluster-host>/sri_lanka_news?retryWrites=true&w=majority"
    ```
 
-The development default is `mongodb://localhost:27017/sri_lanka_news`. It is intended only for a local MongoDB instance without authentication.
+6. Run the application only after `MONGODB_URI` is available in its environment.
+
+The application intentionally has no localhost fallback. Never commit the completed Atlas URI or real database credentials.
 
 ## Environment Variables
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
-| `MONGODB_URI` | No for local development | `mongodb://localhost:27017/sri_lanka_news` | MongoDB connection URI. Use an environment-specific secret outside local development. |
+| `MONGODB_URI` | Yes | None | MongoDB Atlas application connection string. |
 
 Never commit real credentials or a populated `.env` file.
 
@@ -78,7 +76,7 @@ Create the executable application package:
 mvn clean package
 ```
 
-Simple tests do not require a running MongoDB instance. MongoDB health checks are disabled only in the test profile.
+Automated tests do not require an Atlas connection. Their test context excludes MongoDB auto-configuration and disables MongoDB health checks.
 
 ## Architecture Conventions
 
