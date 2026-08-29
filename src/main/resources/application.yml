@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: sri-lanka-news-backend
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/sri_lanka_news}
+
+server:
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: INFO
+    lk.srilankannews: INFO
+  pattern:
+    level: "%5p [requestId:%X{requestId:-}]"
