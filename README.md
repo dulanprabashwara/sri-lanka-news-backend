@@ -88,12 +88,18 @@ X-Ingestion-API-Key: <INGESTION_API_KEY>
 ```
 
 The endpoint resolves `sourceSlug`, validates article metadata and bounded
-cleaned `extractedContent`, and returns
-`201 CREATED` with status `CREATED` for a new canonical URL or `200 OK`
-with status `DUPLICATE` for an existing canonical URL. It is not a public
+cleaned `extractedContent`, and returns `201 CREATED` for a new article or
+`200 OK` with `URL_DUPLICATE` or `CONTENT_DUPLICATE` duplicate information.
+It is not a public
 write API. Extracted content is stored only for internal processing and is
 never exposed by either public Article endpoint. Lead-image metadata is not
 stored or exposed.
+
+The backend owns exact-content fingerprinting: NFC Unicode normalization and
+whitespace normalization are applied before SHA-256 hashing. A sparse unique
+`contentHash` index is safe for legacy documents where the field is absent.
+An idempotent startup backfill hashes legacy content where possible and skips
+pre-existing same-content collisions without deleting or overwriting articles.
 
 At normal application startup, Daily Mirror is registered as an enabled English
 RSS source if its `daily-mirror` slug does not already exist. No other source
@@ -122,7 +128,7 @@ Automated tests do not require an Atlas connection. Their test context excludes 
 - Controllers use request/response DTOs and never expose MongoDB persistence documents directly.
 - Controllers stay thin, services own business logic, and repositories only handle persistence.
 - Bean Validation is applied at API boundaries.
-- Source and Article documents are stored in separate `sources` and `articles` collections. MongoDB creates unique indexes for source slugs and canonical article URLs at application startup.
+- Source and Article documents are stored in separate `sources` and `articles` collections. MongoDB creates unique indexes for source slugs, canonical article URLs, and non-null article content hashes at application startup.
 - Public controllers expose dedicated DTOs, and Article pages resolve Source attribution with one batched lookup rather than one query per Article.
 - Domain services use UTC `Instant` timestamps supplied by an injectable UTC clock.
 - REST errors use one centralized structure containing a timestamp, HTTP status, stable application code, safe message, request path, request ID, and optional field details.

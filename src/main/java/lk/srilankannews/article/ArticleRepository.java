@@ -7,5 +7,9 @@ public interface ArticleRepository extends MongoRepository<Article, String>, Art
 
     Optional<Article> findByCanonicalUrl(String canonicalUrl);
 
+    Optional<Article> findByContentHash(String contentHash);
+
     boolean existsByCanonicalUrl(String canonicalUrl);
+
+    boolean existsByContentHash(String contentHash);
 }

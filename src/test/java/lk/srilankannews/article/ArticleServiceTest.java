@@ -39,6 +39,7 @@ class ArticleServiceTest {
         articleService = new ArticleService(
                 articleRepository,
                 sourceService,
+                new ArticleContentHasher(),
                 Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
@@ -55,7 +56,9 @@ class ArticleServiceTest {
         assertThat(created.updatedAt()).isEqualTo(NOW);
         assertThat(created.authors()).containsExactly("Reporter One");
         assertThat(created.extractedContent()).isEqualTo("Clean fixture body");
+        assertThat(created.contentHash()).hasSize(64);
         verify(articleRepository).existsByCanonicalUrl(command.canonicalUrl());
+        verify(articleRepository).existsByContentHash(created.contentHash());
         verify(articleRepository).save(created);
     }
 
@@ -97,14 +100,41 @@ class ArticleServiceTest {
     }
 
     @Test
+    void rejectsDifferentUrlWithIdenticalNormalizedContent() {
+        CreateArticleCommand command = validCommand(List.of());
+        String hash = new ArticleContentHasher().hash(command.extractedContent());
+        when(sourceService.existsById(command.sourceId())).thenReturn(true);
+        when(articleRepository.existsByContentHash(hash)).thenReturn(true);
+
+        assertThatThrownBy(() -> articleService.create(command))
+                .isInstanceOf(DuplicateArticleContentException.class);
+
+        verify(articleRepository, never()).save(any());
+    }
+
+    @Test
     void translatesDatabaseDuplicateFromConcurrentInsert() {
         CreateArticleCommand command = validCommand(List.of());
         when(sourceService.existsById(command.sourceId())).thenReturn(true);
+        when(articleRepository.existsByCanonicalUrl(command.canonicalUrl())).thenReturn(false, true);
         when(articleRepository.save(any(Article.class)))
                 .thenThrow(new DuplicateKeyException("uk_articles_canonical_url"));
 
         assertThatThrownBy(() -> articleService.create(command))
                 .isInstanceOf(DuplicateArticleCanonicalUrlException.class);
+    }
+
+    @Test
+    void translatesConcurrentContentHashDuplicate() {
+        CreateArticleCommand command = validCommand(List.of());
+        String hash = new ArticleContentHasher().hash(command.extractedContent());
+        when(sourceService.existsById(command.sourceId())).thenReturn(true);
+        when(articleRepository.existsByContentHash(hash)).thenReturn(false, true);
+        when(articleRepository.save(any(Article.class)))
+                .thenThrow(new DuplicateKeyException("uk_articles_content_hash"));
+
+        assertThatThrownBy(() -> articleService.create(command))
+                .isInstanceOf(DuplicateArticleContentException.class);
     }
 
     private CreateArticleCommand validCommand(List<String> authors) {

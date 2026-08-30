@@ -56,6 +56,7 @@ class ArticleIngestionServiceTest {
 
         assertThat(response.status()).isEqualTo(ArticleIngestionResponse.Status.CREATED);
         assertThat(response.articleId()).isEqualTo("article-1");
+        assertThat(response.duplicateReason()).isNull();
         ArgumentCaptor<CreateArticleCommand> command = ArgumentCaptor.forClass(CreateArticleCommand.class);
         verify(articleService).create(command.capture());
         assertThat(command.getValue().sourceId()).isEqualTo("source-1");
@@ -73,6 +74,24 @@ class ArticleIngestionServiceTest {
 
         assertThat(response.status()).isEqualTo(ArticleIngestionResponse.Status.DUPLICATE);
         assertThat(response.articleId()).isEqualTo("article-1");
+        assertThat(response.duplicateReason())
+                .isEqualTo(ArticleIngestionResponse.DuplicateReason.URL_DUPLICATE);
+        verify(articleService, never()).create(any());
+    }
+
+    @Test
+    void returnsContentDuplicateForDifferentUrlWithIdenticalContent() {
+        Article existing = article();
+        when(sourceService.findBySlug("daily-mirror")).thenReturn(Optional.of(source()));
+        when(articleService.findByCanonicalUrl(CANONICAL_URL)).thenReturn(Optional.empty());
+        when(articleService.findByExtractedContent("Clean fixture body")).thenReturn(Optional.of(existing));
+
+        ArticleIngestionResponse response = ingestionService.ingest(request());
+
+        assertThat(response.status()).isEqualTo(ArticleIngestionResponse.Status.DUPLICATE);
+        assertThat(response.articleId()).isEqualTo("article-1");
+        assertThat(response.duplicateReason())
+                .isEqualTo(ArticleIngestionResponse.DuplicateReason.CONTENT_DUPLICATE);
         verify(articleService, never()).create(any());
     }
 

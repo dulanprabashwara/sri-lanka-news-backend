@@ -38,7 +38,8 @@ class ArticleIngestionControllerTest {
         when(articleIngestionService.ingest(any())).thenReturn(new ArticleIngestionResponse(
                 ArticleIngestionResponse.Status.CREATED,
                 "507f1f77bcf86cd799439011",
-                canonicalUrl()));
+                canonicalUrl(),
+                null));
 
         mockMvc.perform(post(ENDPOINT)
                         .header(IngestionApiKeyAuthenticator.HEADER_NAME, API_KEY)
@@ -57,14 +58,16 @@ class ArticleIngestionControllerTest {
         when(articleIngestionService.ingest(any())).thenReturn(new ArticleIngestionResponse(
                 ArticleIngestionResponse.Status.DUPLICATE,
                 "507f1f77bcf86cd799439011",
-                canonicalUrl()));
+                canonicalUrl(),
+                ArticleIngestionResponse.DuplicateReason.CONTENT_DUPLICATE));
 
         mockMvc.perform(post(ENDPOINT)
                         .header(IngestionApiKeyAuthenticator.HEADER_NAME, API_KEY)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validJson()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("DUPLICATE"));
+                .andExpect(jsonPath("$.status").value("DUPLICATE"))
+                .andExpect(jsonPath("$.duplicateReason").value("CONTENT_DUPLICATE"));
     }
 
     @Test

@@ -52,6 +52,6 @@ class ArticleApiMapperTest {
         assertThat(response.source().slug()).isEqualTo(source.slug());
         assertThat(ArticleResponse.class.getRecordComponents())
                 .extracting(component -> component.getName())
-                .doesNotContain("extractedContent");
+                .doesNotContain("extractedContent", "contentHash");
     }
 }

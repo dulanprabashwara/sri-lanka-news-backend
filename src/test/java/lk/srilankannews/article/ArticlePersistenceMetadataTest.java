@@ -11,16 +11,20 @@ import org.springframework.data.mongodb.core.mapping.Document;
 class ArticlePersistenceMetadataTest {
 
     @Test
-    void mapsToArticlesCollectionWithUniqueCanonicalUrlIndex() throws NoSuchFieldException {
+    void mapsToArticlesCollectionWithSafeUniqueDuplicateIndexes() throws NoSuchFieldException {
         Document document = Article.class.getAnnotation(Document.class);
         Indexed canonicalUrlIndex = Article.class.getDeclaredField("canonicalUrl").getAnnotation(Indexed.class);
         Indexed publishedAtIndex = Article.class.getDeclaredField("publishedAt").getAnnotation(Indexed.class);
+        Indexed contentHashIndex = Article.class.getDeclaredField("contentHash").getAnnotation(Indexed.class);
         CompoundIndexes compoundIndexes = Article.class.getAnnotation(CompoundIndexes.class);
 
         assertThat(document.collection()).isEqualTo("articles");
         assertThat(canonicalUrlIndex).isNotNull();
         assertThat(canonicalUrlIndex.unique()).isTrue();
         assertThat(canonicalUrlIndex.name()).isEqualTo("uk_articles_canonical_url");
+        assertThat(contentHashIndex.unique()).isTrue();
+        assertThat(contentHashIndex.sparse()).isTrue();
+        assertThat(contentHashIndex.name()).isEqualTo("uk_articles_content_hash");
         assertThat(publishedAtIndex.direction()).isEqualTo(IndexDirection.DESCENDING);
         assertThat(compoundIndexes.value())
                 .extracting(index -> index.name())

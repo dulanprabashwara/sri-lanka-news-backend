@@ -29,6 +29,7 @@ public record Article(
         Instant discoveredAt,
         ArticleCategory category,
         String extractedContent,
+        @Indexed(name = "uk_articles_content_hash", unique = true, sparse = true) String contentHash,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -36,7 +37,16 @@ public record Article(
         authors = authors == null ? List.of() : List.copyOf(authors);
     }
 
-    static Article create(CreateArticleCommand command, Instant now) {
+    public Article(
+            String id, String sourceId, String title, String originalUrl, String canonicalUrl,
+            Language originalLanguage, List<String> authors, Instant publishedAt,
+            Instant discoveredAt, ArticleCategory category, String extractedContent,
+            Instant createdAt, Instant updatedAt) {
+        this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
+                publishedAt, discoveredAt, category, extractedContent, null, createdAt, updatedAt);
+    }
+
+    static Article create(CreateArticleCommand command, String contentHash, Instant now) {
         return new Article(
                 null,
                 command.sourceId(),
@@ -49,6 +59,7 @@ public record Article(
                 command.discoveredAt(),
                 command.category(),
                 command.extractedContent(),
+                contentHash,
                 now,
                 now);
     }

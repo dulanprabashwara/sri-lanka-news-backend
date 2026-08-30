@@ -4,6 +4,7 @@ import lk.srilankannews.article.Article;
 import lk.srilankannews.article.ArticleService;
 import lk.srilankannews.article.CreateArticleCommand;
 import lk.srilankannews.article.DuplicateArticleCanonicalUrlException;
+import lk.srilankannews.article.DuplicateArticleContentException;
 import lk.srilankannews.common.api.error.ResourceNotFoundException;
 import lk.srilankannews.source.Source;
 import lk.srilankannews.source.SourceService;
@@ -26,7 +27,12 @@ public class ArticleIngestionService {
 
         Article existing = articleService.findByCanonicalUrl(request.canonicalUrl()).orElse(null);
         if (existing != null) {
-            return duplicate(existing);
+            return duplicate(existing, ArticleIngestionResponse.DuplicateReason.URL_DUPLICATE);
+        }
+
+        existing = articleService.findByExtractedContent(request.extractedContent()).orElse(null);
+        if (existing != null) {
+            return duplicate(existing, ArticleIngestionResponse.DuplicateReason.CONTENT_DUPLICATE);
         }
 
         CreateArticleCommand command = new CreateArticleCommand(
@@ -46,21 +52,33 @@ public class ArticleIngestionService {
             return new ArticleIngestionResponse(
                     ArticleIngestionResponse.Status.CREATED,
                     created.id(),
-                    created.canonicalUrl());
+                    created.canonicalUrl(),
+                    null);
         } catch (DuplicateArticleCanonicalUrlException exception) {
             return articleService.findByCanonicalUrl(request.canonicalUrl())
-                    .map(this::duplicate)
+                    .map(article -> duplicate(article, ArticleIngestionResponse.DuplicateReason.URL_DUPLICATE))
                     .orElseGet(() -> new ArticleIngestionResponse(
                             ArticleIngestionResponse.Status.DUPLICATE,
                             null,
-                            request.canonicalUrl()));
+                            request.canonicalUrl(),
+                            ArticleIngestionResponse.DuplicateReason.URL_DUPLICATE));
+        } catch (DuplicateArticleContentException exception) {
+            return articleService.findByExtractedContent(request.extractedContent())
+                    .map(article -> duplicate(article, ArticleIngestionResponse.DuplicateReason.CONTENT_DUPLICATE))
+                    .orElseGet(() -> new ArticleIngestionResponse(
+                            ArticleIngestionResponse.Status.DUPLICATE,
+                            null,
+                            request.canonicalUrl(),
+                            ArticleIngestionResponse.DuplicateReason.CONTENT_DUPLICATE));
         }
     }
 
-    private ArticleIngestionResponse duplicate(Article article) {
+    private ArticleIngestionResponse duplicate(
+            Article article, ArticleIngestionResponse.DuplicateReason duplicateReason) {
         return new ArticleIngestionResponse(
                 ArticleIngestionResponse.Status.DUPLICATE,
                 article.id(),
-                article.canonicalUrl());
+                article.canonicalUrl(),
+                duplicateReason);
     }
 }
