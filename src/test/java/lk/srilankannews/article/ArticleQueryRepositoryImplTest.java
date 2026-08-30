@@ -76,6 +76,7 @@ class ArticleQueryRepositoryImplTest {
                 publishedAt,
                 publishedAt.plusSeconds(60),
                 ArticleCategory.POLITICS,
+                "Internal fixture content",
                 publishedAt,
                 publishedAt);
     }

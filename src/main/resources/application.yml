@@ -6,6 +6,9 @@ spring:
       uri: ${MONGODB_URI}
       auto-index-creation: true
 
+ingestion:
+  api-key: ${INGESTION_API_KEY}
+
 server:
   error:
     include-message: never

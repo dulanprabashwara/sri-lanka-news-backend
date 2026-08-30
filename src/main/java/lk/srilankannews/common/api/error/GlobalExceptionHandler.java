@@ -25,6 +25,7 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import lk.srilankannews.config.InvalidIngestionApiKeyException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -131,6 +132,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 exception.getMessage(), request, List.of());
     }
 
+    @ExceptionHandler(InvalidIngestionApiKeyException.class)
+    ResponseEntity<Object> handleInvalidIngestionApiKey(
+            InvalidIngestionApiKeyException exception,
+            HttpServletRequest request
+    ) {
+        return response(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED,
+                exception.getMessage(), request, List.of());
+    }
+
     @ExceptionHandler(Exception.class)
     ResponseEntity<Object> handleUnexpectedException(Exception exception, HttpServletRequest request) {
         log.error("Unhandled exception while processing {} {}", request.getMethod(), request.getRequestURI(), exception);
@@ -177,6 +187,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     private enum ErrorCode {
+        UNAUTHORIZED,
         VALIDATION_ERROR,
         MALFORMED_REQUEST,
         RESOURCE_NOT_FOUND,

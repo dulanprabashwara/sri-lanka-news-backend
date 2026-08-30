@@ -1,16 +1,21 @@
-package lk.srilankannews.article;
+package lk.srilankannews.article.internal;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.List;
+import lk.srilankannews.article.ArticleCategory;
 import lk.srilankannews.common.domain.Language;
 import lk.srilankannews.common.validation.HttpUrl;
 
-public record CreateArticleCommand(
-        @NotBlank String sourceId,
+public record ArticleIngestionRequest(
+        @NotBlank
+        @Size(max = 100)
+        @Pattern(regexp = "[a-z0-9]+(?:-[a-z0-9]+)*", message = "must be a lowercase URL-safe slug")
+        String sourceSlug,
         @NotBlank @Size(max = 500) String title,
         @NotBlank @HttpUrl @Size(max = 2048) String originalUrl,
         @NotBlank @HttpUrl @Size(max = 2048) String canonicalUrl,
@@ -21,7 +26,7 @@ public record CreateArticleCommand(
         ArticleCategory category,
         @NotBlank @Size(max = 500_000) String extractedContent
 ) {
-    public CreateArticleCommand {
+    public ArticleIngestionRequest {
         authors = authors == null ? null : List.copyOf(authors);
     }
 }

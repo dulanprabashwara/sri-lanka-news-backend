@@ -37,6 +37,7 @@ class CreateArticleCommandValidationTest {
                 List.of(""),
                 null,
                 null,
+                null,
                 null);
 
         Set<String> invalidFields = validator.validate(command).stream()
@@ -46,7 +47,8 @@ class CreateArticleCommandValidationTest {
 
         assertThat(invalidFields)
                 .contains("sourceId", "title", "originalUrl", "canonicalUrl",
-                        "originalLanguage", "authors[0].<list element>", "publishedAt", "discoveredAt");
+                        "originalLanguage", "authors[0].<list element>", "publishedAt", "discoveredAt",
+                        "extractedContent");
     }
 
     private CreateArticleCommand validCommand() {
@@ -60,6 +62,7 @@ class CreateArticleCommandValidationTest {
                 List.of("Reporter One"),
                 publishedAt,
                 publishedAt.plusSeconds(60),
-                ArticleCategory.LOCAL);
+                ArticleCategory.LOCAL,
+                "Clean fixture body");
     }
 }

@@ -30,6 +30,7 @@ class ArticleApiMapperTest {
                 publishedAt,
                 publishedAt.plusSeconds(60),
                 ArticleCategory.LOCAL,
+                "Internal fixture content",
                 publishedAt,
                 publishedAt);
         Source source = new Source(
@@ -49,5 +50,8 @@ class ArticleApiMapperTest {
         assertThat(response.originalUrl()).isEqualTo(article.originalUrl());
         assertThat(response.source().name()).isEqualTo(source.name());
         assertThat(response.source().slug()).isEqualTo(source.slug());
+        assertThat(ArticleResponse.class.getRecordComponents())
+                .extracting(component -> component.getName())
+                .doesNotContain("extractedContent");
     }
 }

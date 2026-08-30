@@ -128,6 +128,7 @@ class ArticleApiServiceTest {
                 publishedAt,
                 publishedAt.plusSeconds(60),
                 ArticleCategory.POLITICS,
+                "Internal fixture content",
                 publishedAt.plusSeconds(60),
                 publishedAt.plusSeconds(60));
     }

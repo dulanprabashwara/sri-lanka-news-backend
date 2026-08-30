@@ -28,6 +28,7 @@ public record Article(
         Instant publishedAt,
         Instant discoveredAt,
         ArticleCategory category,
+        String extractedContent,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -47,6 +48,7 @@ public record Article(
                 command.publishedAt(),
                 command.discoveredAt(),
                 command.category(),
+                command.extractedContent(),
                 now,
                 now);
     }

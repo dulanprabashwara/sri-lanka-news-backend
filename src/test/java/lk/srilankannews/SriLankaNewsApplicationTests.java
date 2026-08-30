@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @ActiveProfiles("test")
 @SpringBootTest(properties = {
+        "ingestion.api-key=test-ingestion-key",
         "management.health.mongo.enabled=false",
         "spring.autoconfigure.exclude="
                 + "org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,"

@@ -54,6 +54,7 @@ class ArticleServiceTest {
         assertThat(created.createdAt()).isEqualTo(NOW);
         assertThat(created.updatedAt()).isEqualTo(NOW);
         assertThat(created.authors()).containsExactly("Reporter One");
+        assertThat(created.extractedContent()).isEqualTo("Clean fixture body");
         verify(articleRepository).existsByCanonicalUrl(command.canonicalUrl());
         verify(articleRepository).save(created);
     }
@@ -117,6 +118,7 @@ class ArticleServiceTest {
                 authors,
                 publishedAt,
                 publishedAt.plusSeconds(60),
-                ArticleCategory.LOCAL);
+                ArticleCategory.LOCAL,
+                "Clean fixture body");
     }
 }

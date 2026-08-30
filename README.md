@@ -4,9 +4,10 @@ Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform
 
 ## Current Phase
 
-**Phase 3 — Basic Public Article API**
+**Phase 6 — First End-to-End Publisher Pipeline**
 
-This phase exposes read-only public Source and Article APIs with dedicated DTOs, pagination, filtering, publication-time sorting, and source attribution.
+This phase preserves the read-only public APIs and adds a shared-secret-protected
+internal article ingestion endpoint plus an idempotent Daily Mirror source seed.
 
 ## Technology
 
@@ -30,12 +31,17 @@ This phase exposes read-only public Source and Article APIs with dedicated DTOs,
 2. Create an Atlas database user with access to the development database. Do not reuse your Atlas account password.
 3. In Atlas Network Access, add the IP address of each developer who needs to connect. Avoid unrestricted network access for routine development.
 4. Obtain the application connection string from Atlas and replace its username, password, and cluster-host placeholders with the database user's values.
-5. Set the completed connection string locally as `MONGODB_URI`. Spring Boot does not load `.env` files automatically, so export the variable in your shell or configure it in your IDE.
+5. Set the completed connection string locally as `MONGODB_URI`. Generate a
+   separate strong random value for `INGESTION_API_KEY`; configure the same
+   value in the Python ingestion service. Spring Boot does not load `.env`
+   files automatically, so export both variables in your shell or configure
+   them in your IDE.
 
    PowerShell:
 
    ```powershell
    $env:MONGODB_URI = "mongodb+srv://<username>:<password>@<cluster-host>/sri_lanka_news?retryWrites=true&w=majority"
+   $env:INGESTION_API_KEY = "<strong-random-shared-secret>"
    ```
 
 6. Run the application only after `MONGODB_URI` is available in its environment.
@@ -47,6 +53,7 @@ The application intentionally has no localhost fallback. Never commit the comple
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
 | `MONGODB_URI` | Yes | None | MongoDB Atlas application connection string. |
+| `INGESTION_API_KEY` | Yes | None | Shared secret accepted only by internal ingestion endpoints. |
 
 Never commit real credentials or a populated `.env` file.
 
@@ -72,6 +79,25 @@ GET /api/v1/articles/{id}
 ```
 
 The Article list accepts zero-based `page`, `size`, optional `source`, `category`, and `language` filters, plus `sort=publishedAt,asc|desc`. Defaults are `page=0`, `size=20`, and newest-first publication sorting. Requests above the maximum page size of `100` are rejected.
+
+## Internal Ingestion API
+
+```text
+POST /api/internal/v1/articles
+X-Ingestion-API-Key: <INGESTION_API_KEY>
+```
+
+The endpoint resolves `sourceSlug`, validates article metadata and bounded
+cleaned `extractedContent`, and returns
+`201 CREATED` with status `CREATED` for a new canonical URL or `200 OK`
+with status `DUPLICATE` for an existing canonical URL. It is not a public
+write API. Extracted content is stored only for internal processing and is
+never exposed by either public Article endpoint. Lead-image metadata is not
+stored or exposed.
+
+At normal application startup, Daily Mirror is registered as an enabled English
+RSS source if its `daily-mirror` slug does not already exist. No other source
+is seeded.
 
 ## Testing
 
@@ -107,6 +133,4 @@ Automated tests do not require an Atlas connection. Their test context excludes 
 
 ## Planned Next Phase
 
-**Phase 4 — Next.js Foundation**
-
-Phase 4 will establish the frontend foundation and consume these public APIs. It has not been implemented.
+Phase 7 — Second and Third Sources has not been started.
