@@ -43,6 +43,15 @@ public class SourceService {
         return sourceRepository.findBySlug(slug);
     }
 
+    public Optional<Source> setEnabledBySlug(String slug, boolean enabled) {
+        return sourceRepository.findBySlug(slug).map(source -> {
+            if (source.enabled() == enabled) {
+                return source;
+            }
+            return sourceRepository.save(source.withEnabled(enabled, clock.instant()));
+        });
+    }
+
     public List<Source> findAllByName() {
         return sourceRepository.findAllByOrderByNameAsc();
     }

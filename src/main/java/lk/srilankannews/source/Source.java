@@ -30,4 +30,17 @@ public record Source(
                 now,
                 now);
     }
+
+    Source withEnabled(boolean newEnabled, Instant now) {
+        return new Source(
+                id,
+                name,
+                slug,
+                baseUrl,
+                defaultLanguage,
+                ingestionType,
+                newEnabled,
+                createdAt,
+                now);
+    }
 }
