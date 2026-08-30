@@ -8,17 +8,26 @@ import lk.srilankannews.article.DuplicateArticleContentException;
 import lk.srilankannews.common.api.error.ResourceNotFoundException;
 import lk.srilankannews.source.Source;
 import lk.srilankannews.source.SourceService;
+import lk.srilankannews.processing.ArticleDiscoveredNotifier;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class ArticleIngestionService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ArticleIngestionService.class);
 
     private final ArticleService articleService;
     private final SourceService sourceService;
+    private final ArticleDiscoveredNotifier discoveredNotifier;
 
-    public ArticleIngestionService(ArticleService articleService, SourceService sourceService) {
+    public ArticleIngestionService(
+            ArticleService articleService,
+            SourceService sourceService,
+            ArticleDiscoveredNotifier discoveredNotifier) {
         this.articleService = articleService;
         this.sourceService = sourceService;
+        this.discoveredNotifier = discoveredNotifier;
     }
 
     public ArticleIngestionResponse ingest(ArticleIngestionRequest request) {
@@ -49,6 +58,12 @@ public class ArticleIngestionService {
 
         try {
             Article created = articleService.create(command);
+            try {
+                discoveredNotifier.notifyDiscovered(created);
+            } catch (RuntimeException exception) {
+                LOGGER.warn("article_event_notification_failed articleId={} reason={}",
+                        created.id(), exception.getClass().getSimpleName());
+            }
             return new ArticleIngestionResponse(
                     ArticleIngestionResponse.Status.CREATED,
                     created.id(),

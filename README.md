@@ -31,7 +31,9 @@ internal article ingestion endpoint plus an idempotent Daily Mirror source seed.
 2. Create an Atlas database user with access to the development database. Do not reuse your Atlas account password.
 3. In Atlas Network Access, add the IP address of each developer who needs to connect. Avoid unrestricted network access for routine development.
 4. Obtain the application connection string from Atlas and replace its username, password, and cluster-host placeholders with the database user's values.
-5. Set the completed connection string locally as `MONGODB_URI`. Generate a
+5. Set the completed connection string locally as `MONGODB_URI`. Obtain a
+   provider-neutral Redis connection URL from a development Redis service and
+   set it as `REDIS_URL`. Generate a
    separate strong random value for `INGESTION_API_KEY`; configure the same
    value in the Python ingestion service. Spring Boot does not load `.env`
    files automatically, so export both variables in your shell or configure
@@ -42,6 +44,7 @@ internal article ingestion endpoint plus an idempotent Daily Mirror source seed.
    ```powershell
    $env:MONGODB_URI = "mongodb+srv://<username>:<password>@<cluster-host>/sri_lanka_news?retryWrites=true&w=majority"
    $env:INGESTION_API_KEY = "<strong-random-shared-secret>"
+   $env:REDIS_URL = "rediss://:<password>@<redis-host>:<port>"
    ```
 
 6. Run the application only after `MONGODB_URI` is available in its environment.
@@ -54,6 +57,8 @@ The application intentionally has no localhost fallback. Never commit the comple
 | --- | --- | --- | --- |
 | `MONGODB_URI` | Yes | None | MongoDB Atlas application connection string. |
 | `INGESTION_API_KEY` | Yes | None | Shared secret accepted only by internal ingestion endpoints. |
+| `REDIS_URL` | Yes | None | Provider-neutral `redis://` or TLS `rediss://` connection URL. |
+| `REDIS_PROCESSING_ENABLED` | No | `true` | Enables Redis Streams publishing and consumption. |
 
 Never commit real credentials or a populated `.env` file.
 
@@ -101,6 +106,24 @@ whitespace normalization are applied before SHA-256 hashing. A sparse unique
 An idempotent startup backfill hashes legacy content where possible and skips
 pre-existing same-content collisions without deleting or overwriting articles.
 
+## Asynchronous Article Processing
+
+Newly persisted articles dispatch publication of a minimal `ARTICLE_DISCOVERED`
+event to the `article-discovered` Redis Stream on a dedicated executor, so
+the ingestion request does not wait for Redis. Events contain identifiers, occurrence
+time, version, and retry attempt only; article content remains in MongoDB.
+The `article-processing` consumer group performs a deterministic Phase 9
+status transition from `PENDING` through `PROCESSING` to `COMPLETED`.
+
+Processing failures are retried at most three times. Exhausted events are
+written to `article-discovered-dlq` before the original message is
+acknowledged. If retry or dead-letter publication fails, the original remains
+unacknowledged. Redis connection failures never roll back a stored Article.
+Articles in nonterminal processing states are republished at the next backend
+startup, providing lightweight development-stage recovery without introducing
+a transactional outbox. The Actuator health endpoint includes Redis availability
+without exposing its URL or credentials.
+
 At normal application startup, Daily Mirror is registered as an enabled English
 RSS source if its `daily-mirror` slug does not already exist. No other source
 is seeded.
@@ -119,7 +142,8 @@ Create the executable application package:
 mvn clean package
 ```
 
-Automated tests do not require an Atlas connection. Their test context excludes MongoDB auto-configuration and disables MongoDB health checks.
+Automated tests require neither Atlas nor Redis. Their application test context
+disables both external integrations and their health checks.
 
 ## Architecture Conventions
 
@@ -139,4 +163,4 @@ Automated tests do not require an Atlas connection. Their test context excludes 
 
 ## Planned Next Phase
 
-Phase 7 — Second and Third Sources has not been started.
+Phase 10 — Gemini AI Processing has not been started.

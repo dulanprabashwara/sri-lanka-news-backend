@@ -57,6 +57,7 @@ class ArticleServiceTest {
         assertThat(created.authors()).containsExactly("Reporter One");
         assertThat(created.extractedContent()).isEqualTo("Clean fixture body");
         assertThat(created.contentHash()).hasSize(64);
+        assertThat(created.processingStatus()).isEqualTo(ProcessingStatus.PENDING);
         verify(articleRepository).existsByCanonicalUrl(command.canonicalUrl());
         verify(articleRepository).existsByContentHash(created.contentHash());
         verify(articleRepository).save(created);

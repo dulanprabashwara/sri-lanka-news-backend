@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 
 import java.time.Instant;
 import java.util.List;
@@ -19,6 +20,7 @@ import lk.srilankannews.common.domain.Language;
 import lk.srilankannews.source.IngestionType;
 import lk.srilankannews.source.Source;
 import lk.srilankannews.source.SourceService;
+import lk.srilankannews.processing.ArticleDiscoveredNotifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,11 +41,15 @@ class ArticleIngestionServiceTest {
     @Mock
     private SourceService sourceService;
 
+    @Mock
+    private ArticleDiscoveredNotifier discoveredNotifier;
+
     private ArticleIngestionService ingestionService;
 
     @BeforeEach
     void setUp() {
-        ingestionService = new ArticleIngestionService(articleService, sourceService);
+        ingestionService = new ArticleIngestionService(
+                articleService, sourceService, discoveredNotifier);
     }
 
     @Test
@@ -63,6 +69,7 @@ class ArticleIngestionServiceTest {
         assertThat(command.getValue().canonicalUrl()).isEqualTo(CANONICAL_URL);
         assertThat(command.getValue().originalLanguage()).isEqualTo(Language.EN);
         assertThat(command.getValue().extractedContent()).isEqualTo("Clean fixture body");
+        verify(discoveredNotifier).notifyDiscovered(article());
     }
 
     @Test
@@ -77,6 +84,21 @@ class ArticleIngestionServiceTest {
         assertThat(response.duplicateReason())
                 .isEqualTo(ArticleIngestionResponse.DuplicateReason.URL_DUPLICATE);
         verify(articleService, never()).create(any());
+        verify(discoveredNotifier, never()).notifyDiscovered(any());
+    }
+
+    @Test
+    void returnsCreatedWhenDownstreamNotificationFailsAfterPersistence() {
+        when(sourceService.findBySlug("daily-mirror")).thenReturn(Optional.of(source()));
+        when(articleService.findByCanonicalUrl(CANONICAL_URL)).thenReturn(Optional.empty());
+        when(articleService.create(any(CreateArticleCommand.class))).thenReturn(article());
+        doThrow(new IllegalStateException("downstream failed"))
+                .when(discoveredNotifier).notifyDiscovered(any());
+
+        ArticleIngestionResponse response = ingestionService.ingest(request());
+
+        assertThat(response.status()).isEqualTo(ArticleIngestionResponse.Status.CREATED);
+        assertThat(response.articleId()).isEqualTo("article-1");
     }
 
     @Test
@@ -93,6 +115,7 @@ class ArticleIngestionServiceTest {
         assertThat(response.duplicateReason())
                 .isEqualTo(ArticleIngestionResponse.DuplicateReason.CONTENT_DUPLICATE);
         verify(articleService, never()).create(any());
+        verify(discoveredNotifier, never()).notifyDiscovered(any());
     }
 
     @Test

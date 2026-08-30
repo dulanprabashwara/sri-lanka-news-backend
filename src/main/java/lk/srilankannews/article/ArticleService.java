@@ -69,6 +69,16 @@ public class ArticleService {
         return articleRepository.findByContentHash(contentHasher.hash(extractedContent));
     }
 
+    public Optional<Article> updateProcessingStatus(String articleId, ProcessingStatus status) {
+        return articleRepository.findById(articleId)
+                .map(article -> articleRepository.save(
+                        article.withProcessingStatus(status, clock.instant())));
+    }
+
+    public java.util.List<Article> findAwaitingProcessing() {
+        return articleRepository.findAwaitingProcessing();
+    }
+
     public Page<Article> findAll(ArticleFilter filter, Pageable pageable) {
         return articleRepository.findAll(filter, pageable);
     }

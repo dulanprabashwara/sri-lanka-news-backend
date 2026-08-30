@@ -52,6 +52,7 @@ class ArticleControllerTest {
                 .andExpect(jsonPath("$.content[0].canonicalUrl").doesNotExist())
                 .andExpect(jsonPath("$.content[0].extractedContent").doesNotExist())
                 .andExpect(jsonPath("$.content[0].contentHash").doesNotExist())
+                .andExpect(jsonPath("$.content[0].processingStatus").doesNotExist())
                 .andExpect(jsonPath("$.content[0].createdAt").doesNotExist())
                 .andExpect(jsonPath("$.content[0].updatedAt").doesNotExist());
 
@@ -87,6 +88,7 @@ class ArticleControllerTest {
                 .andExpect(jsonPath("$.source.slug").value("daily-mirror"))
                 .andExpect(jsonPath("$.extractedContent").doesNotExist())
                 .andExpect(jsonPath("$.contentHash").doesNotExist())
+                .andExpect(jsonPath("$.processingStatus").doesNotExist())
                 .andExpect(jsonPath("$.source.id").doesNotExist());
     }
 

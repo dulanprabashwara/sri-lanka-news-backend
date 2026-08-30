@@ -5,6 +5,19 @@ spring:
     mongodb:
       uri: ${MONGODB_URI}
       auto-index-creation: true
+    redis:
+      url: ${REDIS_URL}
+
+news:
+  processing:
+    redis:
+      enabled: ${REDIS_PROCESSING_ENABLED:true}
+      stream-key: article-discovered
+      dead-letter-stream-key: article-discovered-dlq
+      consumer-group: article-processing
+      consumer-name: ${HOSTNAME:sri-lanka-news-backend}
+      max-attempts: 3
+      poll-timeout: 2s
 
 ingestion:
   api-key: ${INGESTION_API_KEY}

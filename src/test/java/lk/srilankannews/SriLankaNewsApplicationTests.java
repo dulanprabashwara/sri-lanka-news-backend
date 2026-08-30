@@ -20,10 +20,15 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest(properties = {
         "ingestion.api-key=test-ingestion-key",
         "management.health.mongo.enabled=false",
+        "management.health.redis.enabled=false",
+        "news.processing.redis.enabled=false",
+        "spring.data.redis.url=redis://localhost:6379",
         "spring.autoconfigure.exclude="
                 + "org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,"
                 + "org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration,"
-                + "org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration"
+                + "org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoConfiguration,"
+                + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,"
+                + "org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration"
 })
 @AutoConfigureMockMvc
 class SriLankaNewsApplicationTests {

@@ -30,6 +30,7 @@ public record Article(
         ArticleCategory category,
         String extractedContent,
         @Indexed(name = "uk_articles_content_hash", unique = true, sparse = true) String contentHash,
+        ProcessingStatus processingStatus,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -43,7 +44,7 @@ public record Article(
             Instant discoveredAt, ArticleCategory category, String extractedContent,
             Instant createdAt, Instant updatedAt) {
         this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
-                publishedAt, discoveredAt, category, extractedContent, null, createdAt, updatedAt);
+                publishedAt, discoveredAt, category, extractedContent, null, null, createdAt, updatedAt);
     }
 
     static Article create(CreateArticleCommand command, String contentHash, Instant now) {
@@ -60,7 +61,14 @@ public record Article(
                 command.category(),
                 command.extractedContent(),
                 contentHash,
+                ProcessingStatus.PENDING,
                 now,
                 now);
+    }
+
+    Article withProcessingStatus(ProcessingStatus status, Instant now) {
+        return new Article(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage,
+                authors, publishedAt, discoveredAt, category, extractedContent, contentHash,
+                status, createdAt, now);
     }
 }
