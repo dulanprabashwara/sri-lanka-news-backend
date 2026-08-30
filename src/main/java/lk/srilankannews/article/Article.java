@@ -5,9 +5,17 @@ import java.util.List;
 import lk.srilankannews.common.domain.Language;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.index.IndexDirection;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "articles")
+@CompoundIndexes({
+        @CompoundIndex(name = "idx_articles_source_published", def = "{'sourceId': 1, 'publishedAt': -1}"),
+        @CompoundIndex(name = "idx_articles_category_published", def = "{'category': 1, 'publishedAt': -1}"),
+        @CompoundIndex(name = "idx_articles_language_published", def = "{'originalLanguage': 1, 'publishedAt': -1}")
+})
 public record Article(
         @Id String id,
         String sourceId,
@@ -16,6 +24,7 @@ public record Article(
         @Indexed(name = "uk_articles_canonical_url", unique = true) String canonicalUrl,
         Language originalLanguage,
         List<String> authors,
+        @Indexed(name = "idx_articles_published_at", direction = IndexDirection.DESCENDING)
         Instant publishedAt,
         Instant discoveredAt,
         ArticleCategory category,

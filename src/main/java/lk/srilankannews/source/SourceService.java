@@ -3,6 +3,8 @@ package lk.srilankannews.source;
 import jakarta.validation.Valid;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -39,6 +41,14 @@ public class SourceService {
 
     public Optional<Source> findBySlug(String slug) {
         return sourceRepository.findBySlug(slug);
+    }
+
+    public List<Source> findAllByName() {
+        return sourceRepository.findAllByOrderByNameAsc();
+    }
+
+    public List<Source> findAllByIds(Collection<String> ids) {
+        return sourceRepository.findAllById(ids);
     }
 
     public boolean existsById(String id) {

@@ -2,6 +2,7 @@ package lk.srilankannews.common.api.error;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.beans.TypeMismatchException;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
@@ -101,6 +103,32 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         return response(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_ERROR,
                 "Request validation failed.", request, details);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(
+            TypeMismatchException exception,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request
+    ) {
+        String field = exception instanceof MethodArgumentTypeMismatchException methodArgumentException
+                ? methodArgumentException.getName()
+                : "parameter";
+        List<ApiError.Detail> details = List.of(
+                new ApiError.Detail(field, "TypeMismatch", "Invalid value."));
+
+        return response(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_ERROR,
+                "Request validation failed.", servletRequest(request), details);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    ResponseEntity<Object> handleResourceNotFound(
+            ResourceNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        return response(HttpStatus.NOT_FOUND, ErrorCode.RESOURCE_NOT_FOUND,
+                exception.getMessage(), request, List.of());
     }
 
     @ExceptionHandler(Exception.class)

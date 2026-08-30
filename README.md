@@ -4,9 +4,9 @@ Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform
 
 ## Current Phase
 
-**Phase 2 — Source + Article Domain Foundation**
+**Phase 3 — Basic Public Article API**
 
-This phase adds the minimum Source and Article persistence domains, service boundaries, validation, timestamps, and indexes needed before ingestion and public APIs.
+This phase exposes read-only public Source and Article APIs with dedicated DTOs, pagination, filtering, publication-time sorting, and source attribution.
 
 ## Technology
 
@@ -62,6 +62,17 @@ The application listens on `http://localhost:8080` by default. The deliberately 
 GET /actuator/health
 ```
 
+## Public API
+
+```text
+GET /api/v1/sources
+GET /api/v1/sources/{slug}
+GET /api/v1/articles
+GET /api/v1/articles/{id}
+```
+
+The Article list accepts zero-based `page`, `size`, optional `source`, `category`, and `language` filters, plus `sort=publishedAt,asc|desc`. Defaults are `page=0`, `size=20`, and newest-first publication sorting. Requests above the maximum page size of `100` are rejected.
+
 ## Testing
 
 Run the automated tests:
@@ -80,12 +91,13 @@ Automated tests do not require an Atlas connection. Their test context excludes 
 
 ## Architecture Conventions
 
-- Application APIs use the `/api/v1` base path. No business endpoints exist in Phase 1.
+- Application APIs use the `/api/v1` base path.
 - Packages are introduced by feature. Shared cross-cutting code belongs in `common`; application configuration belongs in `config`.
 - Controllers use request/response DTOs and never expose MongoDB persistence documents directly.
 - Controllers stay thin, services own business logic, and repositories only handle persistence.
 - Bean Validation is applied at API boundaries.
 - Source and Article documents are stored in separate `sources` and `articles` collections. MongoDB creates unique indexes for source slugs and canonical article URLs at application startup.
+- Public controllers expose dedicated DTOs, and Article pages resolve Source attribution with one batched lookup rather than one query per Article.
 - Domain services use UTC `Instant` timestamps supplied by an injectable UTC clock.
 - REST errors use one centralized structure containing a timestamp, HTTP status, stable application code, safe message, request path, request ID, and optional field details.
 - Requests accept a safe `X-Request-ID` value or receive a generated one. The ID is returned in the same response header and included in application logs.
@@ -95,6 +107,6 @@ Automated tests do not require an Atlas connection. Their test context excludes 
 
 ## Planned Next Phase
 
-**Phase 3 — Basic Public Article API**
+**Phase 4 — Next.js Foundation**
 
-Phase 3 will add public read-only Source and Article endpoints using dedicated API DTOs. No public business endpoints exist yet.
+Phase 4 will establish the frontend foundation and consume these public APIs. It has not been implemented.

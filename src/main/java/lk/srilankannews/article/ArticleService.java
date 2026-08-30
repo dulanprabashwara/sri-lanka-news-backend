@@ -6,6 +6,8 @@ import java.time.Instant;
 import java.util.Optional;
 import lk.srilankannews.source.SourceService;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
@@ -45,5 +47,9 @@ public class ArticleService {
 
     public Optional<Article> findByCanonicalUrl(String canonicalUrl) {
         return articleRepository.findByCanonicalUrl(canonicalUrl);
+    }
+
+    public Page<Article> findAll(ArticleFilter filter, Pageable pageable) {
+        return articleRepository.findAll(filter, pageable);
     }
 }
