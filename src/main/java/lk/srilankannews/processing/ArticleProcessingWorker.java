@@ -14,6 +14,7 @@ import lk.srilankannews.article.ArticleEntity;
 import lk.srilankannews.article.ArticleService;
 import lk.srilankannews.article.ProcessingStatus;
 import lk.srilankannews.article.cache.ArticleFeedCache;
+import lk.srilankannews.story.StoryClusteringService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class ArticleProcessingWorker {
     private final AiOutputValidator outputValidator;
     private final GeminiProperties properties;
     private final ArticleFeedCache feedCache;
+    private final StoryClusteringService clusteringService;
     private final Clock clock;
 
     public ArticleProcessingWorker(
@@ -37,6 +39,7 @@ public class ArticleProcessingWorker {
             AiOutputValidator outputValidator,
             GeminiProperties properties,
             ArticleFeedCache feedCache,
+            StoryClusteringService clusteringService,
             Clock clock) {
         this.articleService = articleService;
         this.aiProvider = aiProvider;
@@ -44,6 +47,7 @@ public class ArticleProcessingWorker {
         this.outputValidator = outputValidator;
         this.properties = properties;
         this.feedCache = feedCache;
+        this.clusteringService = clusteringService;
         this.clock = clock;
     }
 
@@ -51,9 +55,9 @@ public class ArticleProcessingWorker {
         Article article = articleService.findById(event.articleId())
                 .orElseThrow(() -> new IllegalStateException("Article does not exist"));
         validateEvent(event, article);
-        if (article.processingStatus() == ProcessingStatus.COMPLETED
-                && article.aiEnrichment() != null
+        if (article.aiEnrichment() != null
                 && article.aiEnrichment().matches(properties.model(), properties.promptVersion())) {
+            clusteringService.cluster(article.id());
             return;
         }
 
@@ -75,6 +79,7 @@ public class ArticleProcessingWorker {
         articleService.completeEnrichment(article.id(), enrichment, result.category())
                 .orElseThrow(() -> new IllegalStateException("Article disappeared during enrichment"));
         invalidateFeedCache(article.id());
+        clusteringService.cluster(article.id());
     }
 
     public void markRetrying(String articleId) {

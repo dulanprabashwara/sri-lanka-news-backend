@@ -4,9 +4,9 @@ Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform
 
 ## Current Phase
 
-**Phase 11 — Redis Article Feed Caching**
+**Phase 12 — Story Clustering Foundation**
 
-The public article list now uses a Redis cache-aside layer with TTL-bound entries and generation-based invalidation. MongoDB remains authoritative.
+Enriched articles are assigned to internal MongoDB Story documents by a conservative, deterministic lexical matcher. Public APIs remain unchanged.
 
 ## Technology
 
@@ -47,6 +47,10 @@ The public article list now uses a Redis cache-aside layer with TTL-bound entrie
    $env:INGESTION_API_KEY = "<strong-random-shared-secret>"
    $env:REDIS_URL = "rediss://:<password>@<redis-host>:<port>"
    $env:ARTICLE_FEED_CACHE_TTL_SECONDS = "60"
+   $env:STORY_CLUSTER_WINDOW_HOURS = "48"
+   $env:STORY_CLUSTER_THRESHOLD = "0.72"
+   $env:STORY_CLUSTER_CANDIDATE_LIMIT = "200"
+   $env:STORY_CLUSTER_BACKFILL_LIMIT = "100"
    $env:GEMINI_API_KEY = "<google-ai-studio-api-key>"
    $env:GEMINI_MODEL = "<gemini-model-id>"
    ```
@@ -64,6 +68,10 @@ The application intentionally has no localhost fallback. Never commit the comple
 | `REDIS_URL` | Yes | None | Provider-neutral `redis://` or TLS `rediss://` connection URL. |
 | `REDIS_PROCESSING_ENABLED` | No | `true` | Enables Redis Streams publishing and consumption. |
 | `ARTICLE_FEED_CACHE_TTL_SECONDS` | No | `60` | TTL in seconds for public Article feed cache entries. |
+| `STORY_CLUSTER_WINDOW_HOURS` | No | `48` | Publication-time window on either side of an Article for Story candidates. |
+| `STORY_CLUSTER_THRESHOLD` | No | `0.72` | Minimum deterministic lexical score from 0 to 1. |
+| `STORY_CLUSTER_CANDIDATE_LIMIT` | No | `200` | Maximum candidate Stories scored for one Article. |
+| `STORY_CLUSTER_BACKFILL_LIMIT` | No | `100` | Maximum enriched, unassigned Articles clustered at startup; `0` disables backfill. |
 | `GEMINI_API_KEY` | Yes | None | Google AI Studio API key; never logged or exposed. |
 | `GEMINI_MODEL` | Yes | None | Configurable Gemini model identifier. |
 | `GEMINI_MAX_INPUT_CHARACTERS` | No | `30000` | Maximum deterministic article-content excerpt sent for enrichment. |
@@ -138,6 +146,18 @@ At normal application startup, Daily Mirror is registered as an enabled English
 RSS source if its `daily-mirror` slug does not already exist. No other source
 is seeded.
 
+## Story Clustering
+
+After successful AI enrichment, the worker assigns the Article to one internal Story. Candidate Stories must overlap the configurable publication window. Matching version `lexical-v1` combines normalized title-token Jaccard overlap (70%), topics (15%), entities (10%), and category agreement (5%). Conflicting known categories and different original languages are rejected; title overlap below 0.45 is rejected before the configured threshold is applied. Equal scores prefer the most recently active Story and then the stable Story ID.
+
+Normalization uses Unicode NFKC, locale-neutral case folding, punctuation-to-whitespace conversion, and token whitespace normalization. It does not translate or semantically rewrite text. Consequently, English, Sinhala, and Tamil reports about the same event will usually remain separate unless future multilingual or semantic matching is introduced.
+
+`Article.storyId` is internal and is not exposed by public DTOs. Story membership updates use an internal article-ID set and conditional MongoDB updates so replay cannot increment `articleCount` twice. Article assignment is an atomic set-if-null operation; the winning MongoDB assignment remains authoritative during concurrent attempts. Story-only changes do not invalidate the public Article feed cache.
+
+Story decisions run in an Atlas transaction. The transaction first increments a private `story_cluster_partitions` revision keyed by matching version and original language, then reloads candidates, creates or selects the Story, assigns the Article, and updates membership. Concurrent decisions in the same partition produce a MongoDB write conflict; the complete transaction retries at most three times with a fresh snapshot.
+
+A bounded startup backfill clusters already-enriched Articles without a Story, oldest first, and never calls Gemini. If clustering fails after enrichment, the existing Redis retry/DLQ flow is used; the persisted matching enrichment causes retries to skip Gemini and retry only clustering.
+
 ## Testing
 
 Run the automated tests:
@@ -173,4 +193,4 @@ disables both external integrations and their health checks.
 
 ## Planned Next Phase
 
-Phase 12 — Story Clustering Foundation
+Phase 13 — Embedding-Assisted Story Matching

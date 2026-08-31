@@ -8,10 +8,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import lk.srilankannews.config.RequestCorrelationFilter;
 import lk.srilankannews.article.ArticleRepository;
 import lk.srilankannews.source.SourceRepository;
+import lk.srilankannews.story.StoryClusteringService;
+import lk.srilankannews.story.StoryRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.mongodb.MongoDatabaseFactory;
+import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -47,6 +51,18 @@ class SriLankaNewsApplicationTests {
 
     @MockitoBean
     private ArticleRepository articleRepository;
+
+    @MockitoBean
+    private MongoDatabaseFactory mongoDatabaseFactory;
+
+    @MockitoBean
+    private MongoOperations mongoOperations;
+
+    @MockitoBean
+    private StoryRepository storyRepository;
+
+    @MockitoBean
+    private StoryClusteringService storyClusteringService;
 
     @Test
     void contextLoads() {

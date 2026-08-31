@@ -2,6 +2,7 @@ package lk.srilankannews.article;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
@@ -19,4 +20,8 @@ public interface ArticleRepository extends MongoRepository<Article, String>, Art
             + " {'processingStatus': 'PROCESSING'}, {'processingStatus': 'RETRYING'},"
             + " {'processingStatus': 'COMPLETED', 'aiEnrichment': null}]}")
     List<Article> findAwaitingProcessing();
+
+    @Query("{'aiEnrichment': {'$ne': null}, '$or': ["
+            + "{'storyId': null}, {'storyId': {'$exists': false}}]}")
+    List<Article> findEnrichedWithoutStory(Pageable pageable);
 }

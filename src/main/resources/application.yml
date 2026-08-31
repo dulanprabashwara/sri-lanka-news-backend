@@ -20,6 +20,12 @@ news:
     article-feed:
       enabled: true
       ttl: ${ARTICLE_FEED_CACHE_TTL_SECONDS:60}s
+  story:
+    clustering:
+      window: ${STORY_CLUSTER_WINDOW_HOURS:48}h
+      threshold: ${STORY_CLUSTER_THRESHOLD:0.72}
+      candidate-limit: ${STORY_CLUSTER_CANDIDATE_LIMIT:200}
+      backfill-limit: ${STORY_CLUSTER_BACKFILL_LIMIT:100}
   processing:
     redis:
       enabled: ${REDIS_PROCESSING_ENABLED:true}

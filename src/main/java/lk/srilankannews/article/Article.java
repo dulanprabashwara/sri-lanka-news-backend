@@ -4,10 +4,10 @@ import java.time.Instant;
 import java.util.List;
 import lk.srilankannews.common.domain.Language;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.index.IndexDirection;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.IndexDirection;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "articles")
@@ -32,6 +32,7 @@ public record Article(
         @Indexed(name = "uk_articles_content_hash", unique = true, sparse = true) String contentHash,
         ArticleAiEnrichment aiEnrichment,
         ProcessingStatus processingStatus,
+        @Indexed(name = "idx_articles_story_id") String storyId,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -47,7 +48,18 @@ public record Article(
             Instant createdAt, Instant updatedAt) {
         this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
                 publishedAt, discoveredAt, category, extractedContent, contentHash, null,
-                processingStatus, createdAt, updatedAt);
+                processingStatus, null, createdAt, updatedAt);
+    }
+
+    public Article(
+            String id, String sourceId, String title, String originalUrl, String canonicalUrl,
+            Language originalLanguage, List<String> authors, Instant publishedAt,
+            Instant discoveredAt, ArticleCategory category, String extractedContent,
+            String contentHash, ArticleAiEnrichment aiEnrichment, ProcessingStatus processingStatus,
+            Instant createdAt, Instant updatedAt) {
+        this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
+                publishedAt, discoveredAt, category, extractedContent, contentHash, aiEnrichment,
+                processingStatus, null, createdAt, updatedAt);
     }
 
     public Article(
@@ -57,7 +69,7 @@ public record Article(
             Instant createdAt, Instant updatedAt) {
         this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
                 publishedAt, discoveredAt, category, extractedContent, null, null, null,
-                createdAt, updatedAt);
+                null, createdAt, updatedAt);
     }
 
     static Article create(CreateArticleCommand command, String contentHash, Instant now) {
@@ -66,19 +78,19 @@ public record Article(
                 command.canonicalUrl(), command.originalLanguage(), command.authors(),
                 command.publishedAt(), command.discoveredAt(), command.category(),
                 command.extractedContent(), contentHash, null, ProcessingStatus.PENDING,
-                now, now);
+                null, now, now);
     }
 
     Article withProcessingStatus(ProcessingStatus status, Instant now) {
         return new Article(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage,
                 authors, publishedAt, discoveredAt, category, extractedContent, contentHash,
-                aiEnrichment, status, createdAt, now);
+                aiEnrichment, status, storyId, createdAt, now);
     }
 
     Article withAiEnrichment(
             ArticleAiEnrichment enrichment, ArticleCategory enrichedCategory, Instant now) {
         return new Article(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage,
                 authors, publishedAt, discoveredAt, enrichedCategory, extractedContent, contentHash,
-                enrichment, ProcessingStatus.COMPLETED, createdAt, now);
+                enrichment, ProcessingStatus.COMPLETED, storyId, createdAt, now);
     }
 }

@@ -28,6 +28,7 @@ import lk.srilankannews.article.ArticleService;
 import lk.srilankannews.article.ProcessingStatus;
 import lk.srilankannews.article.cache.ArticleFeedCache;
 import lk.srilankannews.common.domain.Language;
+import lk.srilankannews.story.StoryClusteringService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +46,8 @@ class ArticleProcessingWorkerTest {
     private AiProvider aiProvider;
     @Mock
     private ArticleFeedCache feedCache;
+    @Mock
+    private StoryClusteringService clusteringService;
     private ArticleProcessingWorker worker;
 
     @BeforeEach
@@ -57,6 +60,7 @@ class ArticleProcessingWorkerTest {
                 new AiOutputValidator(),
                 properties,
                 feedCache,
+                clusteringService,
                 Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
@@ -143,6 +147,7 @@ class ArticleProcessingWorkerTest {
 
         verify(aiProvider, never()).enrich(any());
         verify(articleService, never()).updateProcessingStatus(any(), any());
+        verify(clusteringService).cluster("article-1");
     }
 
     @Test
@@ -173,6 +178,35 @@ class ArticleProcessingWorkerTest {
 
         assertThatThrownBy(() -> worker.process(event()))
                 .isInstanceOf(AiProviderException.class);
+    }
+
+    @Test
+    void clusteringFailureRetriesWithoutCallingGeminiAgain() {
+        Article pending = article(Language.EN, ProcessingStatus.PENDING, null);
+        ArticleAiEnrichment existing = new ArticleAiEnrichment(
+                "Existing summary", List.of(), List.of(), List.of(),
+                "gemini-test", "v1", NOW);
+        Article completed = article(Language.EN, ProcessingStatus.RETRYING, existing);
+        when(articleService.findById("article-1"))
+                .thenReturn(Optional.of(pending), Optional.of(completed));
+        when(articleService.updateProcessingStatus("article-1", ProcessingStatus.PROCESSING))
+                .thenReturn(Optional.of(pending));
+        when(aiProvider.enrich(any())).thenReturn(new AiResult(
+                "Summary", ArticleCategory.LOCAL, List.of(), List.of(), List.of()));
+        when(articleService.completeEnrichment(any(), any(), any()))
+                .thenReturn(Optional.of(completed));
+        org.mockito.Mockito.doThrow(new IllegalStateException("clustering failed"))
+                .when(clusteringService).cluster("article-1");
+
+        assertThatThrownBy(() -> worker.process(event()))
+                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> worker.process(event()))
+                .isInstanceOf(IllegalStateException.class);
+
+        verify(aiProvider, org.mockito.Mockito.times(1)).enrich(any());
+        verify(articleService, org.mockito.Mockito.times(1))
+                .completeEnrichment(any(), any(), any());
+        verify(clusteringService, org.mockito.Mockito.times(2)).cluster("article-1");
     }
 
     private ArticleDiscoveredEvent event() {
