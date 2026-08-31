@@ -7,7 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
-public interface StoryRepository extends MongoRepository<Story, String> {
+public interface StoryRepository extends MongoRepository<Story, String>, StoryQueryRepository {
 
     Optional<Story> findByRepresentativeArticleId(String representativeArticleId);
 

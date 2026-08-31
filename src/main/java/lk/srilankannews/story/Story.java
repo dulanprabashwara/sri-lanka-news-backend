@@ -14,7 +14,13 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @CompoundIndexes({
         @CompoundIndex(
                 name = "idx_stories_candidate_window",
-                def = "{'lastPublishedAt': -1, 'firstPublishedAt': 1, 'category': 1}")
+                def = "{'lastPublishedAt': -1, 'firstPublishedAt': 1, 'category': 1}"),
+        @CompoundIndex(
+                name = "idx_stories_public_category_published",
+                def = "{'category': 1, 'lastPublishedAt': -1, '_id': -1}"),
+        @CompoundIndex(
+                name = "idx_stories_public_published",
+                def = "{'lastPublishedAt': -1, '_id': -1}")
 })
 public record Story(
         @Id String id,

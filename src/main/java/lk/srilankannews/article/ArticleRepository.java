@@ -3,6 +3,7 @@ package lk.srilankannews.article;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
@@ -32,4 +33,6 @@ public interface ArticleRepository extends MongoRepository<Article, String>, Art
     @Query("{'aiEnrichment': {'$ne': null}, '$or': ["
             + "{'storyId': null}, {'storyId': {'$exists': false}}]}")
     List<Article> findEnrichedWithoutStory(Pageable pageable);
+
+    List<Article> findByStoryId(String storyId, Sort sort);
 }

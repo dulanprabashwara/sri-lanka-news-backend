@@ -19,7 +19,10 @@ class StoryPersistenceMetadataTest {
         CompoundIndexes indexes = Story.class.getAnnotation(CompoundIndexes.class);
         assertThat(Arrays.stream(indexes.value())
                 .map(index -> index.name()).toList())
-                .contains("idx_stories_candidate_window");
+                .contains(
+                        "idx_stories_candidate_window",
+                        "idx_stories_public_category_published",
+                        "idx_stories_public_published");
     }
 
     @Test
