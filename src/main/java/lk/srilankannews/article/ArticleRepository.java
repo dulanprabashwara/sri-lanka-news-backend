@@ -1,7 +1,7 @@
 package lk.srilankannews.article;
 
-import java.util.Optional;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
@@ -16,6 +16,7 @@ public interface ArticleRepository extends MongoRepository<Article, String>, Art
     boolean existsByContentHash(String contentHash);
 
     @Query("{'$or': [{'processingStatus': null}, {'processingStatus': 'PENDING'},"
-            + " {'processingStatus': 'PROCESSING'}, {'processingStatus': 'RETRYING'}]}")
+            + " {'processingStatus': 'PROCESSING'}, {'processingStatus': 'RETRYING'},"
+            + " {'processingStatus': 'COMPLETED', 'aiEnrichment': null}]}")
     List<Article> findAwaitingProcessing();
 }

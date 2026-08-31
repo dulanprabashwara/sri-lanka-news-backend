@@ -30,6 +30,7 @@ public record Article(
         ArticleCategory category,
         String extractedContent,
         @Indexed(name = "uk_articles_content_hash", unique = true, sparse = true) String contentHash,
+        ArticleAiEnrichment aiEnrichment,
         ProcessingStatus processingStatus,
         Instant createdAt,
         Instant updatedAt
@@ -42,33 +43,42 @@ public record Article(
             String id, String sourceId, String title, String originalUrl, String canonicalUrl,
             Language originalLanguage, List<String> authors, Instant publishedAt,
             Instant discoveredAt, ArticleCategory category, String extractedContent,
+            String contentHash, ProcessingStatus processingStatus,
             Instant createdAt, Instant updatedAt) {
         this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
-                publishedAt, discoveredAt, category, extractedContent, null, null, createdAt, updatedAt);
+                publishedAt, discoveredAt, category, extractedContent, contentHash, null,
+                processingStatus, createdAt, updatedAt);
+    }
+
+    public Article(
+            String id, String sourceId, String title, String originalUrl, String canonicalUrl,
+            Language originalLanguage, List<String> authors, Instant publishedAt,
+            Instant discoveredAt, ArticleCategory category, String extractedContent,
+            Instant createdAt, Instant updatedAt) {
+        this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
+                publishedAt, discoveredAt, category, extractedContent, null, null, null,
+                createdAt, updatedAt);
     }
 
     static Article create(CreateArticleCommand command, String contentHash, Instant now) {
         return new Article(
-                null,
-                command.sourceId(),
-                command.title(),
-                command.originalUrl(),
-                command.canonicalUrl(),
-                command.originalLanguage(),
-                command.authors(),
-                command.publishedAt(),
-                command.discoveredAt(),
-                command.category(),
-                command.extractedContent(),
-                contentHash,
-                ProcessingStatus.PENDING,
-                now,
-                now);
+                null, command.sourceId(), command.title(), command.originalUrl(),
+                command.canonicalUrl(), command.originalLanguage(), command.authors(),
+                command.publishedAt(), command.discoveredAt(), command.category(),
+                command.extractedContent(), contentHash, null, ProcessingStatus.PENDING,
+                now, now);
     }
 
     Article withProcessingStatus(ProcessingStatus status, Instant now) {
         return new Article(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage,
                 authors, publishedAt, discoveredAt, category, extractedContent, contentHash,
-                status, createdAt, now);
+                aiEnrichment, status, createdAt, now);
+    }
+
+    Article withAiEnrichment(
+            ArticleAiEnrichment enrichment, ArticleCategory enrichedCategory, Instant now) {
+        return new Article(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage,
+                authors, publishedAt, discoveredAt, enrichedCategory, extractedContent, contentHash,
+                enrichment, ProcessingStatus.COMPLETED, createdAt, now);
     }
 }

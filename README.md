@@ -4,10 +4,9 @@ Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform
 
 ## Current Phase
 
-**Phase 6 — First End-to-End Publisher Pipeline**
+**Phase 10 — Gemini AI Processing**
 
-This phase preserves the read-only public APIs and adds a shared-secret-protected
-internal article ingestion endpoint plus an idempotent Daily Mirror source seed.
+The Redis Streams worker now enriches newly ingested articles through a provider-neutral AI boundary backed by the official Google Gen AI Java SDK.
 
 ## Technology
 
@@ -17,6 +16,7 @@ internal article ingestion endpoint plus an idempotent Daily Mirror source seed.
 - Spring Web and Bean Validation
 - Spring Data MongoDB
 - Spring Boot Actuator
+- Google Gen AI Java SDK
 - JUnit 5 and Spring Boot Test
 
 ## Prerequisites
@@ -45,6 +45,8 @@ internal article ingestion endpoint plus an idempotent Daily Mirror source seed.
    $env:MONGODB_URI = "mongodb+srv://<username>:<password>@<cluster-host>/sri_lanka_news?retryWrites=true&w=majority"
    $env:INGESTION_API_KEY = "<strong-random-shared-secret>"
    $env:REDIS_URL = "rediss://:<password>@<redis-host>:<port>"
+   $env:GEMINI_API_KEY = "<google-ai-studio-api-key>"
+   $env:GEMINI_MODEL = "<gemini-model-id>"
    ```
 
 6. Run the application only after `MONGODB_URI` is available in its environment.
@@ -59,6 +61,9 @@ The application intentionally has no localhost fallback. Never commit the comple
 | `INGESTION_API_KEY` | Yes | None | Shared secret accepted only by internal ingestion endpoints. |
 | `REDIS_URL` | Yes | None | Provider-neutral `redis://` or TLS `rediss://` connection URL. |
 | `REDIS_PROCESSING_ENABLED` | No | `true` | Enables Redis Streams publishing and consumption. |
+| `GEMINI_API_KEY` | Yes | None | Google AI Studio API key; never logged or exposed. |
+| `GEMINI_MODEL` | Yes | None | Configurable Gemini model identifier. |
+| `GEMINI_MAX_INPUT_CHARACTERS` | No | `30000` | Maximum deterministic article-content excerpt sent for enrichment. |
 
 Never commit real credentials or a populated `.env` file.
 
@@ -108,21 +113,17 @@ pre-existing same-content collisions without deleting or overwriting articles.
 
 ## Asynchronous Article Processing
 
-Newly persisted articles dispatch publication of a minimal `ARTICLE_DISCOVERED`
-event to the `article-discovered` Redis Stream on a dedicated executor, so
-the ingestion request does not wait for Redis. Events contain identifiers, occurrence
-time, version, and retry attempt only; article content remains in MongoDB.
-The `article-processing` consumer group performs a deterministic Phase 9
-status transition from `PENDING` through `PROCESSING` to `COMPLETED`.
+Newly persisted articles publish a minimal `ARTICLE_DISCOVERED` Redis Stream event. The worker loads title and internal `extractedContent` from MongoDB; article content is never placed in Redis.
 
-Processing failures are retried at most three times. Exhausted events are
-written to `article-discovered-dlq` before the original message is
-acknowledged. If retry or dead-letter publication fails, the original remains
-unacknowledged. Redis connection failures never roll back a stored Article.
-Articles in nonterminal processing states are republished at the next backend
-startup, providing lightweight development-stage recovery without introducing
-a transactional outbox. The Actuator health endpoint includes Redis availability
-without exposing its URL or credentials.
+One schema-constrained request through `AiProvider` and `GeminiAiProvider` returns a same-language summary, category, topics, keywords, and simple entities. The prompt forbids translation, outside knowledge, fabricated facts or quotations, and unsupported motive inference.
+
+Structured output is validated before persistence: summaries are limited to 2,000 characters, with at most 8 topics, 15 keywords, and 20 entities plus bounded individual strings. Raw Gemini responses and prompts are not stored.
+
+Input is a deterministic leading excerpt capped at 30,000 characters by default through `GEMINI_MAX_INPUT_CHARACTERS`. Truncation avoids splitting surrogate pairs, is disclosed to the model, and content shorter than 50 characters is rejected.
+
+Validated enrichment stores private model, prompt version `v1`, and UTC processing time. Public Article DTOs expose only summary, topics, and category. Matching model-and-prompt replays skip Gemini.
+
+Provider outages, timeouts, rate limits, invalid JSON, and incomplete output use the existing bounded retry and dead-letter flow. MongoDB persistence and ingestion remain successful independently.
 
 At normal application startup, Daily Mirror is registered as an enabled English
 RSS source if its `daily-mirror` slug does not already exist. No other source
@@ -163,4 +164,4 @@ disables both external integrations and their health checks.
 
 ## Planned Next Phase
 
-Phase 10 — Gemini AI Processing has not been started.
+Phase 11 - Redis Feed Caching has not been started.

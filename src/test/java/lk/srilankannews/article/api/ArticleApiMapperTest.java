@@ -5,7 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Instant;
 import java.util.List;
 import lk.srilankannews.article.Article;
+import lk.srilankannews.article.ArticleAiEnrichment;
 import lk.srilankannews.article.ArticleCategory;
+import lk.srilankannews.article.ArticleEntity;
+import lk.srilankannews.article.ProcessingStatus;
 import lk.srilankannews.common.domain.Language;
 import lk.srilankannews.source.IngestionType;
 import lk.srilankannews.source.Source;
@@ -17,8 +20,16 @@ class ArticleApiMapperTest {
     private final ArticleApiMapper mapper = new ArticleApiMapper(new SourceApiMapper());
 
     @Test
-    void mapsPublicArticleAndNestedSourceFields() {
+    void mapsPublicArticleAiFieldsWithoutInternalData() {
         Instant publishedAt = Instant.parse("2026-08-30T09:00:00Z");
+        ArticleAiEnrichment enrichment = new ArticleAiEnrichment(
+                "Public summary",
+                List.of("Sri Lanka", "Policy"),
+                List.of("private-keyword"),
+                List.of(new ArticleEntity("Colombo", "LOCATION")),
+                "private-model",
+                "v1",
+                publishedAt.plusSeconds(120));
         Article article = new Article(
                 "507f1f77bcf86cd799439011",
                 "source-1",
@@ -31,27 +42,28 @@ class ArticleApiMapperTest {
                 publishedAt.plusSeconds(60),
                 ArticleCategory.LOCAL,
                 "Internal fixture content",
+                "private-content-hash",
+                enrichment,
+                ProcessingStatus.COMPLETED,
                 publishedAt,
                 publishedAt);
         Source source = new Source(
-                "source-1",
-                "Daily Mirror",
-                "daily-mirror",
-                "https://www.dailymirror.lk",
-                Language.EN,
-                IngestionType.RSS,
-                true,
-                publishedAt,
-                publishedAt);
+                "source-1", "Daily Mirror", "daily-mirror",
+                "https://www.dailymirror.lk", Language.EN, IngestionType.RSS,
+                true, publishedAt, publishedAt);
 
         ArticleResponse response = mapper.toResponse(article, source);
 
         assertThat(response.id()).isEqualTo(article.id());
-        assertThat(response.originalUrl()).isEqualTo(article.originalUrl());
-        assertThat(response.source().name()).isEqualTo(source.name());
+        assertThat(response.summary()).isEqualTo("Public summary");
+        assertThat(response.topics()).containsExactly("Sri Lanka", "Policy");
+        assertThat(response.category()).isEqualTo(ArticleCategory.LOCAL);
         assertThat(response.source().slug()).isEqualTo(source.slug());
         assertThat(ArticleResponse.class.getRecordComponents())
                 .extracting(component -> component.getName())
-                .doesNotContain("extractedContent", "contentHash", "processingStatus");
+                .doesNotContain(
+                        "extractedContent", "contentHash", "processingStatus",
+                        "aiEnrichment", "keywords", "entities", "model",
+                        "promptVersion", "processedAt");
     }
 }

@@ -18,6 +18,11 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @ActiveProfiles("test")
 @SpringBootTest(properties = {
+        "news.ai.gemini.api-key=test-gemini-key",
+        "news.ai.gemini.model=gemini-test",
+        "news.ai.gemini.prompt-version=v1",
+        "news.ai.gemini.timeout=5s",
+        "news.ai.gemini.max-input-characters=30000",
         "ingestion.api-key=test-ingestion-key",
         "management.health.mongo.enabled=false",
         "management.health.redis.enabled=false",

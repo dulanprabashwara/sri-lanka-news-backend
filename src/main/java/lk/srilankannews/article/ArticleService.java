@@ -75,6 +75,13 @@ public class ArticleService {
                         article.withProcessingStatus(status, clock.instant())));
     }
 
+    public Optional<Article> completeEnrichment(
+            String articleId, ArticleAiEnrichment enrichment, ArticleCategory category) {
+        return articleRepository.findById(articleId)
+                .map(article -> articleRepository.save(
+                        article.withAiEnrichment(enrichment, category, clock.instant())));
+    }
+
     public java.util.List<Article> findAwaitingProcessing() {
         return articleRepository.findAwaitingProcessing();
     }
