@@ -4,9 +4,9 @@ Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform
 
 ## Current Phase
 
-**Phase 10 — Gemini AI Processing**
+**Phase 11 — Redis Article Feed Caching**
 
-The Redis Streams worker now enriches newly ingested articles through a provider-neutral AI boundary backed by the official Google Gen AI Java SDK.
+The public article list now uses a Redis cache-aside layer with TTL-bound entries and generation-based invalidation. MongoDB remains authoritative.
 
 ## Technology
 
@@ -15,6 +15,7 @@ The Redis Streams worker now enriches newly ingested articles through a provider
 - Maven
 - Spring Web and Bean Validation
 - Spring Data MongoDB
+- Spring Data Redis
 - Spring Boot Actuator
 - Google Gen AI Java SDK
 - JUnit 5 and Spring Boot Test
@@ -45,6 +46,7 @@ The Redis Streams worker now enriches newly ingested articles through a provider
    $env:MONGODB_URI = "mongodb+srv://<username>:<password>@<cluster-host>/sri_lanka_news?retryWrites=true&w=majority"
    $env:INGESTION_API_KEY = "<strong-random-shared-secret>"
    $env:REDIS_URL = "rediss://:<password>@<redis-host>:<port>"
+   $env:ARTICLE_FEED_CACHE_TTL_SECONDS = "60"
    $env:GEMINI_API_KEY = "<google-ai-studio-api-key>"
    $env:GEMINI_MODEL = "<gemini-model-id>"
    ```
@@ -61,6 +63,7 @@ The application intentionally has no localhost fallback. Never commit the comple
 | `INGESTION_API_KEY` | Yes | None | Shared secret accepted only by internal ingestion endpoints. |
 | `REDIS_URL` | Yes | None | Provider-neutral `redis://` or TLS `rediss://` connection URL. |
 | `REDIS_PROCESSING_ENABLED` | No | `true` | Enables Redis Streams publishing and consumption. |
+| `ARTICLE_FEED_CACHE_TTL_SECONDS` | No | `60` | TTL in seconds for public Article feed cache entries. |
 | `GEMINI_API_KEY` | Yes | None | Google AI Studio API key; never logged or exposed. |
 | `GEMINI_MODEL` | Yes | None | Configurable Gemini model identifier. |
 | `GEMINI_MAX_INPUT_CHARACTERS` | No | `30000` | Maximum deterministic article-content excerpt sent for enrichment. |
@@ -110,6 +113,12 @@ whitespace normalization are applied before SHA-256 hashing. A sparse unique
 `contentHash` index is safe for legacy documents where the field is absent.
 An idempotent startup backfill hashes legacy content where possible and skips
 pre-existing same-content collisions without deleting or overwriting articles.
+
+## Public Article Feed Cache
+
+`GET /api/v1/articles` uses cache-aside Redis reads for normalized page, size, source, category, language, and publication-sort combinations. Only the completed public `PagedResponse<ArticleResponse>` JSON is cached; MongoDB documents and private ingestion or AI metadata are never cached.
+
+Keys use the `news:feed:` namespace and a generation value. New article creation and successful public AI enrichment increment `news:feed:generation`; duplicate ingestion and failed processing do not. Previous generations become unreachable and expire naturally after `ARTICLE_FEED_CACHE_TTL_SECONDS` (60 seconds by default). Redis read, write, or invalidation failures are logged safely and never fail public MongoDB reads, article persistence, or enrichment.
 
 ## Asynchronous Article Processing
 
@@ -164,4 +173,4 @@ disables both external integrations and their health checks.
 
 ## Planned Next Phase
 
-Phase 11 - Redis Feed Caching has not been started.
+Phase 12 — Story Clustering Foundation

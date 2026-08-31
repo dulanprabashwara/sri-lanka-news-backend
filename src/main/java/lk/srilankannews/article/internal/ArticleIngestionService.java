@@ -5,13 +5,14 @@ import lk.srilankannews.article.ArticleService;
 import lk.srilankannews.article.CreateArticleCommand;
 import lk.srilankannews.article.DuplicateArticleCanonicalUrlException;
 import lk.srilankannews.article.DuplicateArticleContentException;
+import lk.srilankannews.article.cache.ArticleFeedCache;
 import lk.srilankannews.common.api.error.ResourceNotFoundException;
+import lk.srilankannews.processing.ArticleDiscoveredNotifier;
 import lk.srilankannews.source.Source;
 import lk.srilankannews.source.SourceService;
-import lk.srilankannews.processing.ArticleDiscoveredNotifier;
-import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 @Service
 public class ArticleIngestionService {
@@ -20,14 +21,17 @@ public class ArticleIngestionService {
     private final ArticleService articleService;
     private final SourceService sourceService;
     private final ArticleDiscoveredNotifier discoveredNotifier;
+    private final ArticleFeedCache feedCache;
 
     public ArticleIngestionService(
             ArticleService articleService,
             SourceService sourceService,
-            ArticleDiscoveredNotifier discoveredNotifier) {
+            ArticleDiscoveredNotifier discoveredNotifier,
+            ArticleFeedCache feedCache) {
         this.articleService = articleService;
         this.sourceService = sourceService;
         this.discoveredNotifier = discoveredNotifier;
+        this.feedCache = feedCache;
     }
 
     public ArticleIngestionResponse ingest(ArticleIngestionRequest request) {
@@ -58,6 +62,7 @@ public class ArticleIngestionService {
 
         try {
             Article created = articleService.create(command);
+            invalidateFeedCache(created.id());
             try {
                 discoveredNotifier.notifyDiscovered(created);
             } catch (RuntimeException exception) {
@@ -85,6 +90,15 @@ public class ArticleIngestionService {
                             null,
                             request.canonicalUrl(),
                             ArticleIngestionResponse.DuplicateReason.CONTENT_DUPLICATE));
+        }
+    }
+
+    private void invalidateFeedCache(String articleId) {
+        try {
+            feedCache.invalidate();
+        } catch (RuntimeException exception) {
+            LOGGER.warn("article_feed_cache_invalidation_failed articleId={} reason={}",
+                    articleId, exception.getClass().getSimpleName());
         }
     }
 

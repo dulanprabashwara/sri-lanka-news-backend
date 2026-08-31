@@ -16,6 +16,10 @@ news:
       prompt-version: v1
       timeout: 30s
       max-input-characters: ${GEMINI_MAX_INPUT_CHARACTERS:30000}
+  cache:
+    article-feed:
+      enabled: true
+      ttl: ${ARTICLE_FEED_CACHE_TTL_SECONDS:60}s
   processing:
     redis:
       enabled: ${REDIS_PROCESSING_ENABLED:true}

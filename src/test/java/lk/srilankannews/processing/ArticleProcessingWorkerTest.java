@@ -26,6 +26,7 @@ import lk.srilankannews.article.ArticleAiEnrichment;
 import lk.srilankannews.article.ArticleCategory;
 import lk.srilankannews.article.ArticleService;
 import lk.srilankannews.article.ProcessingStatus;
+import lk.srilankannews.article.cache.ArticleFeedCache;
 import lk.srilankannews.common.domain.Language;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,8 @@ class ArticleProcessingWorkerTest {
     private ArticleService articleService;
     @Mock
     private AiProvider aiProvider;
+    @Mock
+    private ArticleFeedCache feedCache;
     private ArticleProcessingWorker worker;
 
     @BeforeEach
@@ -53,6 +56,7 @@ class ArticleProcessingWorkerTest {
                 new AiInputPolicy(properties),
                 new AiOutputValidator(),
                 properties,
+                feedCache,
                 Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
@@ -71,6 +75,8 @@ class ArticleProcessingWorkerTest {
         when(articleService.completeEnrichment(
                 org.mockito.ArgumentMatchers.eq("article-1"), any(), any()))
                 .thenReturn(Optional.of(article));
+        org.mockito.Mockito.doThrow(new IllegalStateException("cache unavailable"))
+                .when(feedCache).invalidate();
 
         worker.process(event());
 
@@ -92,6 +98,7 @@ class ArticleProcessingWorkerTest {
         assertThat(enrichment.getValue().model()).isEqualTo("gemini-test");
         assertThat(enrichment.getValue().promptVersion()).isEqualTo("v1");
         assertThat(enrichment.getValue().processedAt()).isEqualTo(NOW);
+        verify(feedCache).invalidate();
     }
 
     @Test
@@ -109,6 +116,8 @@ class ArticleProcessingWorkerTest {
         when(articleService.completeEnrichment(
                 org.mockito.ArgumentMatchers.eq("article-1"), any(), any()))
                 .thenReturn(Optional.of(article));
+        org.mockito.Mockito.doThrow(new IllegalStateException("cache unavailable"))
+                .when(feedCache).invalidate();
 
         worker.process(event());
 
@@ -150,6 +159,7 @@ class ArticleProcessingWorkerTest {
                 .extracting(exception -> ((AiProviderException) exception).kind())
                 .isEqualTo(AiProviderException.Kind.INVALID_RESPONSE);
         verify(articleService, never()).completeEnrichment(any(), any(), any());
+        verify(feedCache, never()).invalidate();
     }
 
     @Test

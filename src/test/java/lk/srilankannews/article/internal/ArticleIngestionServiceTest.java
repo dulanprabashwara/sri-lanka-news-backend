@@ -15,6 +15,7 @@ import lk.srilankannews.article.Article;
 import lk.srilankannews.article.ArticleCategory;
 import lk.srilankannews.article.ArticleService;
 import lk.srilankannews.article.CreateArticleCommand;
+import lk.srilankannews.article.cache.ArticleFeedCache;
 import lk.srilankannews.common.api.error.ResourceNotFoundException;
 import lk.srilankannews.common.domain.Language;
 import lk.srilankannews.source.IngestionType;
@@ -44,12 +45,15 @@ class ArticleIngestionServiceTest {
     @Mock
     private ArticleDiscoveredNotifier discoveredNotifier;
 
+    @Mock
+    private ArticleFeedCache feedCache;
+
     private ArticleIngestionService ingestionService;
 
     @BeforeEach
     void setUp() {
         ingestionService = new ArticleIngestionService(
-                articleService, sourceService, discoveredNotifier);
+                articleService, sourceService, discoveredNotifier, feedCache);
     }
 
     @Test
@@ -57,6 +61,7 @@ class ArticleIngestionServiceTest {
         when(sourceService.findBySlug("daily-mirror")).thenReturn(Optional.of(source()));
         when(articleService.findByCanonicalUrl(CANONICAL_URL)).thenReturn(Optional.empty());
         when(articleService.create(any(CreateArticleCommand.class))).thenReturn(article());
+        doThrow(new IllegalStateException("cache unavailable")).when(feedCache).invalidate();
 
         ArticleIngestionResponse response = ingestionService.ingest(request());
 
@@ -70,6 +75,7 @@ class ArticleIngestionServiceTest {
         assertThat(command.getValue().originalLanguage()).isEqualTo(Language.EN);
         assertThat(command.getValue().extractedContent()).isEqualTo("Clean fixture body");
         verify(discoveredNotifier).notifyDiscovered(article());
+        verify(feedCache).invalidate();
     }
 
     @Test
@@ -85,6 +91,8 @@ class ArticleIngestionServiceTest {
                 .isEqualTo(ArticleIngestionResponse.DuplicateReason.URL_DUPLICATE);
         verify(articleService, never()).create(any());
         verify(discoveredNotifier, never()).notifyDiscovered(any());
+        verify(feedCache, never()).invalidate();
+
     }
 
     @Test
@@ -92,6 +100,7 @@ class ArticleIngestionServiceTest {
         when(sourceService.findBySlug("daily-mirror")).thenReturn(Optional.of(source()));
         when(articleService.findByCanonicalUrl(CANONICAL_URL)).thenReturn(Optional.empty());
         when(articleService.create(any(CreateArticleCommand.class))).thenReturn(article());
+        doThrow(new IllegalStateException("cache unavailable")).when(feedCache).invalidate();
         doThrow(new IllegalStateException("downstream failed"))
                 .when(discoveredNotifier).notifyDiscovered(any());
 
@@ -116,6 +125,8 @@ class ArticleIngestionServiceTest {
                 .isEqualTo(ArticleIngestionResponse.DuplicateReason.CONTENT_DUPLICATE);
         verify(articleService, never()).create(any());
         verify(discoveredNotifier, never()).notifyDiscovered(any());
+        verify(feedCache, never()).invalidate();
+
     }
 
     @Test

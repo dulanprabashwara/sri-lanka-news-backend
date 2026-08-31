@@ -27,6 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
         "management.health.mongo.enabled=false",
         "management.health.redis.enabled=false",
         "news.processing.redis.enabled=false",
+        "news.cache.article-feed.enabled=false",
         "spring.data.redis.url=redis://localhost:6379",
         "spring.autoconfigure.exclude="
                 + "org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration,"

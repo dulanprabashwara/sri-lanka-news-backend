@@ -15,6 +15,7 @@ import lk.srilankannews.article.Article;
 import lk.srilankannews.article.ArticleCategory;
 import lk.srilankannews.article.ArticleFilter;
 import lk.srilankannews.article.ArticleService;
+import lk.srilankannews.article.cache.ArticleFeedCache;
 import lk.srilankannews.common.api.PagedResponse;
 import lk.srilankannews.common.api.error.ResourceNotFoundException;
 import lk.srilankannews.common.domain.Language;
@@ -41,12 +42,18 @@ class ArticleApiServiceTest {
     @Mock
     private SourceService sourceService;
 
+    @Mock
+    private ArticleFeedCache feedCache;
+
     private ArticleApiService articleApiService;
 
     @BeforeEach
     void setUp() {
         ArticleApiMapper mapper = new ArticleApiMapper(new SourceApiMapper());
-        articleApiService = new ArticleApiService(articleService, sourceService, mapper);
+        org.mockito.Mockito.lenient().when(feedCache.get(any()))
+                .thenReturn(ArticleFeedCache.Lookup.unavailable());
+        articleApiService = new ArticleApiService(
+                articleService, sourceService, mapper, feedCache);
     }
 
     @Test

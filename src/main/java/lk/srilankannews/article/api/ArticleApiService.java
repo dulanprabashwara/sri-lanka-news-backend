@@ -9,6 +9,8 @@ import lk.srilankannews.article.Article;
 import lk.srilankannews.article.ArticleCategory;
 import lk.srilankannews.article.ArticleFilter;
 import lk.srilankannews.article.ArticleService;
+import lk.srilankannews.article.cache.ArticleFeedCache;
+import lk.srilankannews.article.cache.ArticleFeedQuery;
 import lk.srilankannews.common.api.PagedResponse;
 import lk.srilankannews.common.api.error.ResourceNotFoundException;
 import lk.srilankannews.common.domain.Language;
@@ -26,15 +28,17 @@ public class ArticleApiService {
     private final ArticleService articleService;
     private final SourceService sourceService;
     private final ArticleApiMapper articleApiMapper;
+    private final ArticleFeedCache feedCache;
 
     public ArticleApiService(
             ArticleService articleService,
             SourceService sourceService,
-            ArticleApiMapper articleApiMapper
-    ) {
+            ArticleApiMapper articleApiMapper,
+            ArticleFeedCache feedCache) {
         this.articleService = articleService;
         this.sourceService = sourceService;
         this.articleApiMapper = articleApiMapper;
+        this.feedCache = feedCache;
     }
 
     public PagedResponse<ArticleResponse> list(
@@ -43,8 +47,35 @@ public class ArticleApiService {
             String sourceSlug,
             ArticleCategory category,
             Language language,
-            Sort.Direction direction
-    ) {
+            Sort.Direction direction) {
+        ArticleFeedQuery query =
+                new ArticleFeedQuery(page, size, sourceSlug, category, language, direction);
+        ArticleFeedCache.Lookup lookup = feedCache.get(query);
+        if (lookup.response().isPresent()) {
+            return lookup.response().orElseThrow();
+        }
+
+        PagedResponse<ArticleResponse> response =
+                loadFeed(page, size, sourceSlug, category, language, direction);
+        feedCache.put(query, lookup.generation(), response);
+        return response;
+    }
+
+    public ArticleResponse detail(String id) {
+        Article article = articleService.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Article"));
+        Source source = sourceService.findById(article.sourceId())
+                .orElseThrow(() -> new IllegalStateException("Article source attribution is missing."));
+        return articleApiMapper.toResponse(article, source);
+    }
+
+    private PagedResponse<ArticleResponse> loadFeed(
+            int page,
+            int size,
+            String sourceSlug,
+            ArticleCategory category,
+            Language language,
+            Sort.Direction direction) {
         Pageable pageable = PageRequest.of(
                 page,
                 size,
@@ -62,14 +93,6 @@ public class ArticleApiService {
         return PagedResponse.from(articles.map(article -> articleApiMapper.toResponse(
                 article,
                 sourceFor(article, sourcesById))));
-    }
-
-    public ArticleResponse detail(String id) {
-        Article article = articleService.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Article"));
-        Source source = sourceService.findById(article.sourceId())
-                .orElseThrow(() -> new IllegalStateException("Article source attribution is missing."));
-        return articleApiMapper.toResponse(article, source);
     }
 
     private Optional<String> resolveSourceId(String sourceSlug) {
