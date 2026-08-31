@@ -9,6 +9,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import lk.srilankannews.article.*;
+import lk.srilankannews.common.domain.Language;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.*;
 
@@ -29,18 +30,11 @@ class StoryConcurrencyFixture {
     final StoryClusteringService service;
 
     StoryConcurrencyFixture() {
-        storedArticles.put("article-a", article("article-a", null));
-        storedArticles.put("article-b", article("article-b", null));
-        CountDownLatch bothPreflightReads = new CountDownLatch(2);
-        Map<String, AtomicInteger> loads = new ConcurrentHashMap<>();
+        storedArticles.put("article-a", article("article-a", Language.EN, null));
+        storedArticles.put("article-b", article("article-b", Language.SI, null));
 
         when(articles.findById(any())).thenAnswer(call -> {
             String id = call.getArgument(0);
-            if (loads.computeIfAbsent(id, ignored -> new AtomicInteger())
-                    .incrementAndGet() == 1) {
-                bothPreflightReads.countDown();
-                assertThat(bothPreflightReads.await(5, TimeUnit.SECONDS)).isTrue();
-            }
             return Optional.ofNullable(storedArticles.get(id));
         });
         when(stories.findCandidates(any(), any(), any())).thenAnswer(call -> {
@@ -54,7 +48,7 @@ class StoryConcurrencyFixture {
             ids.forEach(id -> found.add(storedArticles.get(id)));
             return found;
         });
-        when(matcher.score(any(), any())).thenReturn(0.90);
+        when(matcher.score(any(), any())).thenReturn(0.0);
         when(persistence.createPending(any(), any())).thenAnswer(call -> {
             Article representative = call.getArgument(0);
             Story story = StoryClusteringServiceTest.story(
@@ -99,8 +93,17 @@ class StoryConcurrencyFixture {
                 Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
-    private Article article(String id, String storyId) {
-        return StoryClusteringServiceTest.article(id, storyId, NOW);
+    private Article article(String id, Language language, String storyId) {
+        Article base = StoryClusteringServiceTest.article(id, storyId, NOW);
+        return new Article(
+                base.id(), base.sourceId(), base.title(), base.originalUrl(),
+                base.canonicalUrl(), language, base.authors(), base.publishedAt(),
+                base.discoveredAt(), base.category(), base.extractedContent(),
+                base.contentHash(), base.aiEnrichment(),
+                new ArticleSemanticEmbedding(
+                        List.of(1.0, 0.0, 0.0), "test-embedding", 3,
+                        "story-semantic-v2", "hash-" + id, NOW),
+                base.processingStatus(), storyId, base.createdAt(), base.updatedAt());
     }
 
     private Article withStory(Article article, String storyId) {
@@ -109,6 +112,7 @@ class StoryConcurrencyFixture {
                 article.canonicalUrl(), article.originalLanguage(), article.authors(),
                 article.publishedAt(), article.discoveredAt(), article.category(),
                 article.extractedContent(), article.contentHash(), article.aiEnrichment(),
-                article.processingStatus(), storyId, article.createdAt(), NOW);
+                article.semanticEmbedding(), article.processingStatus(), storyId,
+                article.createdAt(), NOW);
     }
 }

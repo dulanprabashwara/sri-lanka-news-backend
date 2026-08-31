@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class StoryClusteringConcurrencyTest {
 
     @Test
-    void relatedArticlesWithConcurrentEmptyPreflightCreateOneStory() throws Exception {
+    void relatedCrossLanguageArticlesConcurrentlyCreateOneStory() throws Exception {
         StoryConcurrencyFixture fixture = new StoryConcurrencyFixture();
         var pool = Executors.newFixedThreadPool(2);
         try {
@@ -29,6 +29,6 @@ class StoryClusteringConcurrencyTest {
         assertThat(fixture.storedStory.get().articleIds())
                 .containsExactlyInAnyOrder("article-a", "article-b");
         org.mockito.Mockito.verify(fixture.partitions, org.mockito.Mockito.times(2))
-                .advance("lexical-v1:EN", StoryConcurrencyFixture.NOW);
+                .advance("hybrid-v1", StoryConcurrencyFixture.NOW);
     }
 }

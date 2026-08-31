@@ -1,7 +1,6 @@
 package lk.srilankannews.story;
 
 import java.time.Clock;
-import lk.srilankannews.common.domain.Language;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -20,9 +19,6 @@ class StoryClusterPartitionInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        var now = clock.instant();
-        for (Language language : Language.values()) {
-            store.ensureExists(StoryClusterPartition.idFor(language), now);
-        }
+        store.ensureExists(StoryClusterPartition.activeId(), clock.instant());
     }
 }

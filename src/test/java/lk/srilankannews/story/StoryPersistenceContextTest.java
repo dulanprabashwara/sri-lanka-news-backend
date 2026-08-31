@@ -23,6 +23,8 @@ class StoryPersistenceContextTest {
             .withBean(StoryMatcher.class, () -> mock(StoryMatcher.class))
             .withBean(StoryClusteringProperties.class,
                     () -> mock(StoryClusteringProperties.class))
+            .withBean(StoryEmbeddingProperties.class,
+                    () -> mock(StoryEmbeddingProperties.class))
             .withBean(Clock.class, Clock::systemUTC)
             .withBean(ArticleDiscoveredNotifier.class,
                     () -> mock(ArticleDiscoveredNotifier.class))
@@ -59,6 +61,7 @@ class StoryPersistenceContextTest {
                             StoryClusterPartitionInitializer.class,
                             StoryClusteringBackfill.class,
                             StoryClusteringService.class,
+                            StorySemanticMatcher.class,
                             StoryClusteringTransactionExecutor.class
                     }))
     static class Phase12StoryBeanScanConfiguration {

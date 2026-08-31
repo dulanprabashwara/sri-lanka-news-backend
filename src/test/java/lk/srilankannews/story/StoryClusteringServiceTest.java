@@ -61,7 +61,7 @@ class StoryClusteringServiceTest {
         assertThat(service.cluster("article-1")).isEqualTo("story-new");
         verify(persistence).addArticleIfAbsent("story-new", article, NOW);
         org.mockito.InOrder order = org.mockito.Mockito.inOrder(partitionStore, stories);
-        order.verify(partitionStore).advance("lexical-v1:EN", NOW);
+        order.verify(partitionStore).advance("hybrid-v1", NOW);
         order.verify(stories).findCandidates(any(), any(), any(Pageable.class));
     }
 

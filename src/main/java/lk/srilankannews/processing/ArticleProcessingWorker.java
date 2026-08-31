@@ -14,6 +14,7 @@ import lk.srilankannews.article.ArticleEntity;
 import lk.srilankannews.article.ArticleService;
 import lk.srilankannews.article.ProcessingStatus;
 import lk.srilankannews.article.cache.ArticleFeedCache;
+import lk.srilankannews.story.ArticleEmbeddingService;
 import lk.srilankannews.story.StoryClusteringService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,7 @@ public class ArticleProcessingWorker {
     private final AiOutputValidator outputValidator;
     private final GeminiProperties properties;
     private final ArticleFeedCache feedCache;
+    private final ArticleEmbeddingService embeddingService;
     private final StoryClusteringService clusteringService;
     private final Clock clock;
 
@@ -39,6 +41,7 @@ public class ArticleProcessingWorker {
             AiOutputValidator outputValidator,
             GeminiProperties properties,
             ArticleFeedCache feedCache,
+            ArticleEmbeddingService embeddingService,
             StoryClusteringService clusteringService,
             Clock clock) {
         this.articleService = articleService;
@@ -47,6 +50,7 @@ public class ArticleProcessingWorker {
         this.outputValidator = outputValidator;
         this.properties = properties;
         this.feedCache = feedCache;
+        this.embeddingService = embeddingService;
         this.clusteringService = clusteringService;
         this.clock = clock;
     }
@@ -55,12 +59,16 @@ public class ArticleProcessingWorker {
         Article article = articleService.findById(event.articleId())
                 .orElseThrow(() -> new IllegalStateException("Article does not exist"));
         validateEvent(event, article);
-        if (article.aiEnrichment() != null
-                && article.aiEnrichment().matches(properties.model(), properties.promptVersion())) {
-            clusteringService.cluster(article.id());
-            return;
+        if (article.aiEnrichment() == null
+                || !article.aiEnrichment().matches(
+                        properties.model(), properties.promptVersion())) {
+            article = enrich(article);
         }
+        embeddingService.ensureEmbedding(article.id());
+        clusteringService.cluster(article.id());
+    }
 
+    private Article enrich(Article article) {
         articleService.updateProcessingStatus(article.id(), ProcessingStatus.PROCESSING)
                 .orElseThrow(() -> new IllegalStateException("Article disappeared during processing"));
 
@@ -76,10 +84,12 @@ public class ArticleProcessingWorker {
                 properties.promptVersion(),
                 clock.instant());
 
-        articleService.completeEnrichment(article.id(), enrichment, result.category())
-                .orElseThrow(() -> new IllegalStateException("Article disappeared during enrichment"));
+        Article completed = articleService.completeEnrichment(
+                        article.id(), enrichment, result.category())
+                .orElseThrow(() -> new IllegalStateException(
+                        "Article disappeared during enrichment"));
         invalidateFeedCache(article.id());
-        clusteringService.cluster(article.id());
+        return completed;
     }
 
     public void markRetrying(String articleId) {

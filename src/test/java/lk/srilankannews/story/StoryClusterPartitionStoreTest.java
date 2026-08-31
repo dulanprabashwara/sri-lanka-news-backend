@@ -20,14 +20,14 @@ class StoryClusterPartitionStoreTest {
         StoryClusterPartitionStore store = new StoryClusterPartitionStore(mongo);
         Instant now = Instant.parse("2026-08-31T00:00:00Z");
 
-        store.advance("lexical-v1:EN", now);
+        store.advance("hybrid-v1", now);
 
         ArgumentCaptor<Query> query = ArgumentCaptor.forClass(Query.class);
         ArgumentCaptor<Update> update = ArgumentCaptor.forClass(Update.class);
         verify(mongo).upsert(
                 query.capture(), update.capture(), eq(StoryClusterPartition.class));
         assertThat(query.getValue().getQueryObject().getString("_id"))
-                .isEqualTo("lexical-v1:EN");
+                .isEqualTo("hybrid-v1");
         Document updateObject = update.getValue().getUpdateObject();
         assertThat(updateObject.get("$inc", Document.class).get("revision"))
                 .isEqualTo(1);

@@ -31,6 +31,7 @@ public record Article(
         String extractedContent,
         @Indexed(name = "uk_articles_content_hash", unique = true, sparse = true) String contentHash,
         ArticleAiEnrichment aiEnrichment,
+        ArticleSemanticEmbedding semanticEmbedding,
         ProcessingStatus processingStatus,
         @Indexed(name = "idx_articles_story_id") String storyId,
         Instant createdAt,
@@ -47,7 +48,7 @@ public record Article(
             String contentHash, ProcessingStatus processingStatus,
             Instant createdAt, Instant updatedAt) {
         this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
-                publishedAt, discoveredAt, category, extractedContent, contentHash, null,
+                publishedAt, discoveredAt, category, extractedContent, contentHash, null, null,
                 processingStatus, null, createdAt, updatedAt);
     }
 
@@ -59,7 +60,19 @@ public record Article(
             Instant createdAt, Instant updatedAt) {
         this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
                 publishedAt, discoveredAt, category, extractedContent, contentHash, aiEnrichment,
-                processingStatus, null, createdAt, updatedAt);
+                null, processingStatus, null, createdAt, updatedAt);
+    }
+
+    public Article(
+            String id, String sourceId, String title, String originalUrl, String canonicalUrl,
+            Language originalLanguage, List<String> authors, Instant publishedAt,
+            Instant discoveredAt, ArticleCategory category, String extractedContent,
+            String contentHash, ArticleAiEnrichment aiEnrichment,
+            ProcessingStatus processingStatus, String storyId,
+            Instant createdAt, Instant updatedAt) {
+        this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
+                publishedAt, discoveredAt, category, extractedContent, contentHash, aiEnrichment,
+                null, processingStatus, storyId, createdAt, updatedAt);
     }
 
     public Article(
@@ -68,7 +81,7 @@ public record Article(
             Instant discoveredAt, ArticleCategory category, String extractedContent,
             Instant createdAt, Instant updatedAt) {
         this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
-                publishedAt, discoveredAt, category, extractedContent, null, null, null,
+                publishedAt, discoveredAt, category, extractedContent, null, null, null, null,
                 null, createdAt, updatedAt);
     }
 
@@ -77,20 +90,26 @@ public record Article(
                 null, command.sourceId(), command.title(), command.originalUrl(),
                 command.canonicalUrl(), command.originalLanguage(), command.authors(),
                 command.publishedAt(), command.discoveredAt(), command.category(),
-                command.extractedContent(), contentHash, null, ProcessingStatus.PENDING,
+                command.extractedContent(), contentHash, null, null, ProcessingStatus.PENDING,
                 null, now, now);
     }
 
     Article withProcessingStatus(ProcessingStatus status, Instant now) {
         return new Article(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage,
                 authors, publishedAt, discoveredAt, category, extractedContent, contentHash,
-                aiEnrichment, status, storyId, createdAt, now);
+                aiEnrichment, semanticEmbedding, status, storyId, createdAt, now);
     }
 
     Article withAiEnrichment(
             ArticleAiEnrichment enrichment, ArticleCategory enrichedCategory, Instant now) {
         return new Article(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage,
                 authors, publishedAt, discoveredAt, enrichedCategory, extractedContent, contentHash,
-                enrichment, ProcessingStatus.COMPLETED, storyId, createdAt, now);
+                enrichment, null, ProcessingStatus.COMPLETED, storyId, createdAt, now);
+    }
+
+    Article withSemanticEmbedding(ArticleSemanticEmbedding embedding, Instant now) {
+        return new Article(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage,
+                authors, publishedAt, discoveredAt, category, extractedContent, contentHash,
+                aiEnrichment, embedding, processingStatus, storyId, createdAt, now);
     }
 }

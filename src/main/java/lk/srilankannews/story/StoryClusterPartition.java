@@ -1,7 +1,6 @@
 package lk.srilankannews.story;
 
 import java.time.Instant;
-import lk.srilankannews.common.domain.Language;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -11,7 +10,7 @@ record StoryClusterPartition(
         long revision,
         Instant updatedAt) {
 
-    static String idFor(Language language) {
-        return StoryMatcher.MATCHING_VERSION + ":" + language.name();
+    static String activeId() {
+        return StoryMatcher.MATCHING_VERSION;
     }
 }

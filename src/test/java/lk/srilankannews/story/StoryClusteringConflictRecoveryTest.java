@@ -52,7 +52,7 @@ class StoryClusteringConflictRecoveryTest {
                 throw new MongoException(112, "WriteConflict");
             }
             return null;
-        }).when(partitions).advance("lexical-v1:EN", StoryClusteringServiceTest.NOW);
+        }).when(partitions).advance("hybrid-v1", StoryClusteringServiceTest.NOW);
 
         TransactionOperations transactions = new TransactionOperations() {
             @Override

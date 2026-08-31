@@ -26,6 +26,14 @@ news:
       threshold: ${STORY_CLUSTER_THRESHOLD:0.72}
       candidate-limit: ${STORY_CLUSTER_CANDIDATE_LIMIT:200}
       backfill-limit: ${STORY_CLUSTER_BACKFILL_LIMIT:100}
+    embedding:
+      model: ${STORY_EMBEDDING_MODEL:gemini-embedding-2}
+      dimensions: ${STORY_EMBEDDING_DIMENSIONS:768}
+      input-version: story-semantic-v2
+      max-input-characters: ${STORY_EMBEDDING_MAX_INPUT_CHARACTERS:8000}
+      semantic-threshold: ${STORY_SEMANTIC_THRESHOLD:0.82}
+      cross-language-semantic-threshold: ${STORY_CROSS_LANGUAGE_SEMANTIC_THRESHOLD:0.90}
+      backfill-limit: ${STORY_EMBEDDING_BACKFILL_LIMIT:50}
   processing:
     redis:
       enabled: ${REDIS_PROCESSING_ENABLED:true}

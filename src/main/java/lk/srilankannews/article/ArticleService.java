@@ -82,6 +82,13 @@ public class ArticleService {
                         article.withAiEnrichment(enrichment, category, clock.instant())));
     }
 
+    public Optional<Article> saveSemanticEmbedding(
+            String articleId, ArticleSemanticEmbedding embedding) {
+        return articleRepository.findById(articleId)
+                .map(article -> articleRepository.save(
+                        article.withSemanticEmbedding(embedding, clock.instant())));
+    }
+
     public java.util.List<Article> findAwaitingProcessing() {
         return articleRepository.findAwaitingProcessing();
     }

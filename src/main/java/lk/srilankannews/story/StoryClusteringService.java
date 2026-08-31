@@ -10,13 +10,15 @@ import lk.srilankannews.article.Article;
 import lk.srilankannews.article.ArticleRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class StoryClusteringService {
     private final ArticleRepository articleRepository;
     private final StoryRepository storyRepository;
-    private final StoryMatcher matcher;
+    private final StoryMatcher lexicalMatcher;
+    private final StorySemanticMatcher semanticMatcher;
     private final StoryPersistence persistence;
     private final ArticleStoryAssignment assignment;
     private final StoryClusterPartitionStore partitionStore;
@@ -24,10 +26,31 @@ public class StoryClusteringService {
     private final StoryClusteringProperties properties;
     private final Clock clock;
 
+    StoryClusteringService(
+            ArticleRepository articleRepository,
+            StoryRepository storyRepository,
+            StoryMatcher lexicalMatcher,
+            StoryPersistence persistence,
+            ArticleStoryAssignment assignment,
+            StoryClusterPartitionStore partitionStore,
+            StoryClusteringTransactionExecutor transactionExecutor,
+            StoryClusteringProperties properties,
+            Clock clock) {
+        this(
+                articleRepository, storyRepository, lexicalMatcher,
+                new StorySemanticMatcher(new StoryEmbeddingProperties(
+                        "test-embedding", 3, "story-semantic-v2", 8000,
+                        0.82, 0.90, 0)),
+                persistence, assignment, partitionStore, transactionExecutor,
+                properties, clock);
+    }
+
+    @Autowired
     public StoryClusteringService(
             ArticleRepository articleRepository,
             StoryRepository storyRepository,
-            StoryMatcher matcher,
+            StoryMatcher lexicalMatcher,
+            StorySemanticMatcher semanticMatcher,
             StoryPersistence persistence,
             ArticleStoryAssignment assignment,
             StoryClusterPartitionStore partitionStore,
@@ -36,7 +59,8 @@ public class StoryClusteringService {
             Clock clock) {
         this.articleRepository = articleRepository;
         this.storyRepository = storyRepository;
-        this.matcher = matcher;
+        this.lexicalMatcher = lexicalMatcher;
+        this.semanticMatcher = semanticMatcher;
         this.persistence = persistence;
         this.assignment = assignment;
         this.partitionStore = partitionStore;
@@ -46,10 +70,8 @@ public class StoryClusteringService {
     }
 
     public String cluster(String articleId) {
-        Article preflight = loadEnrichedArticle(articleId);
-        String partitionId = StoryClusterPartition.idFor(preflight.originalLanguage());
         return transactionExecutor.execute(
-                () -> clusterInTransaction(articleId, partitionId));
+                () -> clusterInTransaction(articleId, StoryClusterPartition.activeId()));
     }
 
     private String clusterInTransaction(String articleId, String partitionId) {
@@ -127,7 +149,8 @@ public class StoryClusteringService {
         if (representative == null || representative.aiEnrichment() == null) {
             return new Match(story, 0);
         }
-        return new Match(story, matcher.score(article, representative));
+        double lexical = lexicalMatcher.score(article, representative);
+        return new Match(story, semanticMatcher.score(article, representative, lexical));
     }
 
     private record Match(Story story, double score) {

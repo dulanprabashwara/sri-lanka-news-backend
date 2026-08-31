@@ -1,6 +1,7 @@
 package lk.srilankannews.story;
 
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -11,7 +12,7 @@ import org.springframework.boot.DefaultApplicationArguments;
 class StoryClusterPartitionInitializerTest {
 
     @Test
-    void createsAllCurrentLanguagePartitionsBeforeProcessingStarts() throws Exception {
+    void createsGlobalHybridPartitionBeforeProcessingStarts() throws Exception {
         StoryClusterPartitionStore store =
                 org.mockito.Mockito.mock(StoryClusterPartitionStore.class);
         Instant now = Instant.parse("2026-08-31T00:00:00Z");
@@ -20,8 +21,7 @@ class StoryClusterPartitionInitializerTest {
 
         initializer.run(new DefaultApplicationArguments());
 
-        verify(store).ensureExists("lexical-v1:EN", now);
-        verify(store).ensureExists("lexical-v1:SI", now);
-        verify(store).ensureExists("lexical-v1:TA", now);
+        verify(store).ensureExists("hybrid-v1", now);
+        verifyNoMoreInteractions(store);
     }
 }

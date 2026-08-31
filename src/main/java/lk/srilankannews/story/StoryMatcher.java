@@ -7,7 +7,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 class StoryMatcher {
-    static final String MATCHING_VERSION = "lexical-v1";
+    static final String LEGACY_MATCHING_VERSION = "lexical-v1";
+    static final String MATCHING_VERSION = "hybrid-v1";
     private static final double MINIMUM_TITLE_OVERLAP = 0.45;
 
     private final StoryTextNormalizer normalizer;

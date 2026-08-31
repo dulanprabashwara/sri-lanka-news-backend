@@ -28,6 +28,7 @@ import lk.srilankannews.article.ArticleService;
 import lk.srilankannews.article.ProcessingStatus;
 import lk.srilankannews.article.cache.ArticleFeedCache;
 import lk.srilankannews.common.domain.Language;
+import lk.srilankannews.story.ArticleEmbeddingService;
 import lk.srilankannews.story.StoryClusteringService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,8 @@ class ArticleProcessingWorkerTest {
     @Mock
     private ArticleFeedCache feedCache;
     @Mock
+    private ArticleEmbeddingService embeddingService;
+    @Mock
     private StoryClusteringService clusteringService;
     private ArticleProcessingWorker worker;
 
@@ -60,6 +63,7 @@ class ArticleProcessingWorkerTest {
                 new AiOutputValidator(),
                 properties,
                 feedCache,
+                embeddingService,
                 clusteringService,
                 Clock.fixed(NOW, ZoneOffset.UTC));
     }
@@ -103,6 +107,12 @@ class ArticleProcessingWorkerTest {
         assertThat(enrichment.getValue().promptVersion()).isEqualTo("v1");
         assertThat(enrichment.getValue().processedAt()).isEqualTo(NOW);
         verify(feedCache).invalidate();
+        org.mockito.InOrder processingOrder = org.mockito.Mockito.inOrder(
+                articleService, embeddingService, clusteringService);
+        processingOrder.verify(articleService).completeEnrichment(
+                org.mockito.ArgumentMatchers.eq("article-1"), any(), any());
+        processingOrder.verify(embeddingService).ensureEmbedding("article-1");
+        processingOrder.verify(clusteringService).cluster("article-1");
     }
 
     @Test
@@ -147,6 +157,7 @@ class ArticleProcessingWorkerTest {
 
         verify(aiProvider, never()).enrich(any());
         verify(articleService, never()).updateProcessingStatus(any(), any());
+        verify(embeddingService).ensureEmbedding("article-1");
         verify(clusteringService).cluster("article-1");
     }
 
@@ -206,7 +217,39 @@ class ArticleProcessingWorkerTest {
         verify(aiProvider, org.mockito.Mockito.times(1)).enrich(any());
         verify(articleService, org.mockito.Mockito.times(1))
                 .completeEnrichment(any(), any(), any());
+        verify(embeddingService, org.mockito.Mockito.times(2)).ensureEmbedding("article-1");
         verify(clusteringService, org.mockito.Mockito.times(2)).cluster("article-1");
+    }
+
+    @Test
+    void embeddingFailurePreservesEnrichmentAndRetrySkipsGemini() {
+        Article pending = article(Language.EN, ProcessingStatus.PENDING, null);
+        ArticleAiEnrichment enrichment = new ArticleAiEnrichment(
+                "Persisted summary", List.of("topic"), List.of(), List.of(),
+                "gemini-test", "v1", NOW);
+        Article completed = article(Language.EN, ProcessingStatus.COMPLETED, enrichment);
+        when(articleService.findById("article-1"))
+                .thenReturn(Optional.of(pending), Optional.of(completed));
+        when(articleService.updateProcessingStatus("article-1", ProcessingStatus.PROCESSING))
+                .thenReturn(Optional.of(pending));
+        when(aiProvider.enrich(any())).thenReturn(new AiResult(
+                "Persisted summary", ArticleCategory.LOCAL,
+                List.of("topic"), List.of(), List.of()));
+        when(articleService.completeEnrichment(any(), any(), any()))
+                .thenReturn(Optional.of(completed));
+        org.mockito.Mockito.doThrow(new IllegalStateException("embedding unavailable"))
+                .when(embeddingService).ensureEmbedding("article-1");
+
+        assertThatThrownBy(() -> worker.process(event()))
+                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> worker.process(event()))
+                .isInstanceOf(IllegalStateException.class);
+
+        verify(aiProvider, org.mockito.Mockito.times(1)).enrich(any());
+        verify(articleService, org.mockito.Mockito.times(1))
+                .completeEnrichment(any(), any(), any());
+        verify(embeddingService, org.mockito.Mockito.times(2)).ensureEmbedding("article-1");
+        verify(clusteringService, never()).cluster(any());
     }
 
     private ArticleDiscoveredEvent event() {

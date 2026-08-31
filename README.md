@@ -51,6 +51,11 @@ Enriched articles are assigned to internal MongoDB Story documents by a conserva
    $env:STORY_CLUSTER_THRESHOLD = "0.72"
    $env:STORY_CLUSTER_CANDIDATE_LIMIT = "200"
    $env:STORY_CLUSTER_BACKFILL_LIMIT = "100"
+   $env:STORY_EMBEDDING_MODEL = "gemini-embedding-2"
+   $env:STORY_EMBEDDING_DIMENSIONS = "768"
+   $env:STORY_SEMANTIC_THRESHOLD = "0.82"
+   $env:STORY_CROSS_LANGUAGE_SEMANTIC_THRESHOLD = "0.90"
+   $env:STORY_EMBEDDING_BACKFILL_LIMIT = "50"
    $env:GEMINI_API_KEY = "<google-ai-studio-api-key>"
    $env:GEMINI_MODEL = "<gemini-model-id>"
    ```
@@ -72,6 +77,12 @@ The application intentionally has no localhost fallback. Never commit the comple
 | `STORY_CLUSTER_THRESHOLD` | No | `0.72` | Minimum deterministic lexical score from 0 to 1. |
 | `STORY_CLUSTER_CANDIDATE_LIMIT` | No | `200` | Maximum candidate Stories scored for one Article. |
 | `STORY_CLUSTER_BACKFILL_LIMIT` | No | `100` | Maximum enriched, unassigned Articles clustered at startup; `0` disables backfill. |
+| `STORY_EMBEDDING_MODEL` | No | `gemini-embedding-2` | Provider model used for private Story-matching embeddings. |
+| `STORY_EMBEDDING_DIMENSIONS` | No | `768` | Required embedding vector dimensions. |
+| `STORY_EMBEDDING_MAX_INPUT_CHARACTERS` | No | `8000` | Maximum deterministic semantic metadata input length; full article content is excluded. |
+| `STORY_SEMANTIC_THRESHOLD` | No | `0.82` | Minimum semantic evidence used to strengthen same-language matching. |
+| `STORY_CROSS_LANGUAGE_SEMANTIC_THRESHOLD` | No | `0.90` | Conservative minimum for cross-language matching. |
+| `STORY_EMBEDDING_BACKFILL_LIMIT` | No | `50` | Maximum enriched Articles embedded at startup; `0` disables embedding backfill. |
 | `GEMINI_API_KEY` | Yes | None | Google AI Studio API key; never logged or exposed. |
 | `GEMINI_MODEL` | Yes | None | Configurable Gemini model identifier. |
 | `GEMINI_MAX_INPUT_CHARACTERS` | No | `30000` | Maximum deterministic article-content excerpt sent for enrichment. |
@@ -148,15 +159,17 @@ is seeded.
 
 ## Story Clustering
 
-After successful AI enrichment, the worker assigns the Article to one internal Story. Candidate Stories must overlap the configurable publication window. Matching version `lexical-v1` combines normalized title-token Jaccard overlap (70%), topics (15%), entities (10%), and category agreement (5%). Conflicting known categories and different original languages are rejected; title overlap below 0.45 is rejected before the configured threshold is applied. Equal scores prefer the most recently active Story and then the stable Story ID.
+After successful AI enrichment, the worker generates a private semantic embedding and then assigns the Article to one internal Story. The provider-neutral `EmbeddingProvider` currently uses Gemini's configurable `gemini-embedding-2` model with 768 dimensions by default. Because that model does not accept the embedding `taskType` field, input version `story-semantic-v2` deterministically prefixes the provider-visible text with `task: sentence similarity | query:`. The remaining input contains only title, AI summary, topics, entities, and category; `extractedContent` is never sent to the embedding endpoint.
 
-Normalization uses Unicode NFKC, locale-neutral case folding, punctuation-to-whitespace conversion, and token whitespace normalization. It does not translate or semantically rewrite text. Consequently, English, Sinhala, and Tamil reports about the same event will usually remain separate unless future multilingual or semantic matching is introduced.
+Candidate Stories remain bounded to the configurable +/-48-hour publication window and representative Articles are batch-loaded before scoring. Active matching version `hybrid-v1` preserves the `lexical-v1` score for same-language reports and uses conservative semantic evidence to improve borderline matches. Cross-language English, Sinhala, and Tamil matching requires compatible embeddings, category compatibility, and the higher cross-language semantic threshold. Legacy `lexical-v1` Stories remain eligible candidates.
+
+Embedding values and their model, dimensions, input version/hash, and UTC timestamp are stored only on the private Article document. A matching model/version/hash is reused on replay; changed semantic input regenerates the embedding. Embedding failures retain completed AI enrichment and enter the existing Redis retry/DLQ flow without calling generative AI again.
 
 `Article.storyId` is internal and is not exposed by public DTOs. Story membership updates use an internal article-ID set and conditional MongoDB updates so replay cannot increment `articleCount` twice. Article assignment is an atomic set-if-null operation; the winning MongoDB assignment remains authoritative during concurrent attempts. Story-only changes do not invalidate the public Article feed cache.
 
-Story decisions run in an Atlas transaction. The transaction first increments a private `story_cluster_partitions` revision keyed by matching version and original language, then reloads candidates, creates or selects the Story, assigns the Article, and updates membership. Concurrent decisions in the same partition produce a MongoDB write conflict; the complete transaction retries at most three times with a fresh snapshot.
+Story decisions run in an Atlas transaction. The transaction first increments the private global `hybrid-v1` `story_cluster_partitions` revision, then reloads candidates, creates or selects the Story, assigns the Article, and updates membership. One global partition serializes cross-language decisions as well as same-language decisions. Concurrent decisions produce a MongoDB write conflict; the complete transaction retries at most three times with a fresh snapshot.
 
-A bounded startup backfill clusters already-enriched Articles without a Story, oldest first, and never calls Gemini. If clustering fails after enrichment, the existing Redis retry/DLQ flow is used; the persisted matching enrichment causes retries to skip Gemini and retry only clustering.
+A bounded startup embedding backfill processes enriched Articles with missing or stale embedding metadata, then clusters unassigned Articles. The existing bounded clustering backfill remains available. Both are oldest-first and reuse persisted enrichment; neither calls generative AI. Keep the backfill limit conservative and monitor Google AI Studio free-tier quota/rate usage; recurring embedding scheduling is intentionally outside this phase.
 
 ## Testing
 
@@ -193,4 +206,4 @@ disables both external integrations and their health checks.
 
 ## Planned Next Phase
 
-Phase 13 — Embedding-Assisted Story Matching
+Phase 14 — Story Pages and Public Story APIs

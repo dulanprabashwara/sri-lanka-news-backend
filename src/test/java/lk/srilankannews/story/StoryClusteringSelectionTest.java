@@ -62,7 +62,33 @@ class StoryClusteringSelectionTest {
         when(assignment.assignIfAbsent("article-2", "story-b", NOW)).thenReturn("story-b");
 
         assertThat(service.cluster("article-2")).isEqualTo("story-b");
+        verify(articles).findAllById(List.of("rep-a", "rep-b"));
         verify(persistence).addArticleIfAbsent("story-b", article, NOW);
+    }
+
+    @Test
+    void legacyLexicalStoryRemainsEligibleForReuse() {
+        Article article = StoryClusteringServiceTest.article("article-2", null, NOW);
+        Article representative = StoryClusteringServiceTest.article(
+                "rep-legacy", "story-legacy", NOW.minusSeconds(60));
+        Story current = StoryClusteringServiceTest.story(
+                "story-legacy", "rep-legacy", NOW.minusSeconds(60), 1);
+        Story legacy = new Story(
+                current.id(), current.canonicalTitle(), current.representativeArticleId(),
+                current.category(), current.firstPublishedAt(), current.lastPublishedAt(),
+                current.articleCount(), current.sourceIds(), current.articleIds(),
+                current.createdAt(), current.updatedAt(), StoryMatcher.LEGACY_MATCHING_VERSION);
+        when(articles.findById("article-2")).thenReturn(Optional.of(article));
+        when(stories.findCandidates(any(), any(), any(Pageable.class)))
+                .thenReturn(List.of(legacy));
+        when(articles.findAllById(List.of("rep-legacy")))
+                .thenReturn(List.of(representative));
+        when(matcher.score(article, representative)).thenReturn(0.80);
+        when(assignment.assignIfAbsent("article-2", "story-legacy", NOW))
+                .thenReturn("story-legacy");
+
+        assertThat(service.cluster("article-2")).isEqualTo("story-legacy");
+        verify(persistence).addArticleIfAbsent("story-legacy", article, NOW);
     }
 
     @Test

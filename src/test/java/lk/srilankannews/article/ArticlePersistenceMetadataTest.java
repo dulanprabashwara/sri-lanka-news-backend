@@ -3,6 +3,7 @@ package lk.srilankannews.article;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import lk.srilankannews.article.api.ArticleResponse;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.IndexDirection;
@@ -32,5 +33,15 @@ class ArticlePersistenceMetadataTest {
                         "idx_articles_source_published",
                         "idx_articles_category_published",
                         "idx_articles_language_published");
+    }
+
+    @Test
+    void semanticEmbeddingAndStoryAssignmentRemainPrivate() {
+        assertThat(Article.class.getRecordComponents())
+                .extracting(component -> component.getName())
+                .contains("semanticEmbedding", "storyId", "extractedContent");
+        assertThat(ArticleResponse.class.getRecordComponents())
+                .extracting(component -> component.getName())
+                .doesNotContain("semanticEmbedding", "storyId", "extractedContent");
     }
 }

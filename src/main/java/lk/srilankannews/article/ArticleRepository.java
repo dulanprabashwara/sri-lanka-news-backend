@@ -22,6 +22,14 @@ public interface ArticleRepository extends MongoRepository<Article, String>, Art
     List<Article> findAwaitingProcessing();
 
     @Query("{'aiEnrichment': {'$ne': null}, '$or': ["
+            + "{'semanticEmbedding': null}, {'semanticEmbedding': {'$exists': false}},"
+            + "{'semanticEmbedding.model': {'$ne': ?0}},"
+            + "{'semanticEmbedding.dimensions': {'$ne': ?1}},"
+            + "{'semanticEmbedding.inputVersion': {'$ne': ?2}}]}")
+    List<Article> findEmbeddingBackfillCandidates(
+            String model, int dimensions, String inputVersion, Pageable pageable);
+
+    @Query("{'aiEnrichment': {'$ne': null}, '$or': ["
             + "{'storyId': null}, {'storyId': {'$exists': false}}]}")
     List<Article> findEnrichedWithoutStory(Pageable pageable);
 }
