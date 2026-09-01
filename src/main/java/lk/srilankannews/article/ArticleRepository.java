@@ -34,5 +34,7 @@ public interface ArticleRepository extends MongoRepository<Article, String>, Art
             + "{'storyId': null}, {'storyId': {'$exists': false}}]}")
     List<Article> findEnrichedWithoutStory(Pageable pageable);
 
+    List<Article> findByAiEnrichmentIsNotNull(Pageable pageable);
+
     List<Article> findByStoryId(String storyId, Sort sort);
 }

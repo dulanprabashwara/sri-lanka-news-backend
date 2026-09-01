@@ -4,6 +4,8 @@ import jakarta.validation.Valid;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Map;
+import lk.srilankannews.common.domain.Language;
 import lk.srilankannews.source.SourceService;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.Page;
@@ -87,6 +89,13 @@ public class ArticleService {
         return articleRepository.findById(articleId)
                 .map(article -> articleRepository.save(
                         article.withSemanticEmbedding(embedding, clock.instant())));
+    }
+
+    public Optional<Article> saveTranslations(
+            String articleId, Map<Language, ArticleTranslation> translations) {
+        return articleRepository.findById(articleId)
+                .map(article -> articleRepository.save(
+                        article.withTranslations(translations, clock.instant())));
     }
 
     public java.util.List<Article> findAwaitingProcessing() {

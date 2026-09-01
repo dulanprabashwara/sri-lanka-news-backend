@@ -48,25 +48,41 @@ public class ArticleApiService {
             ArticleCategory category,
             Language language,
             Sort.Direction direction) {
+        return list(page, size, sourceSlug, category, language, null, direction);
+    }
+
+    public PagedResponse<ArticleResponse> list(
+            int page,
+            int size,
+            String sourceSlug,
+            ArticleCategory category,
+            Language language,
+            Language displayLanguage,
+            Sort.Direction direction) {
         ArticleFeedQuery query =
-                new ArticleFeedQuery(page, size, sourceSlug, category, language, direction);
+                new ArticleFeedQuery(
+                        page, size, sourceSlug, category, language, displayLanguage, direction);
         ArticleFeedCache.Lookup lookup = feedCache.get(query);
         if (lookup.response().isPresent()) {
             return lookup.response().orElseThrow();
         }
 
         PagedResponse<ArticleResponse> response =
-                loadFeed(page, size, sourceSlug, category, language, direction);
+                loadFeed(page, size, sourceSlug, category, language, displayLanguage, direction);
         feedCache.put(query, lookup.generation(), response);
         return response;
     }
 
     public ArticleResponse detail(String id) {
+        return detail(id, null);
+    }
+
+    public ArticleResponse detail(String id, Language displayLanguage) {
         Article article = articleService.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Article"));
         Source source = sourceService.findById(article.sourceId())
                 .orElseThrow(() -> new IllegalStateException("Article source attribution is missing."));
-        return articleApiMapper.toResponse(article, source);
+        return articleApiMapper.toResponse(article, source, displayLanguage);
     }
 
     private PagedResponse<ArticleResponse> loadFeed(
@@ -75,6 +91,7 @@ public class ArticleApiService {
             String sourceSlug,
             ArticleCategory category,
             Language language,
+            Language displayLanguage,
             Sort.Direction direction) {
         Pageable pageable = PageRequest.of(
                 page,
@@ -92,7 +109,7 @@ public class ArticleApiService {
 
         return PagedResponse.from(articles.map(article -> articleApiMapper.toResponse(
                 article,
-                sourceFor(article, sourcesById))));
+                sourceFor(article, sourcesById), displayLanguage)));
     }
 
     private Optional<String> resolveSourceId(String sourceSlug) {

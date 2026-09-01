@@ -16,9 +16,11 @@ import lk.srilankannews.article.ProcessingStatus;
 import lk.srilankannews.article.cache.ArticleFeedCache;
 import lk.srilankannews.story.ArticleEmbeddingService;
 import lk.srilankannews.story.StoryClusteringService;
+import lk.srilankannews.translation.ArticleTranslationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
 public class ArticleProcessingWorker {
@@ -32,7 +34,32 @@ public class ArticleProcessingWorker {
     private final ArticleFeedCache feedCache;
     private final ArticleEmbeddingService embeddingService;
     private final StoryClusteringService clusteringService;
+    private final ArticleTranslationService translationService;
     private final Clock clock;
+
+    @Autowired
+    public ArticleProcessingWorker(
+            ArticleService articleService,
+            AiProvider aiProvider,
+            AiInputPolicy inputPolicy,
+            AiOutputValidator outputValidator,
+            GeminiProperties properties,
+            ArticleFeedCache feedCache,
+            ArticleEmbeddingService embeddingService,
+            StoryClusteringService clusteringService,
+            ArticleTranslationService translationService,
+            Clock clock) {
+        this.articleService = articleService;
+        this.aiProvider = aiProvider;
+        this.inputPolicy = inputPolicy;
+        this.outputValidator = outputValidator;
+        this.properties = properties;
+        this.feedCache = feedCache;
+        this.embeddingService = embeddingService;
+        this.clusteringService = clusteringService;
+        this.translationService = translationService;
+        this.clock = clock;
+    }
 
     public ArticleProcessingWorker(
             ArticleService articleService,
@@ -44,15 +71,8 @@ public class ArticleProcessingWorker {
             ArticleEmbeddingService embeddingService,
             StoryClusteringService clusteringService,
             Clock clock) {
-        this.articleService = articleService;
-        this.aiProvider = aiProvider;
-        this.inputPolicy = inputPolicy;
-        this.outputValidator = outputValidator;
-        this.properties = properties;
-        this.feedCache = feedCache;
-        this.embeddingService = embeddingService;
-        this.clusteringService = clusteringService;
-        this.clock = clock;
+        this(articleService, aiProvider, inputPolicy, outputValidator, properties, feedCache,
+                embeddingService, clusteringService, null, clock);
     }
 
     public void process(ArticleDiscoveredEvent event) {
@@ -66,6 +86,9 @@ public class ArticleProcessingWorker {
         }
         embeddingService.ensureEmbedding(article.id());
         clusteringService.cluster(article.id());
+        if (translationService != null) {
+            translationService.ensureTranslations(article.id());
+        }
     }
 
     private Article enrich(Article article) {

@@ -86,6 +86,10 @@ The application intentionally has no localhost fallback. Never commit the comple
 | `GEMINI_API_KEY` | Yes | None | Google AI Studio API key; never logged or exposed. |
 | `GEMINI_MODEL` | Yes | None | Configurable Gemini model identifier. |
 | `GEMINI_MAX_INPUT_CHARACTERS` | No | `30000` | Maximum deterministic article-content excerpt sent for enrichment. |
+| `MULTILINGUAL_MODEL` | No | `GEMINI_MODEL` | Gemini model used behind the translation provider abstraction. |
+| `MULTILINGUAL_PROMPT_VERSION` | No | `translation-v1` | Translation input/prompt contract version used for idempotency. |
+| `MULTILINGUAL_MAX_INPUT_CHARACTERS` | No | `8000` | Maximum combined title and AI-summary translation input. |
+| `MULTILINGUAL_BACKFILL_LIMIT` | No | `10` | Maximum stale/missing translations generated at startup; `0` disables backfill. |
 
 Never commit real credentials or a populated `.env` file.
 
@@ -157,7 +161,7 @@ pre-existing same-content collisions without deleting or overwriting articles.
 
 ## Public Article Feed Cache
 
-`GET /api/v1/articles` uses cache-aside Redis reads for normalized page, size, source, category, language, and publication-sort combinations. Only the completed public `PagedResponse<ArticleResponse>` JSON is cached; MongoDB documents and private ingestion or AI metadata are never cached.
+`GET /api/v1/articles` uses cache-aside Redis reads for normalized page, size, source, category, original language, display language, and publication-sort combinations. Only the completed public `PagedResponse<ArticleResponse>` JSON is cached; MongoDB documents and private ingestion or AI metadata are never cached.
 
 Keys use the `news:feed:` namespace and a generation value. New article creation and successful public AI enrichment increment `news:feed:generation`; duplicate ingestion and failed processing do not. Previous generations become unreachable and expire naturally after `ARTICLE_FEED_CACHE_TTL_SECONDS` (60 seconds by default). Redis read, write, or invalidation failures are logged safely and never fail public MongoDB reads, article persistence, or enrichment.
 
@@ -219,6 +223,7 @@ disables both external integrations and their health checks.
 - Bean Validation is applied at API boundaries.
 - Source and Article documents are stored in separate `sources` and `articles` collections. MongoDB creates unique indexes for source slugs, canonical article URLs, and non-null article content hashes at application startup.
 - Public controllers expose dedicated DTOs, and Article pages resolve Source attribution with one batched lookup rather than one query per Article.
+
 - Domain services use UTC `Instant` timestamps supplied by an injectable UTC clock.
 - REST errors use one centralized structure containing a timestamp, HTTP status, stable application code, safe message, request path, request ID, and optional field details.
 - Requests accept a safe `X-Request-ID` value or receive a generated one. The ID is returned in the same response header and included in application logs.
@@ -226,6 +231,27 @@ disables both external integrations and their health checks.
 - List endpoints will use zero-based `page`, `size`, and `sort=field,direction`. The initial convention is `page=0`, `size=20`, with a maximum size of `100`; enforcement begins when paginated endpoints are introduced.
 - Configuration is externalized through Spring Boot properties and environment variables. Secrets must not be stored in source control.
 
+## Multilingual presentation
+
+Public Article and Story endpoints accept an optional `displayLanguage=en|si|ta` query
+parameter. This is separate from the Article list's existing `language` filter: `language`
+selects the publisher's original Article language, while `displayLanguage` requests a safe
+presentation language. Omitting `displayLanguage` preserves original behavior. Missing or stale
+translations fall back to the original title and AI summary.
+
+After enrichment, embedding, and Story clustering, the worker translates only the Article title
+and existing AI-generated summary into the other two supported languages. It never sends
+`extractedContent` to the translation provider or republishes full publisher content. Original
+fields remain authoritative. Private model, prompt version, deterministic input hash, and UTC time
+remain internal; public DTOs expose only safe `localizedContent`.
+
+Matching model/prompt/hash translations are reused. A bounded oldest-first startup backfill handles
+existing enriched Articles; `MULTILINGUAL_BACKFILL_LIMIT=0` disables it. Translation changes advance
+the feed-cache generation, while cache keys isolate Original, English, Sinhala, and Tamil. Story
+titles reuse batch-loaded representative Article translations without another AI call. Coverage
+topic/entity comparison remains based on original metadata, so chips can remain in mixed source
+languages. Timeline ordering and relative times remain unchanged.
+
 ## Planned Next Phase
 
-Phase 17 — Multilingual Pipeline
+Phase 18 — Supabase Auth

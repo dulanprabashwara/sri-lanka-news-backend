@@ -9,6 +9,11 @@ import org.springframework.stereotype.Component;
 public class StoryApiMapper {
 
     public StorySummaryResponse toSummary(Story story) {
+        return toSummary(story, null);
+    }
+
+    public StorySummaryResponse toSummary(
+            Story story, LocalizedStoryContentResponse localizedContent) {
         return new StorySummaryResponse(
                 story.id(),
                 story.canonicalTitle(),
@@ -16,10 +21,18 @@ public class StoryApiMapper {
                 story.firstPublishedAt(),
                 story.lastPublishedAt(),
                 story.articleCount(),
-                story.sourceIds().size());
+                story.sourceIds().size(),
+                localizedContent);
     }
 
     public StoryDetailResponse toDetail(Story story, List<ArticleResponse> articles) {
+        return toDetail(story, articles, null);
+    }
+
+    public StoryDetailResponse toDetail(
+            Story story,
+            List<ArticleResponse> articles,
+            LocalizedStoryContentResponse localizedContent) {
         return new StoryDetailResponse(
                 story.id(),
                 story.canonicalTitle(),
@@ -28,6 +41,7 @@ public class StoryApiMapper {
                 story.lastPublishedAt(),
                 story.articleCount(),
                 story.sourceIds().size(),
-                articles);
+                articles,
+                localizedContent);
     }
 }

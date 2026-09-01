@@ -16,6 +16,11 @@ news:
       prompt-version: v1
       timeout: 30s
       max-input-characters: ${GEMINI_MAX_INPUT_CHARACTERS:30000}
+    multilingual:
+      model: ${MULTILINGUAL_MODEL:${GEMINI_MODEL}}
+      prompt-version: ${MULTILINGUAL_PROMPT_VERSION:translation-v1}
+      max-input-characters: ${MULTILINGUAL_MAX_INPUT_CHARACTERS:8000}
+      backfill-limit: ${MULTILINGUAL_BACKFILL_LIMIT:10}
   cache:
     article-feed:
       enabled: true

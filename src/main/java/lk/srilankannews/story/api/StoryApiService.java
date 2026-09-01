@@ -9,6 +9,8 @@ import lk.srilankannews.article.Article;
 import lk.srilankannews.article.ArticleCategory;
 import lk.srilankannews.article.ArticleRepository;
 import lk.srilankannews.article.api.ArticleApiMapper;
+import lk.srilankannews.article.api.ArticleLocalizationService;
+import lk.srilankannews.article.api.LocalizedContentResponse;
 import lk.srilankannews.article.api.ArticleResponse;
 import lk.srilankannews.common.api.PagedResponse;
 import lk.srilankannews.common.api.error.ResourceNotFoundException;
@@ -21,6 +23,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
 public class StoryApiService {
@@ -30,6 +33,23 @@ public class StoryApiService {
     private final SourceService sourceService;
     private final StoryApiMapper storyApiMapper;
     private final ArticleApiMapper articleApiMapper;
+    private final ArticleLocalizationService localizationService;
+
+    @Autowired
+    public StoryApiService(
+            StoryRepository storyRepository,
+            ArticleRepository articleRepository,
+            SourceService sourceService,
+            StoryApiMapper storyApiMapper,
+            ArticleApiMapper articleApiMapper,
+            ArticleLocalizationService localizationService) {
+        this.storyRepository = storyRepository;
+        this.articleRepository = articleRepository;
+        this.sourceService = sourceService;
+        this.storyApiMapper = storyApiMapper;
+        this.articleApiMapper = articleApiMapper;
+        this.localizationService = localizationService;
+    }
 
     public StoryApiService(
             StoryRepository storyRepository,
@@ -37,11 +57,8 @@ public class StoryApiService {
             SourceService sourceService,
             StoryApiMapper storyApiMapper,
             ArticleApiMapper articleApiMapper) {
-        this.storyRepository = storyRepository;
-        this.articleRepository = articleRepository;
-        this.sourceService = sourceService;
-        this.storyApiMapper = storyApiMapper;
-        this.articleApiMapper = articleApiMapper;
+        this(storyRepository, articleRepository, sourceService, storyApiMapper,
+                articleApiMapper, null);
     }
 
     public PagedResponse<StorySummaryResponse> list(
@@ -51,16 +68,37 @@ public class StoryApiService {
             Instant publishedFrom,
             Instant publishedTo,
             Sort.Direction direction) {
+        return list(page, size, category, publishedFrom, publishedTo, direction, null);
+    }
+
+    public PagedResponse<StorySummaryResponse> list(
+            int page,
+            int size,
+            ArticleCategory category,
+            Instant publishedFrom,
+            Instant publishedTo,
+            Sort.Direction direction,
+            lk.srilankannews.common.domain.Language displayLanguage) {
         PageRequest pageable = PageRequest.of(
                 page,
                 size,
                 Sort.by(direction, "lastPublishedAt").and(Sort.by(direction, "id")));
         Page<Story> stories = storyRepository.findAll(
                 new StoryFilter(category, publishedFrom, publishedTo), pageable);
-        return PagedResponse.from(stories.map(storyApiMapper::toSummary));
+        Map<String, Article> representatives = displayLanguage == null
+                ? Map.of()
+                : representativeArticles(stories.getContent());
+        return PagedResponse.from(stories.map(story -> storyApiMapper.toSummary(
+                story, localizedStory(story, representatives.get(story.representativeArticleId()),
+                        displayLanguage))));
     }
 
     public StoryDetailResponse detail(String storyId) {
+        return detail(storyId, null);
+    }
+
+    public StoryDetailResponse detail(
+            String storyId, lk.srilankannews.common.domain.Language displayLanguage) {
         Story story = storyRepository.findById(storyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Story"));
         requirePublicStory(story);
@@ -70,12 +108,24 @@ public class StoryApiService {
         var articles = articleRepository.findByStoryId(storyId, articleSort);
         Map<String, Source> sourcesById = sourcesById(articles);
         var responses = articles.stream()
-                .map(article -> articleApiMapper.toResponse(article, sourceFor(article, sourcesById)))
+                .map(article -> articleApiMapper.toResponse(
+                        article, sourceFor(article, sourcesById), displayLanguage))
                 .toList();
-        return storyApiMapper.toDetail(story, responses);
+        Article representative = articles.stream()
+                .filter(article -> article.id().equals(story.representativeArticleId()))
+                .findFirst()
+                .orElseGet(() -> articleRepository.findById(story.representativeArticleId())
+                        .orElse(null));
+        return storyApiMapper.toDetail(
+                story, responses, localizedStory(story, representative, displayLanguage));
     }
 
     public StorySummaryResponse storyForArticle(String articleId) {
+        return storyForArticle(articleId, null);
+    }
+
+    public StorySummaryResponse storyForArticle(
+            String articleId, lk.srilankannews.common.domain.Language displayLanguage) {
         Article article = articleRepository.findById(articleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Article"));
         if (article.storyId() == null) {
@@ -84,7 +134,43 @@ public class StoryApiService {
         Story story = storyRepository.findById(article.storyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Story"));
         requirePublicStory(story);
-        return storyApiMapper.toSummary(story);
+        Article representative = displayLanguage == null
+                ? null
+                : article.id().equals(story.representativeArticleId())
+                        ? article
+                        : articleRepository.findById(story.representativeArticleId()).orElse(null);
+        return storyApiMapper.toSummary(
+                story, localizedStory(story, representative, displayLanguage));
+    }
+
+    private Map<String, Article> representativeArticles(java.util.List<Story> stories) {
+        Set<String> ids = stories.stream()
+                .map(Story::representativeArticleId)
+                .collect(Collectors.toSet());
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        return java.util.stream.StreamSupport.stream(
+                        articleRepository.findAllById(ids).spliterator(), false)
+                .collect(Collectors.toUnmodifiableMap(Article::id, Function.identity()));
+    }
+
+    private LocalizedStoryContentResponse localizedStory(
+            Story story,
+            Article representative,
+            lk.srilankannews.common.domain.Language displayLanguage) {
+        if (displayLanguage == null) {
+            return null;
+        }
+        if (representative == null) {
+            return new LocalizedStoryContentResponse(
+                    displayLanguage, displayLanguage, false, true, story.canonicalTitle());
+        }
+        LocalizedContentResponse localized = localizationService.localize(
+                representative, displayLanguage);
+        return new LocalizedStoryContentResponse(
+                localized.requestedLanguage(), localized.resolvedLanguage(),
+                localized.translated(), localized.fallback(), localized.title());
     }
 
     private void requirePublicStory(Story story) {

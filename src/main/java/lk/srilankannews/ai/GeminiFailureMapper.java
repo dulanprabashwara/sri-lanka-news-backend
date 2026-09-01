@@ -7,11 +7,11 @@ import java.net.http.HttpTimeoutException;
 import java.util.Locale;
 import java.util.concurrent.TimeoutException;
 
-final class GeminiFailureMapper {
+public final class GeminiFailureMapper {
     private GeminiFailureMapper() {
     }
 
-    static AiProviderException map(RuntimeException exception, String model) {
+    public static AiProviderException map(RuntimeException exception, String model) {
         if (exception instanceof ApiException apiException) {
             return mapApi(apiException, model);
         }

@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
 import lk.srilankannews.article.Article;
 import lk.srilankannews.article.ArticleEntity;
 import lk.srilankannews.article.ArticleRepository;
+import lk.srilankannews.article.api.ArticleLocalizationService;
+import lk.srilankannews.article.api.LocalizedContentResponse;
 import lk.srilankannews.common.api.error.ResourceNotFoundException;
 import lk.srilankannews.common.domain.Language;
 import lk.srilankannews.source.Source;
@@ -21,6 +23,7 @@ import lk.srilankannews.story.Story;
 import lk.srilankannews.story.StoryRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
 public class CoverageComparisonService {
@@ -31,19 +34,35 @@ public class CoverageComparisonService {
     private final ArticleRepository articleRepository;
     private final SourceService sourceService;
     private final CoverageTextNormalizer normalizer;
+    private final ArticleLocalizationService localizationService;
+
+    @Autowired
+    public CoverageComparisonService(
+            StoryRepository storyRepository,
+            ArticleRepository articleRepository,
+            SourceService sourceService,
+            CoverageTextNormalizer normalizer,
+            ArticleLocalizationService localizationService) {
+        this.storyRepository = storyRepository;
+        this.articleRepository = articleRepository;
+        this.sourceService = sourceService;
+        this.normalizer = normalizer;
+        this.localizationService = localizationService;
+    }
 
     public CoverageComparisonService(
             StoryRepository storyRepository,
             ArticleRepository articleRepository,
             SourceService sourceService,
             CoverageTextNormalizer normalizer) {
-        this.storyRepository = storyRepository;
-        this.articleRepository = articleRepository;
-        this.sourceService = sourceService;
-        this.normalizer = normalizer;
+        this(storyRepository, articleRepository, sourceService, normalizer, null);
     }
 
     public CoverageComparisonResponse compare(String storyId) {
+        return compare(storyId, null);
+    }
+
+    public CoverageComparisonResponse compare(String storyId, Language displayLanguage) {
         Story story = storyRepository.findById(storyId)
                 .filter(candidate -> candidate.articleCount() > 0)
                 .orElseThrow(() -> new ResourceNotFoundException("Story"));
@@ -52,7 +71,7 @@ public class CoverageComparisonService {
                 Sort.Order.asc("id"));
         List<Article> articles = articleRepository.findByStoryId(storyId, articleOrder);
         Map<String, Source> sourcesById = loadSources(articles);
-        List<SourceData> sourceData = groupBySource(articles, sourcesById);
+        List<SourceData> sourceData = groupBySource(articles, sourcesById, displayLanguage);
 
         Map<String, Integer> topicSourceCounts = sourceCounts(
                 sourceData, data -> data.topics.keySet());
@@ -76,7 +95,8 @@ public class CoverageComparisonService {
                 sources.size() > 1,
                 sharedTopics,
                 sharedEntities,
-                sources);
+                sources,
+                localizedStory(story, articles, displayLanguage));
     }
 
     private Map<String, Source> loadSources(List<Article> articles) {
@@ -90,14 +110,16 @@ public class CoverageComparisonService {
 
     private List<SourceData> groupBySource(
             List<Article> articles,
-            Map<String, Source> sourcesById) {
+            Map<String, Source> sourcesById,
+            Language displayLanguage) {
         Map<String, SourceData> grouped = new LinkedHashMap<>();
         for (Article article : articles) {
             Source source = sourcesById.get(article.sourceId());
             if (source == null) {
                 throw new IllegalStateException("Article source attribution is missing.");
             }
-            grouped.computeIfAbsent(source.id(), ignored -> new SourceData(source))
+            grouped.computeIfAbsent(
+                            source.id(), ignored -> new SourceData(source, displayLanguage))
                     .add(article);
         }
         return List.copyOf(grouped.values());
@@ -188,9 +210,11 @@ public class CoverageComparisonService {
         private final Map<EntityKey, CoverageEntityResponse> entities = new LinkedHashMap<>();
         private Instant firstPublishedAt;
         private Instant lastPublishedAt;
+        private final Language displayLanguage;
 
-        private SourceData(Source source) {
+        private SourceData(Source source, Language displayLanguage) {
             this.source = source;
+            this.displayLanguage = displayLanguage;
         }
 
         private SourceData add(Article article) {
@@ -199,7 +223,10 @@ public class CoverageComparisonService {
                     : article.aiEnrichment().summary();
             articles.add(new CoverageArticleResponse(
                     article.id(), article.title(), summary, article.originalLanguage(),
-                    article.publishedAt(), article.originalUrl()));
+                    article.publishedAt(), article.originalUrl(),
+                    displayLanguage == null
+                            ? null
+                            : localizationService.localize(article, displayLanguage)));
             languages.add(article.originalLanguage());
             if (firstPublishedAt == null || article.publishedAt().isBefore(firstPublishedAt)) {
                 firstPublishedAt = article.publishedAt();
@@ -233,6 +260,26 @@ public class CoverageComparisonService {
                         new CoverageEntityResponse(name, type));
             }
         }
+    }
+
+    private LocalizedStoryContentResponse localizedStory(
+            Story story, List<Article> articles, Language displayLanguage) {
+        if (displayLanguage == null) {
+            return null;
+        }
+        Article representative = articles.stream()
+                .filter(article -> article.id().equals(story.representativeArticleId()))
+                .findFirst()
+                .orElse(null);
+        if (representative == null) {
+            return new LocalizedStoryContentResponse(
+                    displayLanguage, displayLanguage, false, true, story.canonicalTitle());
+        }
+        LocalizedContentResponse localized = localizationService.localize(
+                representative, displayLanguage);
+        return new LocalizedStoryContentResponse(
+                localized.requestedLanguage(), localized.resolvedLanguage(),
+                localized.translated(), localized.fallback(), localized.title());
     }
 
     private record EntityKey(String name, String type) implements Comparable<EntityKey> {

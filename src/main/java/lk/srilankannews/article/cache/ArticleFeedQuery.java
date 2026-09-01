@@ -11,6 +11,7 @@ public record ArticleFeedQuery(
         String sourceSlug,
         ArticleCategory category,
         Language language,
+        Language displayLanguage,
         Sort.Direction direction) {
 
     public ArticleFeedQuery {
@@ -24,7 +25,14 @@ public record ArticleFeedQuery(
                 + ":source=" + value(sourceSlug)
                 + ":category=" + value(category)
                 + ":language=" + value(language)
+                + ":display=" + (displayLanguage == null ? "original" : value(displayLanguage))
                 + ":sort=publishedAt," + direction.name().toLowerCase(Locale.ROOT);
+    }
+
+    public ArticleFeedQuery(
+            int page, int size, String sourceSlug, ArticleCategory category,
+            Language language, Sort.Direction direction) {
+        this(page, size, sourceSlug, category, language, null, direction);
     }
 
     private static String value(Object value) {

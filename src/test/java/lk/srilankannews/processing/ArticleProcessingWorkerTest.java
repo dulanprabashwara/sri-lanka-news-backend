@@ -30,6 +30,7 @@ import lk.srilankannews.article.cache.ArticleFeedCache;
 import lk.srilankannews.common.domain.Language;
 import lk.srilankannews.story.ArticleEmbeddingService;
 import lk.srilankannews.story.StoryClusteringService;
+import lk.srilankannews.translation.ArticleTranslationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,6 +52,8 @@ class ArticleProcessingWorkerTest {
     private ArticleEmbeddingService embeddingService;
     @Mock
     private StoryClusteringService clusteringService;
+    @Mock
+    private ArticleTranslationService translationService;
     private ArticleProcessingWorker worker;
 
     @BeforeEach
@@ -65,6 +68,7 @@ class ArticleProcessingWorkerTest {
                 feedCache,
                 embeddingService,
                 clusteringService,
+                translationService,
                 Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
@@ -113,6 +117,7 @@ class ArticleProcessingWorkerTest {
                 org.mockito.ArgumentMatchers.eq("article-1"), any(), any());
         processingOrder.verify(embeddingService).ensureEmbedding("article-1");
         processingOrder.verify(clusteringService).cluster("article-1");
+        verify(translationService).ensureTranslations("article-1");
     }
 
     @Test
@@ -159,6 +164,7 @@ class ArticleProcessingWorkerTest {
         verify(articleService, never()).updateProcessingStatus(any(), any());
         verify(embeddingService).ensureEmbedding("article-1");
         verify(clusteringService).cluster("article-1");
+        verify(translationService).ensureTranslations("article-1");
     }
 
     @Test

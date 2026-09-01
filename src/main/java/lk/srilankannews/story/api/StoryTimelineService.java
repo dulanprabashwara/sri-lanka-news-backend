@@ -10,6 +10,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lk.srilankannews.article.Article;
 import lk.srilankannews.article.ArticleRepository;
+import lk.srilankannews.article.api.ArticleLocalizationService;
+import lk.srilankannews.article.api.LocalizedContentResponse;
+import lk.srilankannews.common.domain.Language;
 import lk.srilankannews.common.api.error.ResourceNotFoundException;
 import lk.srilankannews.source.Source;
 import lk.srilankannews.source.SourceService;
@@ -17,6 +20,7 @@ import lk.srilankannews.story.Story;
 import lk.srilankannews.story.StoryRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Service
 public class StoryTimelineService {
@@ -28,17 +32,32 @@ public class StoryTimelineService {
     private final StoryRepository storyRepository;
     private final ArticleRepository articleRepository;
     private final SourceService sourceService;
+    private final ArticleLocalizationService localizationService;
+
+    @Autowired
+    public StoryTimelineService(
+            StoryRepository storyRepository,
+            ArticleRepository articleRepository,
+            SourceService sourceService,
+            ArticleLocalizationService localizationService) {
+        this.storyRepository = storyRepository;
+        this.articleRepository = articleRepository;
+        this.sourceService = sourceService;
+        this.localizationService = localizationService;
+    }
 
     public StoryTimelineService(
             StoryRepository storyRepository,
             ArticleRepository articleRepository,
             SourceService sourceService) {
-        this.storyRepository = storyRepository;
-        this.articleRepository = articleRepository;
-        this.sourceService = sourceService;
+        this(storyRepository, articleRepository, sourceService, null);
     }
 
     public StoryTimelineResponse timeline(String storyId) {
+        return timeline(storyId, null);
+    }
+
+    public StoryTimelineResponse timeline(String storyId, Language displayLanguage) {
         Story story = storyRepository.findById(storyId)
                 .filter(candidate -> candidate.articleCount() > 0)
                 .orElseThrow(() -> new ResourceNotFoundException("Story"));
@@ -60,7 +79,8 @@ public class StoryTimelineService {
         Instant firstPublishedAt = articles.get(0).publishedAt();
         Instant lastPublishedAt = articles.get(articles.size() - 1).publishedAt();
         List<TimelineEventResponse> events = articles.stream()
-                .map(article -> toEvent(article, sourceFor(article, sourcesById), firstPublishedAt))
+                .map(article -> toEvent(
+                        article, sourceFor(article, sourcesById), firstPublishedAt, displayLanguage))
                 .toList();
 
         return new StoryTimelineResponse(
@@ -70,7 +90,8 @@ public class StoryTimelineService {
                 lastPublishedAt,
                 events.size(),
                 sourcesById.size(),
-                events);
+                events,
+                localizedStory(story, articles, displayLanguage));
     }
 
     private Map<String, Source> loadSources(List<Article> articles) {
@@ -87,7 +108,8 @@ public class StoryTimelineService {
         return source;
     }
 
-    private TimelineEventResponse toEvent(Article article, Source source, Instant first) {
+    private TimelineEventResponse toEvent(
+            Article article, Source source, Instant first, Language displayLanguage) {
         String summary = article.aiEnrichment() == null
                 ? null
                 : article.aiEnrichment().summary();
@@ -99,6 +121,29 @@ public class StoryTimelineService {
                 article.publishedAt(),
                 article.originalUrl(),
                 new TimelineSourceResponse(source.name(), source.slug()),
-                Duration.between(first, article.publishedAt()).toMinutes());
+                Duration.between(first, article.publishedAt()).toMinutes(),
+                displayLanguage == null
+                        ? null
+                        : localizationService.localize(article, displayLanguage));
+    }
+
+    private LocalizedStoryContentResponse localizedStory(
+            Story story, List<Article> articles, Language displayLanguage) {
+        if (displayLanguage == null) {
+            return null;
+        }
+        Article representative = articles.stream()
+                .filter(article -> article.id().equals(story.representativeArticleId()))
+                .findFirst()
+                .orElse(null);
+        if (representative == null) {
+            return new LocalizedStoryContentResponse(
+                    displayLanguage, displayLanguage, false, true, story.canonicalTitle());
+        }
+        LocalizedContentResponse localized = localizationService.localize(
+                representative, displayLanguage);
+        return new LocalizedStoryContentResponse(
+                localized.requestedLanguage(), localized.resolvedLanguage(),
+                localized.translated(), localized.fallback(), localized.title());
     }
 }

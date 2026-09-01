@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Pattern;
 import java.time.Instant;
 import lk.srilankannews.article.ArticleCategory;
 import lk.srilankannews.common.api.PagedResponse;
+import lk.srilankannews.common.domain.Language;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
@@ -40,6 +41,7 @@ public class StoryController {
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(MAX_PAGE_SIZE) int size,
             @RequestParam(required = false) ArticleCategory category,
+            @RequestParam(required = false) Language displayLanguage,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant publishedFrom,
             @RequestParam(required = false)
@@ -52,39 +54,53 @@ public class StoryController {
         Sort.Direction direction = sort.endsWith(",asc")
                 ? Sort.Direction.ASC
                 : Sort.Direction.DESC;
-        return storyApiService.list(
-                page, size, category, publishedFrom, publishedTo, direction);
+        return displayLanguage == null
+                ? storyApiService.list(page, size, category, publishedFrom, publishedTo, direction)
+                : storyApiService.list(
+                        page, size, category, publishedFrom, publishedTo, direction, displayLanguage);
     }
 
     @GetMapping("/stories/{storyId}")
     public StoryDetailResponse detail(
             @PathVariable
             @Pattern(regexp = "[0-9a-fA-F]{24}", message = "must be a valid MongoDB ObjectId")
-            String storyId) {
-        return storyApiService.detail(storyId);
+            String storyId,
+            @RequestParam(required = false) Language displayLanguage) {
+        return displayLanguage == null
+                ? storyApiService.detail(storyId)
+                : storyApiService.detail(storyId, displayLanguage);
     }
 
     @GetMapping("/stories/{storyId}/coverage")
     public CoverageComparisonResponse coverage(
             @PathVariable
             @Pattern(regexp = "[0-9a-fA-F]{24}", message = "must be a valid MongoDB ObjectId")
-            String storyId) {
-        return coverageComparisonService.compare(storyId);
+            String storyId,
+            @RequestParam(required = false) Language displayLanguage) {
+        return displayLanguage == null
+                ? coverageComparisonService.compare(storyId)
+                : coverageComparisonService.compare(storyId, displayLanguage);
     }
 
     @GetMapping("/stories/{storyId}/timeline")
     public StoryTimelineResponse timeline(
             @PathVariable
             @Pattern(regexp = "[0-9a-fA-F]{24}", message = "must be a valid MongoDB ObjectId")
-            String storyId) {
-        return storyTimelineService.timeline(storyId);
+            String storyId,
+            @RequestParam(required = false) Language displayLanguage) {
+        return displayLanguage == null
+                ? storyTimelineService.timeline(storyId)
+                : storyTimelineService.timeline(storyId, displayLanguage);
     }
 
     @GetMapping("/articles/{articleId}/story")
     public StorySummaryResponse storyForArticle(
             @PathVariable
             @Pattern(regexp = "[0-9a-fA-F]{24}", message = "must be a valid MongoDB ObjectId")
-            String articleId) {
-        return storyApiService.storyForArticle(articleId);
+            String articleId,
+            @RequestParam(required = false) Language displayLanguage) {
+        return displayLanguage == null
+                ? storyApiService.storyForArticle(articleId)
+                : storyApiService.storyForArticle(articleId, displayLanguage);
     }
 }

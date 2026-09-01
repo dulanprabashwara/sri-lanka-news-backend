@@ -93,6 +93,32 @@ class ArticleControllerTest {
     }
 
     @Test
+    void supportsDisplayLanguageWithoutExposingTranslationProvenance() throws Exception {
+        var localized = new LocalizedContentResponse(
+                Language.SI, Language.SI, true, false,
+                "සිංහල ශීර්ෂය", "සිංහල සාරාංශය");
+        ArticleResponse response = new ArticleResponse(
+                ARTICLE_ID, "Original", "https://example.com/article", Language.EN,
+                List.of(), Instant.parse("2026-08-30T00:00:00Z"),
+                Instant.parse("2026-08-30T00:01:00Z"), ArticleCategory.LOCAL,
+                "Original summary", List.of(),
+                new SourceSummaryResponse("Daily Mirror", "daily-mirror", "https://www.dailymirror.lk"),
+                localized);
+        when(articleApiService.detail(ARTICLE_ID, Language.SI)).thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/articles/{id}", ARTICLE_ID)
+                        .param("displayLanguage", "si"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Original"))
+                .andExpect(jsonPath("$.localizedContent.title").value("සිංහල ශීර්ෂය"))
+                .andExpect(jsonPath("$.localizedContent.translated").value(true))
+                .andExpect(jsonPath("$.translations").doesNotExist())
+                .andExpect(jsonPath("$.localizedContent.model").doesNotExist())
+                .andExpect(jsonPath("$.localizedContent.promptVersion").doesNotExist())
+                .andExpect(jsonPath("$.localizedContent.inputHash").doesNotExist());
+    }
+
+    @Test
     void returnsStandardNotFoundErrorForUnknownArticle() throws Exception {
         when(articleApiService.detail(ARTICLE_ID)).thenThrow(new ResourceNotFoundException("Article"));
 
@@ -124,6 +150,9 @@ class ArticleControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
         mockMvc.perform(get("/api/v1/articles").param("language", "de"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+        mockMvc.perform(get("/api/v1/articles").param("displayLanguage", "de"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
         mockMvc.perform(get("/api/v1/articles").param("sort", "title,asc"))

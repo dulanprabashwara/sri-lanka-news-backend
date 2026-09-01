@@ -36,20 +36,27 @@ public class ArticleController {
             String source,
             @RequestParam(required = false) ArticleCategory category,
             @RequestParam(required = false) Language language,
+            @RequestParam(required = false) Language displayLanguage,
             @RequestParam(defaultValue = "publishedAt,desc")
             @Pattern(regexp = "publishedAt,(?:asc|desc)", message = "must be publishedAt,asc or publishedAt,desc")
             String sort
     ) {
         Sort.Direction direction = sort.endsWith(",asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
-        return articleApiService.list(page, size, source, category, language, direction);
+        return displayLanguage == null
+                ? articleApiService.list(page, size, source, category, language, direction)
+                : articleApiService.list(
+                        page, size, source, category, language, displayLanguage, direction);
     }
 
     @GetMapping("/{id}")
     public ArticleResponse detail(
             @PathVariable
             @Pattern(regexp = "[0-9a-fA-F]{24}", message = "must be a valid MongoDB ObjectId")
-            String id
+            String id,
+            @RequestParam(required = false) Language displayLanguage
     ) {
-        return articleApiService.detail(id);
+        return displayLanguage == null
+                ? articleApiService.detail(id)
+                : articleApiService.detail(id, displayLanguage);
     }
 }

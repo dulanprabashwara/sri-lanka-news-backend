@@ -1,5 +1,6 @@
 package lk.srilankannews.article.api;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Instant;
 import java.util.List;
 import lk.srilankannews.article.ArticleCategory;
@@ -17,7 +18,8 @@ public record ArticleResponse(
         ArticleCategory category,
         String summary,
         List<String> topics,
-        SourceSummaryResponse source
+        SourceSummaryResponse source,
+        @JsonInclude(JsonInclude.Include.NON_NULL) LocalizedContentResponse localizedContent
 ) {
     public ArticleResponse {
         authors = List.copyOf(authors);
@@ -27,8 +29,17 @@ public record ArticleResponse(
     public ArticleResponse(
             String id, String title, String originalUrl, Language originalLanguage,
             List<String> authors, Instant publishedAt, Instant discoveredAt,
+            ArticleCategory category, String summary, List<String> topics,
+            SourceSummaryResponse source) {
+        this(id, title, originalUrl, originalLanguage, authors, publishedAt,
+                discoveredAt, category, summary, topics, source, null);
+    }
+
+    public ArticleResponse(
+            String id, String title, String originalUrl, Language originalLanguage,
+            List<String> authors, Instant publishedAt, Instant discoveredAt,
             ArticleCategory category, SourceSummaryResponse source) {
         this(id, title, originalUrl, originalLanguage, authors, publishedAt,
-                discoveredAt, category, null, List.of(), source);
+                discoveredAt, category, null, List.of(), source, null);
     }
 }
