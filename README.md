@@ -4,9 +4,9 @@ Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform
 
 ## Current Phase
 
-**Phase 15 — Coverage Comparison**
+**Phase 16 — Story Timeline**
 
-Public Story pages include deterministic, source-oriented coverage metadata without judging publisher accuracy, intent, or credibility.
+Public Story pages include a deterministic chronology of currently linked publisher reports based on Article publication timestamps.
 
 ## Technology
 
@@ -111,6 +111,7 @@ GET /api/v1/articles/{id}
 GET /api/v1/stories
 GET /api/v1/stories/{id}
 GET /api/v1/stories/{id}/coverage
+GET /api/v1/stories/{id}/timeline
 GET /api/v1/articles/{id}/story
 ```
 
@@ -124,6 +125,14 @@ whitespace, and case normalization, so equivalent terms written in different lan
 not merged. Single-source Stories return a valid response with `comparisonAvailable=false`.
 Only public summaries and metadata are returned; extracted content, keywords, model/prompt
 metadata, embeddings, clustering fields, and internal IDs remain private.
+
+Story timelines order all assigned Articles by `publishedAt` and stable Article ID, then
+calculate elapsed whole minutes from the earliest available report. The timeline describes
+publisher-report publication chronology only; it does not establish event occurrence time or
+infer discovery, copying, causation, credibility, or publisher intent. It makes no AI/provider
+or network call. Single-report Stories return one event at minute zero. Timeline DTOs expose
+only public summaries and attribution; private content, hashes, embeddings, processing,
+clustering, model/prompt, and MongoDB metadata remain internal.
 
 ## Internal Ingestion API
 
@@ -219,4 +228,4 @@ disables both external integrations and their health checks.
 
 ## Planned Next Phase
 
-Phase 16 — Story Timeline
+Phase 17 — Multilingual Pipeline

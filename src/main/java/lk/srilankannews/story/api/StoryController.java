@@ -24,12 +24,15 @@ public class StoryController {
 
     private final StoryApiService storyApiService;
     private final CoverageComparisonService coverageComparisonService;
+    private final StoryTimelineService storyTimelineService;
 
     public StoryController(
             StoryApiService storyApiService,
-            CoverageComparisonService coverageComparisonService) {
+            CoverageComparisonService coverageComparisonService,
+            StoryTimelineService storyTimelineService) {
         this.storyApiService = storyApiService;
         this.coverageComparisonService = coverageComparisonService;
+        this.storyTimelineService = storyTimelineService;
     }
 
     @GetMapping("/stories")
@@ -67,6 +70,14 @@ public class StoryController {
             @Pattern(regexp = "[0-9a-fA-F]{24}", message = "must be a valid MongoDB ObjectId")
             String storyId) {
         return coverageComparisonService.compare(storyId);
+    }
+
+    @GetMapping("/stories/{storyId}/timeline")
+    public StoryTimelineResponse timeline(
+            @PathVariable
+            @Pattern(regexp = "[0-9a-fA-F]{24}", message = "must be a valid MongoDB ObjectId")
+            String storyId) {
+        return storyTimelineService.timeline(storyId);
     }
 
     @GetMapping("/articles/{articleId}/story")

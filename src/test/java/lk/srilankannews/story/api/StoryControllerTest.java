@@ -39,6 +39,9 @@ class StoryControllerTest {
     @MockitoBean
     private CoverageComparisonService coverageComparisonService;
 
+    @MockitoBean
+    private StoryTimelineService storyTimelineService;
+
     @Test
     void listsStoriesWithDefaultPaginationAndNewestFirstSorting() throws Exception {
         when(storyApiService.list(0, 20, null, null, null, Sort.Direction.DESC))
@@ -144,6 +147,53 @@ class StoryControllerTest {
                 .thenThrow(new ResourceNotFoundException("Story"));
 
         mockMvc.perform(get("/api/v1/stories/{storyId}/coverage", STORY_ID))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Story was not found."));
+    }
+
+    @Test
+    void returnsSafeStoryTimeline() throws Exception {
+        StoryTimelineResponse response = new StoryTimelineResponse(
+                STORY_ID,
+                "Sri Lanka public story",
+                Instant.parse("2026-08-30T08:00:00Z"),
+                Instant.parse("2026-08-30T08:23:00Z"),
+                2,
+                2,
+                List.of(new TimelineEventResponse(
+                        ARTICLE_ID,
+                        "Public headline",
+                        "Public summary",
+                        Language.EN,
+                        Instant.parse("2026-08-30T08:00:00Z"),
+                        "https://example.com/article",
+                        new TimelineSourceResponse("Daily Mirror", "daily-mirror"),
+                        0)));
+        when(storyTimelineService.timeline(STORY_ID)).thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/stories/{storyId}/timeline", STORY_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.storyId").value(STORY_ID))
+                .andExpect(jsonPath("$.events[0].minutesFromFirstReport").value(0))
+                .andExpect(jsonPath("$.events[0].source.slug").value("daily-mirror"))
+                .andExpect(jsonPath("$.events[0].sourceId").doesNotExist())
+                .andExpect(jsonPath("$.events[0].extractedContent").doesNotExist())
+                .andExpect(jsonPath("$.events[0].contentHash").doesNotExist())
+                .andExpect(jsonPath("$.events[0].semanticEmbedding").doesNotExist())
+                .andExpect(jsonPath("$.events[0].processingStatus").doesNotExist())
+                .andExpect(jsonPath("$.events[0].model").doesNotExist())
+                .andExpect(jsonPath("$.events[0].promptVersion").doesNotExist())
+                .andExpect(jsonPath("$.matchingVersion").doesNotExist())
+                .andExpect(jsonPath("$.articleIds").doesNotExist())
+                .andExpect(jsonPath("$.sourceIds").doesNotExist());
+    }
+
+    @Test
+    void returnsStandardNotFoundForUnknownTimelineStory() throws Exception {
+        when(storyTimelineService.timeline(STORY_ID))
+                .thenThrow(new ResourceNotFoundException("Story"));
+
+        mockMvc.perform(get("/api/v1/stories/{storyId}/timeline", STORY_ID))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Story was not found."));
     }
