@@ -36,6 +36,9 @@ class StoryControllerTest {
     @MockitoBean
     private StoryApiService storyApiService;
 
+    @MockitoBean
+    private CoverageComparisonService coverageComparisonService;
+
     @Test
     void listsStoriesWithDefaultPaginationAndNewestFirstSorting() throws Exception {
         when(storyApiService.list(0, 20, null, null, null, Sort.Direction.DESC))
@@ -98,6 +101,51 @@ class StoryControllerTest {
         mockMvc.perform(get("/api/v1/articles/{articleId}/story", ARTICLE_ID))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(STORY_ID));
+    }
+
+    @Test
+    void returnsSafeCoverageComparison() throws Exception {
+        CoverageComparisonResponse response = new CoverageComparisonResponse(
+                STORY_ID, "Sri Lanka public story", 2, 2, true,
+                List.of("Public transport"),
+                List.of(new CoverageEntityResponse("Colombo", "LOCATION")),
+                List.of(new SourceCoverageResponse(
+                        new CoverageSourceResponse("Daily Mirror", "daily-mirror"),
+                        1, List.of(Language.EN),
+                        Instant.parse("2026-08-30T08:00:00Z"),
+                        Instant.parse("2026-08-30T08:00:00Z"),
+                        List.of(new CoverageArticleResponse(
+                                ARTICLE_ID, "Public headline", "Public summary", Language.EN,
+                                Instant.parse("2026-08-30T08:00:00Z"),
+                                "https://example.com/article")),
+                        List.of("Public transport"), List.of(),
+                        List.of(new CoverageEntityResponse("Colombo", "LOCATION")), List.of())));
+        when(coverageComparisonService.compare(STORY_ID)).thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/stories/{storyId}/coverage", STORY_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.storyId").value(STORY_ID))
+                .andExpect(jsonPath("$.comparisonAvailable").value(true))
+                .andExpect(jsonPath("$.sources[0].articles[0].summary").value("Public summary"))
+                .andExpect(jsonPath("$.sources[0].articles[0].extractedContent").doesNotExist())
+                .andExpect(jsonPath("$.sources[0].articles[0].contentHash").doesNotExist())
+                .andExpect(jsonPath("$.sources[0].articles[0].semanticEmbedding").doesNotExist())
+                .andExpect(jsonPath("$.sources[0].articles[0].processingStatus").doesNotExist())
+                .andExpect(jsonPath("$.sources[0].articles[0].model").doesNotExist())
+                .andExpect(jsonPath("$.sources[0].articles[0].promptVersion").doesNotExist())
+                .andExpect(jsonPath("$.matchingVersion").doesNotExist())
+                .andExpect(jsonPath("$.articleIds").doesNotExist())
+                .andExpect(jsonPath("$.sourceIds").doesNotExist());
+    }
+
+    @Test
+    void returnsStandardNotFoundForUnknownCoverageStory() throws Exception {
+        when(coverageComparisonService.compare(STORY_ID))
+                .thenThrow(new ResourceNotFoundException("Story"));
+
+        mockMvc.perform(get("/api/v1/stories/{storyId}/coverage", STORY_ID))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Story was not found."));
     }
 
     @Test

@@ -23,9 +23,13 @@ public class StoryController {
     static final int MAX_PAGE_SIZE = 100;
 
     private final StoryApiService storyApiService;
+    private final CoverageComparisonService coverageComparisonService;
 
-    public StoryController(StoryApiService storyApiService) {
+    public StoryController(
+            StoryApiService storyApiService,
+            CoverageComparisonService coverageComparisonService) {
         this.storyApiService = storyApiService;
+        this.coverageComparisonService = coverageComparisonService;
     }
 
     @GetMapping("/stories")
@@ -55,6 +59,14 @@ public class StoryController {
             @Pattern(regexp = "[0-9a-fA-F]{24}", message = "must be a valid MongoDB ObjectId")
             String storyId) {
         return storyApiService.detail(storyId);
+    }
+
+    @GetMapping("/stories/{storyId}/coverage")
+    public CoverageComparisonResponse coverage(
+            @PathVariable
+            @Pattern(regexp = "[0-9a-fA-F]{24}", message = "must be a valid MongoDB ObjectId")
+            String storyId) {
+        return coverageComparisonService.compare(storyId);
     }
 
     @GetMapping("/articles/{articleId}/story")

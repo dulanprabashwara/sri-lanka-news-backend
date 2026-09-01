@@ -4,9 +4,9 @@ Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform
 
 ## Current Phase
 
-**Phase 12 — Story Clustering Foundation**
+**Phase 15 — Coverage Comparison**
 
-Enriched articles are assigned to internal MongoDB Story documents by a conservative, deterministic lexical matcher. Public APIs remain unchanged.
+Public Story pages include deterministic, source-oriented coverage metadata without judging publisher accuracy, intent, or credibility.
 
 ## Technology
 
@@ -108,9 +108,22 @@ GET /api/v1/sources
 GET /api/v1/sources/{slug}
 GET /api/v1/articles
 GET /api/v1/articles/{id}
+GET /api/v1/stories
+GET /api/v1/stories/{id}
+GET /api/v1/stories/{id}/coverage
+GET /api/v1/articles/{id}/story
 ```
 
 The Article list accepts zero-based `page`, `size`, optional `source`, `category`, and `language` filters, plus `sort=publishedAt,asc|desc`. Defaults are `page=0`, `size=20`, and newest-first publication sorting. Requests above the maximum page size of `100` are rejected.
+
+Story coverage comparison groups assigned Articles by publisher and compares normalized
+topics and entities already stored by enrichment. It makes no AI provider or network call.
+"Source-specific" means only that metadata is not present in another currently available
+publisher report; it does not imply intentional omission. Equality uses conservative Unicode,
+whitespace, and case normalization, so equivalent terms written in different languages are
+not merged. Single-source Stories return a valid response with `comparisonAvailable=false`.
+Only public summaries and metadata are returned; extracted content, keywords, model/prompt
+metadata, embeddings, clustering fields, and internal IDs remain private.
 
 ## Internal Ingestion API
 
@@ -206,4 +219,4 @@ disables both external integrations and their health checks.
 
 ## Planned Next Phase
 
-Phase 14 — Story Pages and Public Story APIs
+Phase 16 — Story Timeline
