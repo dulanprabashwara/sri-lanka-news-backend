@@ -105,4 +105,9 @@ public class ArticleService {
     public Page<Article> findAll(ArticleFilter filter, Pageable pageable) {
         return articleRepository.findAll(filter, pageable);
     }
+
+    public java.util.List<Article> findRecent(int limit) {
+        return articleRepository.findAllByOrderByPublishedAtDescIdDesc(
+                org.springframework.data.domain.PageRequest.of(0, limit));
+    }
 }

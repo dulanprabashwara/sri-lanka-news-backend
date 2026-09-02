@@ -9,6 +9,8 @@ spring:
       url: ${REDIS_URL}
 
 news:
+  for-you:
+    candidate-limit: ${FOR_YOU_CANDIDATE_LIMIT:500}
   ai:
     gemini:
       api-key: ${GEMINI_API_KEY}

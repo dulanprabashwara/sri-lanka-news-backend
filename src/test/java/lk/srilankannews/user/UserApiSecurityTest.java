@@ -24,7 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.http.MediaType;
 
 @WebMvcTest({UserPreferencesController.class, UserBookmarkController.class,
-        UserFollowController.class})
+        UserFollowController.class, ForYouController.class})
 @Import(SecurityConfiguration.class)
 class UserApiSecurityTest {
     @Autowired MockMvc mockMvc;
@@ -33,12 +33,14 @@ class UserApiSecurityTest {
     @MockitoBean UserPreferencesService preferencesService;
     @MockitoBean UserBookmarkService bookmarkService;
     @MockitoBean UserFollowService followService;
+    @MockitoBean ForYouService forYouService;
 
     @Test
     void preferencesAndBookmarksRequireAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/me/preferences")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/v1/me/bookmarks")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/v1/me/follows")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/me/for-you")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -74,6 +76,18 @@ class UserApiSecurityTest {
                         .with(jwt().jwt(token -> token.subject("user-a"))))
                 .andExpect(status().isOk());
         verify(preferencesService).get("user-a");
+
+        mockMvc.perform(get("/api/v1/me/for-you")
+                        .with(jwt().jwt(token -> token.subject("user-a"))))
+                .andExpect(status().isOk());
+        verify(forYouService).feed("user-a", 0, 20, null);
+    }
+
+    @Test
+    void forYouPaginationIsBounded() throws Exception {
+        mockMvc.perform(get("/api/v1/me/for-you?size=101")
+                        .with(jwt().jwt(token -> token.subject("user-a"))))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

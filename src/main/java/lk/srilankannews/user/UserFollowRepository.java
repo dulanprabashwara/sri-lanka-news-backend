@@ -15,6 +15,7 @@ public interface UserFollowRepository extends MongoRepository<UserFollow, String
     long deleteByUserIdAndTargetTypeAndTargetKey(
             String userId, FollowTargetType targetType, String targetKey);
     Page<UserFollow> findByUserId(String userId, Pageable pageable);
+    List<UserFollow> findAllByUserId(String userId);
     Page<UserFollow> findByUserIdAndTargetType(
             String userId, FollowTargetType targetType, Pageable pageable);
 }

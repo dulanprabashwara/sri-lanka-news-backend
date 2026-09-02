@@ -4,9 +4,9 @@ Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform
 
 ## Current Phase
 
-**Phase 20 — Follow**
+**Phase 21 — For You**
 
-Public Story pages include a deterministic chronology of currently linked publisher reports based on Article publication timestamps.
+Authenticated readers receive a deterministic personalized Article feed based only on explicitly saved interests.
 
 ## Technology
 
@@ -47,6 +47,7 @@ Public Story pages include a deterministic chronology of currently linked publis
    $env:INGESTION_API_KEY = "<strong-random-shared-secret>"
    $env:REDIS_URL = "rediss://:<password>@<redis-host>:<port>"
    $env:ARTICLE_FEED_CACHE_TTL_SECONDS = "60"
+   $env:FOR_YOU_CANDIDATE_LIMIT = "500"
    $env:STORY_CLUSTER_WINDOW_HOURS = "48"
    $env:STORY_CLUSTER_THRESHOLD = "0.72"
    $env:STORY_CLUSTER_CANDIDATE_LIMIT = "200"
@@ -76,6 +77,7 @@ The application intentionally has no localhost fallback. Never commit the comple
 | `REDIS_URL` | Yes | None | Provider-neutral `redis://` or TLS `rediss://` connection URL. |
 | `REDIS_PROCESSING_ENABLED` | No | `true` | Enables Redis Streams publishing and consumption. |
 | `ARTICLE_FEED_CACHE_TTL_SECONDS` | No | `60` | TTL in seconds for public Article feed cache entries. |
+| `FOR_YOU_CANDIDATE_LIMIT` | No | `500` | Maximum newest Articles considered by one personalized feed request; accepted range is 1–2000. |
 | `STORY_CLUSTER_WINDOW_HOURS` | No | `48` | Publication-time window on either side of an Article for Story candidates. |
 | `STORY_CLUSTER_THRESHOLD` | No | `0.72` | Minimum deterministic lexical score from 0 to 1. |
 | `STORY_CLUSTER_CANDIDATE_LIMIT` | No | `200` | Maximum candidate Stories scored for one Article. |
@@ -143,7 +145,21 @@ trimmed/collapsed whitespace, and locale-neutral lowercase while retaining a rea
 This is exact text identity only: synonyms, translations, and semantically equivalent topics stay
 separate. Follow state is owner-scoped by JWT `sub`, protected by a unique compound index, and is
 never added to shared Redis caches or public feed DTOs. Phase 20 does not change Article or Story
-ranking; follow signals are reserved for Phase 21.
+ranking.
+
+Phase 21 adds protected `GET /api/v1/me/for-you`. It loads preferred categories, Source follows,
+and Topic follows once, ranks at most `FOR_YOU_CANDIDATE_LIMIT` recent Articles in memory, and
+batch-loads Source attribution. Followed Sources add 40 points, each exact normalized followed
+Topic adds 30 points up to 60, and an exact preferred Category adds 20. Results sort by score,
+then newest publication time, then descending Article ID. Matching Articles appear first and
+newest score-zero Articles follow as fallback content; cold-start users therefore receive normal
+recent news rather than an empty or error response. Pagination applies to this bounded ranked set.
+
+The response exposes public-safe Article DTOs and neutral reason labels, never numeric scores,
+ownership IDs, normalization keys, or private processing data. Presentation language and
+translation availability do not affect ranking. Topic matching remains exact and language-specific.
+The feed uses no behavior tracking, Gemini, embeddings, collaborative data, or Redis. The shared
+`GET /api/v1/articles` ordering and Redis cache remain unchanged and contain no user-specific data.
 
 For Supabase setup, use a project with asymmetric Auth signing keys and confirm that its JWKS URL is
 available. Configure the project-specific issuer and JWKS URL only through environment variables.
@@ -286,4 +302,4 @@ languages. Timeline ordering and relative times remain unchanged.
 
 ## Planned Next Phase
 
-Phase 21 — For You
+Phase 22 — Text Search

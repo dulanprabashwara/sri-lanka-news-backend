@@ -30,6 +30,7 @@ class ArticlePersistenceMetadataTest {
         assertThat(compoundIndexes.value())
                 .extracting(index -> index.name())
                 .containsExactlyInAnyOrder(
+                        "idx_articles_published_id",
                         "idx_articles_source_published",
                         "idx_articles_category_published",
                         "idx_articles_language_published");

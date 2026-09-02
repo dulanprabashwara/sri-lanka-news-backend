@@ -13,6 +13,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "articles")
 @CompoundIndexes({
+        @CompoundIndex(name = "idx_articles_published_id", def = "{'publishedAt': -1, '_id': -1}"),
         @CompoundIndex(name = "idx_articles_source_published", def = "{'sourceId': 1, 'publishedAt': -1}"),
         @CompoundIndex(name = "idx_articles_category_published", def = "{'category': 1, 'publishedAt': -1}"),
         @CompoundIndex(name = "idx_articles_language_published", def = "{'originalLanguage': 1, 'publishedAt': -1}")

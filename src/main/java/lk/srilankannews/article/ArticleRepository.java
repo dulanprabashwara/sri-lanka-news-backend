@@ -37,4 +37,6 @@ public interface ArticleRepository extends MongoRepository<Article, String>, Art
     List<Article> findByAiEnrichmentIsNotNull(Pageable pageable);
 
     List<Article> findByStoryId(String storyId, Sort sort);
+
+    List<Article> findAllByOrderByPublishedAtDescIdDesc(Pageable pageable);
 }
