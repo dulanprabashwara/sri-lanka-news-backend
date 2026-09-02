@@ -52,6 +52,12 @@ news:
 ingestion:
   api-key: ${INGESTION_API_KEY}
 
+supabase:
+  auth:
+    issuer: ${SUPABASE_AUTH_ISSUER:http://localhost.invalid/auth/v1}
+    jwks-uri: ${SUPABASE_AUTH_JWKS_URI:http://localhost.invalid/auth/v1/.well-known/jwks.json}
+    audience: ${SUPABASE_AUTH_AUDIENCE:authenticated}
+
 server:
   error:
     include-message: never

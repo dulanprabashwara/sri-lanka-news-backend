@@ -4,7 +4,7 @@ Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform
 
 ## Current Phase
 
-**Phase 16 — Story Timeline**
+**Phase 18 — Supabase Auth**
 
 Public Story pages include a deterministic chronology of currently linked publisher reports based on Article publication timestamps.
 
@@ -70,6 +70,9 @@ The application intentionally has no localhost fallback. Never commit the comple
 | --- | --- | --- | --- |
 | `MONGODB_URI` | Yes | None | MongoDB Atlas application connection string. |
 | `INGESTION_API_KEY` | Yes | None | Shared secret accepted only by internal ingestion endpoints. |
+| `SUPABASE_AUTH_ISSUER` | Yes for user auth | Local invalid placeholder | Supabase Auth issuer, ending in `/auth/v1`. |
+| `SUPABASE_AUTH_JWKS_URI` | Yes for user auth | Local invalid placeholder | Public JWKS endpoint for asymmetric Supabase signing keys. |
+| `SUPABASE_AUTH_AUDIENCE` | No | `authenticated` | Required access-token audience. |
 | `REDIS_URL` | Yes | None | Provider-neutral `redis://` or TLS `rediss://` connection URL. |
 | `REDIS_PROCESSING_ENABLED` | No | `true` | Enables Redis Streams publishing and consumption. |
 | `ARTICLE_FEED_CACHE_TTL_SECONDS` | No | `60` | TTL in seconds for public Article feed cache entries. |
@@ -118,6 +121,18 @@ GET /api/v1/stories/{id}/coverage
 GET /api/v1/stories/{id}/timeline
 GET /api/v1/articles/{id}/story
 ```
+
+`GET /api/v1/me` is the only Phase 18 user-authenticated endpoint. It accepts a Supabase bearer
+access token and returns only the validated JWT subject and optional email claim. Public endpoints
+remain available without a JWT. Internal ingestion remains independently protected by
+`X-Ingestion-API-Key`; a Supabase token cannot replace that key, and an ingestion key does not
+authenticate `/api/v1/me`.
+
+For Supabase setup, use a project with asymmetric Auth signing keys and confirm that its JWKS URL is
+available. Configure the project-specific issuer and JWKS URL only through environment variables.
+The backend validates signature, issuer, `authenticated` audience, expiry, and a nonblank subject.
+Do not configure a Supabase service-role key, database password, signing private key, or legacy JWT
+secret in this application.
 
 The Article list accepts zero-based `page`, `size`, optional `source`, `category`, and `language` filters, plus `sort=publishedAt,asc|desc`. Defaults are `page=0`, `size=20`, and newest-first publication sorting. Requests above the maximum page size of `100` are rejected.
 
@@ -254,4 +269,4 @@ languages. Timeline ordering and relative times remain unchanged.
 
 ## Planned Next Phase
 
-Phase 18 — Supabase Auth
+Phase 19 — Preferences + Bookmarks
