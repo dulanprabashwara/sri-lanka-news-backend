@@ -60,6 +60,10 @@ public class SourceService {
         return sourceRepository.findAllById(ids);
     }
 
+    public List<Source> findAllBySlugs(Collection<String> slugs) {
+        return sourceRepository.findAllBySlugIn(slugs);
+    }
+
     public boolean existsById(String id) {
         return sourceRepository.existsById(id);
     }

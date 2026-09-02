@@ -9,6 +9,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import lk.srilankannews.auth.SecurityConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,18 +23,49 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.http.MediaType;
 
-@WebMvcTest({UserPreferencesController.class, UserBookmarkController.class})
+@WebMvcTest({UserPreferencesController.class, UserBookmarkController.class,
+        UserFollowController.class})
 @Import(SecurityConfiguration.class)
 class UserApiSecurityTest {
     @Autowired MockMvc mockMvc;
+    @Autowired ObjectMapper objectMapper;
     @MockitoBean JwtDecoder jwtDecoder;
     @MockitoBean UserPreferencesService preferencesService;
     @MockitoBean UserBookmarkService bookmarkService;
+    @MockitoBean UserFollowService followService;
 
     @Test
     void preferencesAndBookmarksRequireAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/me/preferences")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/v1/me/bookmarks")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/me/follows")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void followOwnerAlwaysComesFromJwtSubject() throws Exception {
+        mockMvc.perform(post("/api/v1/me/follows/topics")
+                        .with(jwt().jwt(token -> token.subject("user-a")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\":\"user-b\",\"topic\":\"Cricket\"}"))
+                .andExpect(status().isOk());
+        verify(followService).followTopic("user-a", "Cricket");
+    }
+
+    @Test
+    void validatesTopicAndBatchBounds() throws Exception {
+        mockMvc.perform(post("/api/v1/me/follows/topics")
+                        .with(jwt().jwt(token -> token.subject("user-a")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"topic\":\"   \"}"))
+                .andExpect(status().isBadRequest());
+
+        String oversizedBatch = objectMapper.writeValueAsString(Map.of(
+                "sourceSlugs", List.of(), "topics", Collections.nCopies(21, "Cricket")));
+        mockMvc.perform(post("/api/v1/me/follows/status")
+                        .with(jwt().jwt(token -> token.subject("user-a")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(oversizedBatch))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

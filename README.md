@@ -4,7 +4,7 @@ Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform
 
 ## Current Phase
 
-**Phase 19 — Preferences + Bookmarks**
+**Phase 20 — Follow**
 
 Public Story pages include a deterministic chronology of currently linked publisher reports based on Article publication timestamps.
 
@@ -135,6 +135,15 @@ display language and a bounded, deterministic category set for later personaliza
 are owner-scoped, idempotent, paginated, and hydrated from existing public-safe DTOs. A compound
 unique index prevents duplicate bookmarks during concurrent requests. User-specific data is never
 placed in the shared Redis feed cache.
+
+Phase 20 adds private MongoDB `user_follows` records for exactly two target types: `SOURCE` and
+`TOPIC`. Source slugs are validated and resolved to stable internal Source IDs before storage;
+those IDs are never returned by follow APIs. Topic identity uses NFC Unicode normalization,
+trimmed/collapsed whitespace, and locale-neutral lowercase while retaining a readable label.
+This is exact text identity only: synonyms, translations, and semantically equivalent topics stay
+separate. Follow state is owner-scoped by JWT `sub`, protected by a unique compound index, and is
+never added to shared Redis caches or public feed DTOs. Phase 20 does not change Article or Story
+ranking; follow signals are reserved for Phase 21.
 
 For Supabase setup, use a project with asymmetric Auth signing keys and confirm that its JWKS URL is
 available. Configure the project-specific issuer and JWKS URL only through environment variables.
@@ -277,4 +286,4 @@ languages. Timeline ordering and relative times remain unchanged.
 
 ## Planned Next Phase
 
-Phase 20 — Follow
+Phase 21 — For You
