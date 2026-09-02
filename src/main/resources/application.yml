@@ -9,6 +9,10 @@ spring:
       url: ${REDIS_URL}
 
 news:
+  rate-limit:
+    semantic-search-per-minute: ${SEMANTIC_SEARCH_RATE_LIMIT_PER_MINUTE:20}
+    ask-story-per-minute: ${ASK_STORY_RATE_LIMIT_PER_MINUTE:10}
+    max-clients: ${PUBLIC_AI_RATE_LIMIT_MAX_CLIENTS:10000}
   admin:
     user-ids: ${ADMIN_USER_IDS:}
   search:
