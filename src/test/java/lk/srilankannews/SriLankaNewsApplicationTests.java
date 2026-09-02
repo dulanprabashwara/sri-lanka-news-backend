@@ -10,6 +10,8 @@ import lk.srilankannews.article.ArticleRepository;
 import lk.srilankannews.source.SourceRepository;
 import lk.srilankannews.story.StoryClusteringService;
 import lk.srilankannews.story.StoryRepository;
+import lk.srilankannews.user.UserBookmarkRepository;
+import lk.srilankannews.user.UserPreferencesRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -60,6 +62,12 @@ class SriLankaNewsApplicationTests {
 
     @MockitoBean
     private StoryRepository storyRepository;
+
+    @MockitoBean
+    private UserBookmarkRepository userBookmarkRepository;
+
+    @MockitoBean
+    private UserPreferencesRepository userPreferencesRepository;
 
     @MockitoBean
     private StoryClusteringService storyClusteringService;

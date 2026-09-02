@@ -34,7 +34,7 @@ public class SecurityConfiguration {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/v1/me").authenticated()
+                        .requestMatchers("/api/v1/me", "/api/v1/me/**").authenticated()
                         .anyRequest().permitAll())
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(Customizer.withDefaults())

@@ -4,7 +4,7 @@ Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform
 
 ## Current Phase
 
-**Phase 18 — Supabase Auth**
+**Phase 19 — Preferences + Bookmarks**
 
 Public Story pages include a deterministic chronology of currently linked publisher reports based on Article publication timestamps.
 
@@ -122,11 +122,19 @@ GET /api/v1/stories/{id}/timeline
 GET /api/v1/articles/{id}/story
 ```
 
-`GET /api/v1/me` is the only Phase 18 user-authenticated endpoint. It accepts a Supabase bearer
-access token and returns only the validated JWT subject and optional email claim. Public endpoints
+`GET /api/v1/me` and `/api/v1/me/preferences` and `/api/v1/me/bookmarks` routes accept a Supabase bearer
+access token. Public endpoints
 remain available without a JWT. Internal ingestion remains independently protected by
 `X-Ingestion-API-Key`; a Supabase token cannot replace that key, and an ingestion key does not
 authenticate `/api/v1/me`.
+
+The validated JWT `sub` is the sole ownership identity for MongoDB `user_preferences` and
+`user_bookmarks`; request bodies cannot select an owner. Preferences store an explicitly saved
+display language and a bounded, deterministic category set for later personalization. An explicit
+`displayLanguage` API parameter always overrides the saved preference. Article and Story bookmarks
+are owner-scoped, idempotent, paginated, and hydrated from existing public-safe DTOs. A compound
+unique index prevents duplicate bookmarks during concurrent requests. User-specific data is never
+placed in the shared Redis feed cache.
 
 For Supabase setup, use a project with asymmetric Auth signing keys and confirm that its JWKS URL is
 available. Configure the project-specific issuer and JWKS URL only through environment variables.
@@ -269,4 +277,4 @@ languages. Timeline ordering and relative times remain unchanged.
 
 ## Planned Next Phase
 
-Phase 19 — Preferences + Bookmarks
+Phase 20 — Follow
