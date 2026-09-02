@@ -56,9 +56,17 @@ public class ArticleTextIndexInitializer implements ApplicationRunner {
         Set<IndexField> expectedFields = FIELD_WEIGHTS.entrySet().stream()
                 .map(entry -> IndexField.text(entry.getKey(), entry.getValue()))
                 .collect(Collectors.toSet());
+        Set<IndexField> actualTextFields = index.getIndexFields().stream()
+                .filter(IndexField::isText)
+                .collect(Collectors.toSet());
+        boolean onlyTextAndMongoMetadata = index.getIndexFields().stream()
+                .allMatch(field -> field.isText() || "_ftsx".equals(field.getKey()));
         return INDEX_NAME.equals(index.getName())
                 && DEFAULT_LANGUAGE.equals(index.getLanguage())
-                && Set.copyOf(index.getIndexFields()).equals(expectedFields);
+                && !index.isUnique()
+                && !index.isSparse()
+                && onlyTextAndMongoMetadata
+                && actualTextFields.equals(expectedFields);
     }
 
     private static Map<String, Float> fieldWeights() {

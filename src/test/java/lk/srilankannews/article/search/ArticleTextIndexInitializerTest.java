@@ -83,6 +83,31 @@ class ArticleTextIndexInitializerTest {
     }
 
     @Test
+    void acceptsMongoTextIndexWireRepresentationContainingInternalFtsxKey() throws Exception {
+        when(mongoOperations.indexOps(Article.class)).thenReturn(indexOperations);
+        Document weights = new Document();
+        ArticleTextIndexInitializer.FIELD_WEIGHTS.forEach(weights::append);
+        Document mongoIndex = new Document("v", 2)
+                .append("key", new Document("_fts", "text").append("_ftsx", 1))
+                .append("name", ArticleTextIndexInitializer.INDEX_NAME)
+                .append("weights", weights)
+                .append("default_language", ArticleTextIndexInitializer.DEFAULT_LANGUAGE)
+                .append("language_override", "language")
+                .append("textIndexVersion", 3);
+        IndexInfo atlasRepresentation = IndexInfo.indexInfoOf(mongoIndex);
+        when(indexOperations.getIndexInfo()).thenReturn(List.of(atlasRepresentation));
+
+        new ArticleTextIndexInitializer(mongoOperations)
+                .run(new DefaultApplicationArguments(new String[0]));
+
+        assertThat(atlasRepresentation.getIndexFields())
+                .anyMatch(field -> "_ftsx".equals(field.getKey()) && !field.isText());
+        assertThat(ArticleTextIndexInitializer.compatible(atlasRepresentation)).isTrue();
+        verify(indexOperations, never()).ensureIndex(org.mockito.ArgumentMatchers.any());
+        verify(indexOperations, never()).dropIndex(org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
     void refusesIncompatibleTextIndexWithoutDeletingAnything() {
         when(mongoOperations.indexOps(Article.class)).thenReturn(indexOperations);
         IndexInfo incompatible = new IndexInfo(

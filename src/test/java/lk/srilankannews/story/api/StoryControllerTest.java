@@ -3,6 +3,7 @@ package lk.srilankannews.story.api;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -14,6 +15,10 @@ import lk.srilankannews.common.api.PagedResponse;
 import lk.srilankannews.common.api.error.ResourceNotFoundException;
 import lk.srilankannews.common.domain.Language;
 import lk.srilankannews.config.ArticleCategoryConverter;
+import lk.srilankannews.story.ask.AskStoryResponse;
+import lk.srilankannews.story.ask.AskStoryService;
+import lk.srilankannews.story.ask.InvalidAskStoryQuestionException;
+import lk.srilankannews.story.ask.AskStoryUnavailableException;
 import lk.srilankannews.source.api.SourceSummaryResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +46,60 @@ class StoryControllerTest {
 
     @MockitoBean
     private StoryTimelineService storyTimelineService;
+
+    @MockitoBean
+    private AskStoryService askStoryService;
+
+    @Test
+    void guestCanAskStoryAndQuestionIsValidated() throws Exception {
+        when(askStoryService.ask(org.mockito.ArgumentMatchers.eq(STORY_ID),
+                org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AskStoryResponse(STORY_ID, false,
+                        "Not enough information.", List.of()));
+
+        mockMvc.perform(post("/api/v1/stories/{storyId}/ask", STORY_ID)
+                        .contentType("application/json")
+                        .content("{\"question\":\"What happened?\",\"displayLanguage\":\"en\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.storyId").value(STORY_ID))
+                .andExpect(jsonPath("$.answerable").value(false));
+
+        mockMvc.perform(post("/api/v1/stories/{storyId}/ask", STORY_ID)
+                        .contentType("application/json")
+                        .content("{\"question\":\"\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void returnsSanitizedUnavailableForAskProviderFailure() throws Exception {
+        when(askStoryService.ask(org.mockito.ArgumentMatchers.eq(STORY_ID),
+                org.mockito.ArgumentMatchers.any()))
+                .thenThrow(new AskStoryUnavailableException(
+                        new RuntimeException("provider secret response")));
+
+        mockMvc.perform(post("/api/v1/stories/{storyId}/ask", STORY_ID)
+                        .contentType("application/json")
+                        .content("{\"question\":\"What happened?\"}"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("ASK_STORY_UNAVAILABLE"))
+                .andExpect(jsonPath("$.message").value("Ask This Story is temporarily unavailable."))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("secret"))));
+    }
+
+    @Test
+    void askUsesStandardValidationAndUnavailableErrors() throws Exception {
+        when(askStoryService.ask(org.mockito.ArgumentMatchers.eq(STORY_ID),
+                org.mockito.ArgumentMatchers.argThat(request -> "ab".equals(request.question()))))
+                .thenThrow(new InvalidAskStoryQuestionException(
+                        "Question must contain at least 3 Unicode characters."));
+
+        mockMvc.perform(post("/api/v1/stories/{storyId}/ask", STORY_ID)
+                        .contentType("application/json")
+                        .content("{\"question\":\"ab\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
 
     @Test
     void listsStoriesWithDefaultPaginationAndNewestFirstSorting() throws Exception {

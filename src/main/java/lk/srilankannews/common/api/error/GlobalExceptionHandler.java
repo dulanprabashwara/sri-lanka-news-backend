@@ -29,6 +29,8 @@ import lk.srilankannews.config.InvalidIngestionApiKeyException;
 import lk.srilankannews.article.search.InvalidSearchQueryException;
 import lk.srilankannews.article.search.SemanticSearchUnavailableException;
 import lk.srilankannews.article.search.SemanticSearchWindowException;
+import lk.srilankannews.story.ask.AskStoryUnavailableException;
+import lk.srilankannews.story.ask.InvalidAskStoryQuestionException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -177,6 +179,29 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "Semantic search is temporarily unavailable.", request, List.of());
     }
 
+    @ExceptionHandler(InvalidAskStoryQuestionException.class)
+    ResponseEntity<Object> handleInvalidAskStoryQuestion(
+            InvalidAskStoryQuestionException exception,
+            HttpServletRequest request
+    ) {
+        return response(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_ERROR,
+                exception.getMessage(), request, List.of(
+                        new ApiError.Detail("question", "InvalidQuestion", exception.getMessage())));
+    }
+
+    @ExceptionHandler(AskStoryUnavailableException.class)
+    ResponseEntity<Object> handleAskStoryUnavailable(
+            AskStoryUnavailableException exception,
+            HttpServletRequest request
+    ) {
+        log.warn("Ask This Story unavailable cause={}",
+                exception.getCause() == null
+                        ? exception.getClass().getSimpleName()
+                        : exception.getCause().getClass().getSimpleName());
+        return response(HttpStatus.SERVICE_UNAVAILABLE, ErrorCode.ASK_STORY_UNAVAILABLE,
+                "Ask This Story is temporarily unavailable.", request, List.of());
+    }
+
     @ExceptionHandler(Exception.class)
     ResponseEntity<Object> handleUnexpectedException(Exception exception, HttpServletRequest request) {
         log.error("Unhandled exception while processing {} {}", request.getMethod(), request.getRequestURI(), exception);
@@ -228,6 +253,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         MALFORMED_REQUEST,
         RESOURCE_NOT_FOUND,
         SEMANTIC_SEARCH_UNAVAILABLE,
+        ASK_STORY_UNAVAILABLE,
         INTERNAL_ERROR
     }
 }

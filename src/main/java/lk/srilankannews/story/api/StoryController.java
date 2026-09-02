@@ -3,6 +3,7 @@ package lk.srilankannews.story.api;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.Valid;
 import java.time.Instant;
 import lk.srilankannews.article.ArticleCategory;
 import lk.srilankannews.common.api.PagedResponse;
@@ -15,6 +16,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import lk.srilankannews.story.ask.AskStoryRequest;
+import lk.srilankannews.story.ask.AskStoryResponse;
+import lk.srilankannews.story.ask.AskStoryService;
 
 @RestController
 @Validated
@@ -26,14 +32,26 @@ public class StoryController {
     private final StoryApiService storyApiService;
     private final CoverageComparisonService coverageComparisonService;
     private final StoryTimelineService storyTimelineService;
+    private final AskStoryService askStoryService;
 
     public StoryController(
             StoryApiService storyApiService,
             CoverageComparisonService coverageComparisonService,
-            StoryTimelineService storyTimelineService) {
+            StoryTimelineService storyTimelineService,
+            AskStoryService askStoryService) {
         this.storyApiService = storyApiService;
         this.coverageComparisonService = coverageComparisonService;
         this.storyTimelineService = storyTimelineService;
+        this.askStoryService = askStoryService;
+    }
+
+    @PostMapping("/stories/{storyId}/ask")
+    public AskStoryResponse ask(
+            @PathVariable
+            @Pattern(regexp = "[0-9a-fA-F]{24}", message = "must be a valid MongoDB ObjectId")
+            String storyId,
+            @Valid @RequestBody AskStoryRequest request) {
+        return askStoryService.ask(storyId, request);
     }
 
     @GetMapping("/stories")

@@ -230,6 +230,28 @@ Cross-language EN/SI/TA quality depends on the configured embedding model; queri
 translated. Public provider quota and rate limiting should be revisited during Phase 27 production
 hardening.
 
+Phase 24 adds guest-accessible `POST /api/v1/stories/{storyId}/ask`. It is Story-scoped grounded
+RAG, not general chat: the backend loads only Articles assigned to the requested Story, creates one
+temporary question embedding, ranks their existing compatible Article vectors locally, and makes
+one bounded grounded-generation request. It never uses global Atlas Vector Search for this path,
+creates missing embeddings, or retrieves Articles from another Story.
+
+The model receives a compact Story inventory plus separated, publisher-attributed evidence from at
+most five selected reports by default. Titles and AI summaries are preferred, while private
+`extractedContent` is aggressively truncated to 6,000 characters per report and 24,000 characters
+across context. Source text and questions are explicitly treated as untrusted data, and the prompt
+forbids following embedded instructions, revealing prompts/configuration, using outside knowledge,
+or reproducing publisher articles. Output is bounded structured JSON. Internal citation labels are
+validated and mapped to trusted persisted Article URLs; private text, vectors, scores, prompts, and
+provider metadata are never returned.
+
+English, Sinhala, and Tamil answers follow optional `displayLanguage=en|si|ta`; presentation does
+not alter retrieval. Insufficient or unrelated evidence returns `200` with `answerable=false`.
+Embedding, generation, malformed-output, or invalid-citation failures return a sanitized
+`503 ASK_STORY_UNAVAILABLE`. Questions, vectors, contexts, answers, histories, identities, and
+clicks are not persisted, logged explicitly, or cached in Redis. Each normal request costs one
+embedding and one generation call, so public quota and rate limiting remain Phase 27 concerns.
+
 For Supabase setup, use a project with asymmetric Auth signing keys and confirm that its JWKS URL is
 available. Configure the project-specific issuer and JWKS URL only through environment variables.
 The backend validates signature, issuer, `authenticated` audience, expiry, and a nonblank subject.
@@ -371,4 +393,4 @@ languages. Timeline ordering and relative times remain unchanged.
 
 ## Planned Next Phase
 
-Phase 24 — Ask This Story / RAG
+Phase 25 — Trending
