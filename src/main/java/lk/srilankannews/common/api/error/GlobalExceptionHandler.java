@@ -27,6 +27,8 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import lk.srilankannews.config.InvalidIngestionApiKeyException;
 import lk.srilankannews.article.search.InvalidSearchQueryException;
+import lk.srilankannews.article.search.SemanticSearchUnavailableException;
+import lk.srilankannews.article.search.SemanticSearchWindowException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -152,6 +154,29 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                         new ApiError.Detail("q", "InvalidSearchQuery", exception.getMessage())));
     }
 
+    @ExceptionHandler(SemanticSearchWindowException.class)
+    ResponseEntity<Object> handleSemanticSearchWindow(
+            SemanticSearchWindowException exception,
+            HttpServletRequest request
+    ) {
+        return response(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_ERROR,
+                exception.getMessage(), request, List.of(
+                        new ApiError.Detail("page", "SemanticSearchWindow", exception.getMessage())));
+    }
+
+    @ExceptionHandler(SemanticSearchUnavailableException.class)
+    ResponseEntity<Object> handleSemanticSearchUnavailable(
+            SemanticSearchUnavailableException exception,
+            HttpServletRequest request
+    ) {
+        log.warn("Semantic search unavailable cause={}",
+                exception.getCause() == null
+                        ? exception.getClass().getSimpleName()
+                        : exception.getCause().getClass().getSimpleName());
+        return response(HttpStatus.SERVICE_UNAVAILABLE, ErrorCode.SEMANTIC_SEARCH_UNAVAILABLE,
+                "Semantic search is temporarily unavailable.", request, List.of());
+    }
+
     @ExceptionHandler(Exception.class)
     ResponseEntity<Object> handleUnexpectedException(Exception exception, HttpServletRequest request) {
         log.error("Unhandled exception while processing {} {}", request.getMethod(), request.getRequestURI(), exception);
@@ -202,6 +227,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         VALIDATION_ERROR,
         MALFORMED_REQUEST,
         RESOURCE_NOT_FOUND,
+        SEMANTIC_SEARCH_UNAVAILABLE,
         INTERNAL_ERROR
     }
 }

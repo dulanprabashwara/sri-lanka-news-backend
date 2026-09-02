@@ -8,13 +8,11 @@ import java.util.Comparator;
 import java.util.List;
 import lk.srilankannews.article.Article;
 import lk.srilankannews.article.ArticleEntity;
+import lk.srilankannews.ai.SemanticSimilarityEmbeddingInput;
 import org.springframework.stereotype.Component;
 
 @Component
 class SemanticEmbeddingInputFactory {
-    private static final String SEMANTIC_SIMILARITY_INSTRUCTION =
-            "task: sentence similarity | query: ";
-
     private final StoryEmbeddingProperties properties;
 
     SemanticEmbeddingInputFactory(StoryEmbeddingProperties properties) {
@@ -45,7 +43,7 @@ class SemanticEmbeddingInputFactory {
                 topics,
                 entities,
                 article.category() == null ? "" : article.category().name()).trim();
-        String text = SEMANTIC_SIMILARITY_INSTRUCTION + semanticContent;
+        String text = SemanticSimilarityEmbeddingInput.format(semanticContent);
         text = truncate(text, properties.maxInputCharacters());
         return new Input(text, sha256(text), properties.inputVersion());
     }

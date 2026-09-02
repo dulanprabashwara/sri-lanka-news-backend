@@ -4,9 +4,9 @@ Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform
 
 ## Current Phase
 
-**Phase 22 — Text Search**
+**Phase 23 — Semantic Search**
 
-Readers can search public Article metadata and stored translations with deterministic MongoDB text ranking.
+Readers can choose independent lexical or embedding-assisted Article retrieval paths.
 
 ## Technology
 
@@ -88,6 +88,9 @@ The application intentionally has no localhost fallback. Never commit the comple
 | `STORY_SEMANTIC_THRESHOLD` | No | `0.82` | Minimum semantic evidence used to strengthen same-language matching. |
 | `STORY_CROSS_LANGUAGE_SEMANTIC_THRESHOLD` | No | `0.90` | Conservative minimum for cross-language matching. |
 | `STORY_EMBEDDING_BACKFILL_LIMIT` | No | `50` | Maximum enriched Articles embedded at startup; `0` disables embedding backfill. |
+| `SEMANTIC_SEARCH_VECTOR_INDEX` | No | `idx_articles_semantic_vector` | Atlas Vector Search index used only by public semantic Article search. |
+| `SEMANTIC_SEARCH_MIN_SCORE` | No | `0.65` | Minimum normalized vector-search score retained as a semantic result. |
+| `SEMANTIC_SEARCH_MAX_WINDOW` | No | `200` | Maximum bounded result window available through semantic pagination. |
 | `GEMINI_API_KEY` | Yes | None | Google AI Studio API key; never logged or exposed. |
 | `GEMINI_MODEL` | Yes | None | Configurable Gemini model identifier. |
 | `GEMINI_MAX_INPUT_CHARACTERS` | No | `30000` | Maximum deterministic article-content excerpt sent for enrichment. |
@@ -118,6 +121,7 @@ GET /api/v1/sources/{slug}
 GET /api/v1/articles
 GET /api/v1/articles/{id}
 GET /api/v1/search/articles?q={query}
+GET /api/v1/search/semantic?q={query}
 GET /api/v1/stories
 GET /api/v1/stories/{id}
 GET /api/v1/stories/{id}/coverage
@@ -176,6 +180,55 @@ delete an incompatible Atlas index. Private extracted content, keywords, entitie
 embeddings, processing metadata, and internal IDs are never indexed, returned, or logged.
 Search does not use Redis, Gemini, embeddings, personalization, behavior tracking, or a live AI
 call; it searches only public-safe fields already stored in MongoDB.
+
+Phase 23 adds the separate public `GET /api/v1/search/semantic` path. Each valid request creates
+exactly one transient query embedding through the existing `EmbeddingProvider` and
+`gemini-embedding-2` configuration. Query text uses NFC and whitespace normalization plus the same
+`task: sentence similarity | query:` provider-visible instruction as the existing
+`story-semantic-v2` Article vectors. Queries and query vectors are never persisted or cached.
+Semantic retrieval does not regenerate or mutate Article embeddings, invoke generative AI,
+translation, clustering, feed invalidation, or Redis.
+
+Atlas `$vectorSearch` reads `semanticEmbedding.values` and prefilters to `COMPLETED` Articles whose
+embedding model, 768 dimensions, and input version match the active configuration. Optional Source,
+Category, and original-language filters are applied inside vector search. Results below the
+configurable `0.65` minimum are discarded, then ordered by vector score, publication time, and
+Article ID. Scores are internal ranking metadata and are never returned. Pagination exposes
+`hasMore` rather than fabricated totals and is bounded to the first 200 results. Presentation
+localization happens after ranking and cannot influence retrieval.
+
+Semantic search requires a manually configured Atlas Vector Search index on the `articles`
+collection. In Atlas, open Search & Vector Search, create a JSON editor index named
+`idx_articles_semantic_vector`, and use:
+
+```json
+{
+  "fields": [
+    {
+      "type": "vector",
+      "path": "semanticEmbedding.values",
+      "numDimensions": 768,
+      "similarity": "cosine"
+    },
+    { "type": "filter", "path": "sourceId" },
+    { "type": "filter", "path": "category" },
+    { "type": "filter", "path": "originalLanguage" },
+    { "type": "filter", "path": "processingStatus" },
+    { "type": "filter", "path": "semanticEmbedding.model" },
+    { "type": "filter", "path": "semanticEmbedding.dimensions" },
+    { "type": "filter", "path": "semanticEmbedding.inputVersion" }
+  ]
+}
+```
+
+This is an Atlas Vector Search index, not the normal MongoDB text index
+`idx_articles_public_text`. Wait until Atlas reports the vector index as active before testing.
+Missing, building, unsupported, or temporarily unavailable vector search and embedding-provider
+failures return safe `503 SEMANTIC_SEARCH_UNAVAILABLE` responses without affecting application
+startup or keyword search. Articles without compatible Phase 13 embeddings do not participate.
+Cross-language EN/SI/TA quality depends on the configured embedding model; queries are never
+translated. Public provider quota and rate limiting should be revisited during Phase 27 production
+hardening.
 
 For Supabase setup, use a project with asymmetric Auth signing keys and confirm that its JWKS URL is
 available. Configure the project-specific issuer and JWKS URL only through environment variables.
@@ -318,4 +371,4 @@ languages. Timeline ordering and relative times remain unchanged.
 
 ## Planned Next Phase
 
-Phase 23 — Semantic Search
+Phase 24 — Ask This Story / RAG
