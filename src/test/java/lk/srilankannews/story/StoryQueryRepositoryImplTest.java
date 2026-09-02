@@ -55,4 +55,26 @@ class StoryQueryRepositoryImplTest {
                 .containsEntry("id", -1);
         assertThat(result.getTotalElements()).isEqualTo(21);
     }
+
+    @Test
+    void boundsTrendingCandidatesInsideWindowAndAppliesCategoryBeforeRanking() {
+        Instant since = Instant.parse("2026-08-29T00:00:00Z");
+        when(mongoTemplate.find(any(Query.class), eq(Story.class))).thenReturn(List.of());
+        StoryQueryRepositoryImpl repository = new StoryQueryRepositoryImpl(mongoTemplate);
+
+        repository.findTrendingCandidates(since, ArticleCategory.LOCAL, 500);
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(Story.class));
+        Query query = queryCaptor.getValue();
+        assertThat((Document) query.getQueryObject().get("articleCount"))
+                .containsEntry("$gt", 0);
+        assertThat((Document) query.getQueryObject().get("lastPublishedAt"))
+                .containsEntry("$gte", since);
+        assertThat(query.getQueryObject()).containsEntry("category", ArticleCategory.LOCAL);
+        assertThat(query.getLimit()).isEqualTo(500);
+        assertThat(query.getSortObject())
+                .containsEntry("lastPublishedAt", -1)
+                .containsEntry("id", -1);
+    }
 }

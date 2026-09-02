@@ -4,9 +4,9 @@ Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform
 
 ## Current Phase
 
-**Phase 23 — Semantic Search**
+**Phase 25 — Trending Stories**
 
-Readers can choose independent lexical or embedding-assisted Article retrieval paths.
+Readers can discover recent Stories receiving broad reporting coverage without user tracking.
 
 ## Technology
 
@@ -48,6 +48,11 @@ Readers can choose independent lexical or embedding-assisted Article retrieval p
    $env:REDIS_URL = "rediss://:<password>@<redis-host>:<port>"
    $env:ARTICLE_FEED_CACHE_TTL_SECONDS = "60"
    $env:FOR_YOU_CANDIDATE_LIMIT = "500"
+   $env:TRENDING_WINDOW_HOURS = "72"
+   $env:TRENDING_RECENCY_HALF_LIFE_HOURS = "12"
+   $env:TRENDING_SOURCE_NORMALIZATION = "3"
+   $env:TRENDING_REPORT_NORMALIZATION = "5"
+   $env:TRENDING_MAX_CANDIDATES = "500"
    $env:STORY_CLUSTER_WINDOW_HOURS = "48"
    $env:STORY_CLUSTER_THRESHOLD = "0.72"
    $env:STORY_CLUSTER_CANDIDATE_LIMIT = "200"
@@ -78,6 +83,11 @@ The application intentionally has no localhost fallback. Never commit the comple
 | `REDIS_PROCESSING_ENABLED` | No | `true` | Enables Redis Streams publishing and consumption. |
 | `ARTICLE_FEED_CACHE_TTL_SECONDS` | No | `60` | TTL in seconds for public Article feed cache entries. |
 | `FOR_YOU_CANDIDATE_LIMIT` | No | `500` | Maximum newest Articles considered by one personalized feed request; accepted range is 1–2000. |
+| `TRENDING_WINDOW_HOURS` | No | `72` | Recent Story candidate window; accepted range is 6–336 hours. |
+| `TRENDING_RECENCY_HALF_LIFE_HOURS` | No | `12` | Positive recency-decay half-life and recently-updated reason period. |
+| `TRENDING_SOURCE_NORMALIZATION` | No | `3` | Positive distinct-publisher count at which source coverage is fully normalized. |
+| `TRENDING_REPORT_NORMALIZATION` | No | `5` | Positive report count at which report coverage is fully normalized. |
+| `TRENDING_MAX_CANDIDATES` | No | `500` | Maximum recent Stories ranked per request; accepted range is 50–5000. |
 | `STORY_CLUSTER_WINDOW_HOURS` | No | `48` | Publication-time window on either side of an Article for Story candidates. |
 | `STORY_CLUSTER_THRESHOLD` | No | `0.72` | Minimum deterministic lexical score from 0 to 1. |
 | `STORY_CLUSTER_CANDIDATE_LIMIT` | No | `200` | Maximum candidate Stories scored for one Article. |
@@ -123,6 +133,7 @@ GET /api/v1/articles/{id}
 GET /api/v1/search/articles?q={query}
 GET /api/v1/search/semantic?q={query}
 GET /api/v1/stories
+GET /api/v1/stories/trending
 GET /api/v1/stories/{id}
 GET /api/v1/stories/{id}/coverage
 GET /api/v1/stories/{id}/timeline
@@ -251,6 +262,23 @@ Embedding, generation, malformed-output, or invalid-citation failures return a s
 `503 ASK_STORY_UNAVAILABLE`. Questions, vectors, contexts, answers, histories, identities, and
 clicks are not persisted, logged explicitly, or cached in Redis. Each normal request costs one
 embedding and one generation call, so public quota and rate limiting remain Phase 27 concerns.
+
+Phase 25 adds guest-accessible `GET /api/v1/stories/trending`. Trending means recent reporting
+activity plus report count and distinct publisher coverage; it does not mean popularity, importance,
+virality, clicks, bookmarks, follows, searches, or other user behavior. Candidates must have a
+report within the configured 72-hour window, are fetched newest-first with a bounded default cap of
+500, and may be filtered by Story category before ranking.
+
+The deterministic score is `0.60 * exp(-ageHours / halfLifeHours)`, plus `0.25` times normalized
+distinct-source coverage and `0.15` times normalized report coverage. Ties use latest report time,
+report count, and descending Story ID. Scores and components stay internal; the API exposes only
+truthful `RECENTLY_UPDATED`, `MULTIPLE_SOURCES`, and `MULTIPLE_REPORTS` reasons. Distinct stored
+source IDs prevent repeated reports from one publisher increasing source count.
+
+`displayLanguage=en|si|ta` reuses existing representative-Article localization after ranking, so
+language changes presentation but never Story order. Trending performs no Gemini, embedding,
+translation-generation, grounded-answer, Redis, personalization, or user-repository operation and
+does not affect the public feed cache.
 
 For Supabase setup, use a project with asymmetric Auth signing keys and confirm that its JWKS URL is
 available. Configure the project-specific issuer and JWKS URL only through environment variables.
@@ -393,4 +421,4 @@ languages. Timeline ordering and relative times remain unchanged.
 
 ## Planned Next Phase
 
-Phase 25 — Trending
+Phase 26 — Admin

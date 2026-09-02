@@ -6,7 +6,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @EnableConfigurationProperties({
         StoryClusteringProperties.class,
-        StoryEmbeddingProperties.class
+        StoryEmbeddingProperties.class,
+        TrendingProperties.class
 })
 class StoryConfiguration {
 }

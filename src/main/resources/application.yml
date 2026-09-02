@@ -33,6 +33,12 @@ news:
       enabled: true
       ttl: ${ARTICLE_FEED_CACHE_TTL_SECONDS:60}s
   story:
+    trending:
+      window-hours: ${TRENDING_WINDOW_HOURS:72}
+      recency-half-life-hours: ${TRENDING_RECENCY_HALF_LIFE_HOURS:12}
+      source-normalization: ${TRENDING_SOURCE_NORMALIZATION:3}
+      report-normalization: ${TRENDING_REPORT_NORMALIZATION:5}
+      max-candidates: ${TRENDING_MAX_CANDIDATES:500}
     ask:
       prompt-version: ${ASK_STORY_PROMPT_VERSION:ask-story-v1}
       max-question-characters: ${ASK_STORY_MAX_QUESTION_CHARACTERS:500}
