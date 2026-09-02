@@ -26,6 +26,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import lk.srilankannews.config.InvalidIngestionApiKeyException;
+import lk.srilankannews.article.search.InvalidSearchQueryException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -139,6 +140,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     ) {
         return response(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED,
                 exception.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler(InvalidSearchQueryException.class)
+    ResponseEntity<Object> handleInvalidSearchQuery(
+            InvalidSearchQueryException exception,
+            HttpServletRequest request
+    ) {
+        return response(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_ERROR,
+                exception.getMessage(), request, List.of(
+                        new ApiError.Detail("q", "InvalidSearchQuery", exception.getMessage())));
     }
 
     @ExceptionHandler(Exception.class)

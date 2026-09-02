@@ -4,9 +4,9 @@ Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform
 
 ## Current Phase
 
-**Phase 21 — For You**
+**Phase 22 — Text Search**
 
-Authenticated readers receive a deterministic personalized Article feed based only on explicitly saved interests.
+Readers can search public Article metadata and stored translations with deterministic MongoDB text ranking.
 
 ## Technology
 
@@ -117,6 +117,7 @@ GET /api/v1/sources
 GET /api/v1/sources/{slug}
 GET /api/v1/articles
 GET /api/v1/articles/{id}
+GET /api/v1/search/articles?q={query}
 GET /api/v1/stories
 GET /api/v1/stories/{id}
 GET /api/v1/stories/{id}/coverage
@@ -160,6 +161,21 @@ ownership IDs, normalization keys, or private processing data. Presentation lang
 translation availability do not affect ranking. Topic matching remains exact and language-specific.
 The feed uses no behavior tracking, Gemini, embeddings, collaborative data, or Redis. The shared
 `GET /api/v1/articles` ordering and Redis cache remain unchanged and contain no user-specific data.
+
+Phase 22 adds public `GET /api/v1/search/articles`. Queries are NFC-normalized, trimmed,
+and whitespace-collapsed, with a 2–200 Unicode-code-point limit. Optional `source`,
+`category`, and original `language` filters and the existing `displayLanguage` presentation
+parameter are supported. Results use MongoDB text score, then publication time and Article ID
+for deterministic ties, with the standard zero-based pagination and maximum page size of 100.
+
+One explicit `idx_articles_public_text` index uses MongoDB language `none` for predictable
+English, Sinhala, and Tamil token handling. Weights are title and translated titles 10,
+topics 6, and summaries and translated summaries 4. The startup initializer creates this index
+only when no text index exists, accepts the exact existing definition, and refuses to alter or
+delete an incompatible Atlas index. Private extracted content, keywords, entities, hashes,
+embeddings, processing metadata, and internal IDs are never indexed, returned, or logged.
+Search does not use Redis, Gemini, embeddings, personalization, behavior tracking, or a live AI
+call; it searches only public-safe fields already stored in MongoDB.
 
 For Supabase setup, use a project with asymmetric Auth signing keys and confirm that its JWKS URL is
 available. Configure the project-specific issuer and JWKS URL only through environment variables.
@@ -302,4 +318,4 @@ languages. Timeline ordering and relative times remain unchanged.
 
 ## Planned Next Phase
 
-Phase 22 — Text Search
+Phase 23 — Semantic Search
