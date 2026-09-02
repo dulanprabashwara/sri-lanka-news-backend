@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
@@ -25,7 +26,8 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-@EnableConfigurationProperties(SupabaseAuthProperties.class)
+@EnableMethodSecurity
+@EnableConfigurationProperties({SupabaseAuthProperties.class, AdminProperties.class})
 public class SecurityConfiguration {
 
     @Bean
@@ -34,8 +36,22 @@ public class SecurityConfiguration {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/v1/admin", "/api/v1/admin/**").authenticated()
                         .requestMatchers("/api/v1/me", "/api/v1/me/**").authenticated()
                         .anyRequest().permitAll())
+                .exceptionHandling(exceptions -> exceptions.accessDeniedHandler(
+                        (request, response, exception) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            objectMapper.writeValue(response.getOutputStream(), Map.of(
+                                    "timestamp", Instant.now().toString(),
+                                    "status", 403,
+                                    "error", "Forbidden",
+                                    "code", "FORBIDDEN",
+                                    "message", "Admin access is required.",
+                                    "path", request.getRequestURI(),
+                                    "details", List.of()));
+                        }))
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(Customizer.withDefaults())
                         .authenticationEntryPoint((request, response, exception) -> {

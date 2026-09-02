@@ -25,12 +25,14 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.security.access.AccessDeniedException;
 import lk.srilankannews.config.InvalidIngestionApiKeyException;
 import lk.srilankannews.article.search.InvalidSearchQueryException;
 import lk.srilankannews.article.search.SemanticSearchUnavailableException;
 import lk.srilankannews.article.search.SemanticSearchWindowException;
 import lk.srilankannews.story.ask.AskStoryUnavailableException;
 import lk.srilankannews.story.ask.InvalidAskStoryQuestionException;
+import lk.srilankannews.admin.AdminRetryNotAllowedException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -202,6 +204,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "Ask This Story is temporarily unavailable.", request, List.of());
     }
 
+    @ExceptionHandler(AdminRetryNotAllowedException.class)
+    ResponseEntity<Object> handleAdminRetryNotAllowed(
+            AdminRetryNotAllowedException exception,
+            HttpServletRequest request) {
+        return response(HttpStatus.CONFLICT, ErrorCode.CONFLICT,
+                exception.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    ResponseEntity<Object> handleAccessDenied(
+            AccessDeniedException exception,
+            HttpServletRequest request) {
+        return response(HttpStatus.FORBIDDEN, ErrorCode.FORBIDDEN,
+                "Admin access is required.", request, List.of());
+    }
+
     @ExceptionHandler(Exception.class)
     ResponseEntity<Object> handleUnexpectedException(Exception exception, HttpServletRequest request) {
         log.error("Unhandled exception while processing {} {}", request.getMethod(), request.getRequestURI(), exception);
@@ -254,6 +272,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         RESOURCE_NOT_FOUND,
         SEMANTIC_SEARCH_UNAVAILABLE,
         ASK_STORY_UNAVAILABLE,
+        CONFLICT,
+        FORBIDDEN,
         INTERNAL_ERROR
     }
 }

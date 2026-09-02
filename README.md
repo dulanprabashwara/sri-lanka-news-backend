@@ -4,9 +4,9 @@ Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform
 
 ## Current Phase
 
-**Phase 25 — Trending Stories**
+**Phase 26 — Admin**
 
-Readers can discover recent Stories receiving broad reporting coverage without user tracking.
+Configured operators can securely inspect ingestion and processing health.
 
 ## Technology
 
@@ -48,6 +48,7 @@ Readers can discover recent Stories receiving broad reporting coverage without u
    $env:REDIS_URL = "rediss://:<password>@<redis-host>:<port>"
    $env:ARTICLE_FEED_CACHE_TTL_SECONDS = "60"
    $env:FOR_YOU_CANDIDATE_LIMIT = "500"
+   $env:ADMIN_USER_IDS = "<supabase-user-sub>"
    $env:TRENDING_WINDOW_HOURS = "72"
    $env:TRENDING_RECENCY_HALF_LIFE_HOURS = "12"
    $env:TRENDING_SOURCE_NORMALIZATION = "3"
@@ -79,6 +80,7 @@ The application intentionally has no localhost fallback. Never commit the comple
 | `SUPABASE_AUTH_ISSUER` | Yes for user auth | Local invalid placeholder | Supabase Auth issuer, ending in `/auth/v1`. |
 | `SUPABASE_AUTH_JWKS_URI` | Yes for user auth | Local invalid placeholder | Public JWKS endpoint for asymmetric Supabase signing keys. |
 | `SUPABASE_AUTH_AUDIENCE` | No | `authenticated` | Required access-token audience. |
+| `ADMIN_USER_IDS` | No | Empty | Comma-separated verified Supabase user `sub` values permitted to use Admin APIs. Empty grants nobody access. |
 | `REDIS_URL` | Yes | None | Provider-neutral `redis://` or TLS `rediss://` connection URL. |
 | `REDIS_PROCESSING_ENABLED` | No | `true` | Enables Redis Streams publishing and consumption. |
 | `ARTICLE_FEED_CACHE_TTL_SECONDS` | No | `60` | TTL in seconds for public Article feed cache entries. |
@@ -138,6 +140,11 @@ GET /api/v1/stories/{id}
 GET /api/v1/stories/{id}/coverage
 GET /api/v1/stories/{id}/timeline
 GET /api/v1/articles/{id}/story
+GET /api/v1/admin/me
+GET /api/v1/admin/overview
+GET /api/v1/admin/sources
+GET /api/v1/admin/articles
+POST /api/v1/admin/articles/{id}/retry
 ```
 
 `GET /api/v1/me` and `/api/v1/me/preferences` and `/api/v1/me/bookmarks` routes accept a Supabase bearer
@@ -280,6 +287,23 @@ language changes presentation but never Story order. Trending performs no Gemini
 translation-generation, grounded-answer, Redis, personalization, or user-repository operation and
 does not affect the public feed cache.
 
+Phase 26 adds a small operational Admin API protected by the existing verified Supabase JWT and a
+comma-separated `ADMIN_USER_IDS` allowlist. Authorization compares only the JWT `sub`; email and
+request headers cannot grant access. Empty configuration means nobody is an administrator. Obtain
+your stable subject from authenticated `GET /api/v1/me`, then configure it locally without
+committing the value. No Supabase service-role key or role database is used.
+
+Admin overview, Source, and Article routes use Mongo counts, bounded newest-first processing
+queries, batched Source hydration, and grouped Article counts. Responses include only operational
+titles, publisher attribution, statuses, and timestamps—never extracted content, hashes,
+embeddings, prompts, provider errors, queue payloads, tokens, or credentials. Admin reads use no
+Redis, Gemini, translations, vector search, or analytics.
+
+Retry atomically claims only a `FAILED` Article by changing it to `RETRYING`, then reuses the
+existing `ArticleDiscoveredNotifier`. Repeated clicks cannot claim the same failure twice; MongoDB
+remains authoritative, and existing startup recovery can redispatch a retry if Redis was
+temporarily unavailable. The controller never invokes Gemini or duplicates processing logic.
+
 For Supabase setup, use a project with asymmetric Auth signing keys and confirm that its JWKS URL is
 available. Configure the project-specific issuer and JWKS URL only through environment variables.
 The backend validates signature, issuer, `authenticated` audience, expiry, and a nonblank subject.
@@ -421,4 +445,4 @@ languages. Timeline ordering and relative times remain unchanged.
 
 ## Planned Next Phase
 
-Phase 26 — Admin
+Phase 27 — Reliability / Production Hardening

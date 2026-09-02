@@ -9,6 +9,8 @@ spring:
       url: ${REDIS_URL}
 
 news:
+  admin:
+    user-ids: ${ADMIN_USER_IDS:}
   search:
     semantic:
       vector-index: ${SEMANTIC_SEARCH_VECTOR_INDEX:idx_articles_semantic_vector}
