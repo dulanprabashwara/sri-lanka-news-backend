@@ -10,4 +10,28 @@ public interface IngestionRunRepository extends MongoRepository<IngestionRun, St
 
     List<IngestionRun> findBySourceIdAndStatusAndLeaseExpiresAtBefore(
             String sourceId, IngestionRunStatus status, Instant before);
+
+    org.springframework.data.domain.Page<IngestionRun> findBySourceSlug(
+            String sourceSlug, org.springframework.data.domain.Pageable pageable);
+
+    org.springframework.data.domain.Page<IngestionRun> findBySourceSlugAndStatus(
+            String sourceSlug, IngestionRunStatus status, org.springframework.data.domain.Pageable pageable);
+
+    org.springframework.data.domain.Page<IngestionRun> findBySourceSlugAndTriggerType(
+            String sourceSlug, IngestionTriggerType triggerType, org.springframework.data.domain.Pageable pageable);
+
+    org.springframework.data.domain.Page<IngestionRun> findBySourceSlugAndStatusAndTriggerType(
+            String sourceSlug, IngestionRunStatus status, IngestionTriggerType triggerType, org.springframework.data.domain.Pageable pageable);
+
+    org.springframework.data.domain.Page<IngestionRun> findByStatus(
+            IngestionRunStatus status, org.springframework.data.domain.Pageable pageable);
+
+    org.springframework.data.domain.Page<IngestionRun> findByTriggerType(
+            IngestionTriggerType triggerType, org.springframework.data.domain.Pageable pageable);
+
+    org.springframework.data.domain.Page<IngestionRun> findByStatusAndTriggerType(
+            IngestionRunStatus status, IngestionTriggerType triggerType, org.springframework.data.domain.Pageable pageable);
+
+    // For health calculations:
+    List<IngestionRun> findTop5BySourceSlugOrderByStartedAtDesc(String sourceSlug);
 }

@@ -61,7 +61,7 @@ class SriLankaNewsApplicationTests {
     private MongoDatabaseFactory mongoDatabaseFactory;
 
     @MockitoBean
-    private MongoOperations mongoOperations;
+    private org.springframework.data.mongodb.core.MongoTemplate mongoTemplate;
 
     @MockitoBean
     private StoryRepository storyRepository;
@@ -83,6 +83,15 @@ class SriLankaNewsApplicationTests {
 
     @MockitoBean
     private IngestionSourceLeaseRepository ingestionSourceLeaseRepository;
+
+    @MockitoBean
+    private lk.srilankannews.admin.audit.AdminAuditEventRepository adminAuditEventRepository;
+
+    @MockitoBean
+    private lk.srilankannews.ingestion.settings.IngestionSourceSettingsRepository ingestionSourceSettingsRepository;
+
+    @MockitoBean
+    private lk.srilankannews.ingestion.trigger.IngestionTriggerRequestRepository ingestionTriggerRequestRepository;
 
     @Test
     void contextLoads() {
