@@ -28,6 +28,15 @@ public class IngestionSourceSettingsService {
         seedSource("newsfirst", true, 10, 120, now);
         seedSource("hiru-news-sinhala", true, 10, 120, now);
         seedSource("ada-derana-sinhala", false, 10, 120, now);
+
+        // Phase 31 Sources
+        seedSource("the-island", true, 15, 120, now);
+        seedSource("lankadeepa", true, 15, 120, now);
+        seedSource("divaina", true, 15, 120, now);
+
+        seedSource("daily-news", false, 15, 120, now);
+        seedSource("virakesari", false, 15, 120, now);
+        seedSource("thinakaran", false, 15, 120, now);
     }
 
     private void seedSource(String slug, boolean enabled, int interval, int jitter, Instant now) {
