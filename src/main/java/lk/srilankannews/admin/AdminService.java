@@ -13,6 +13,8 @@ import lk.srilankannews.common.api.error.ResourceNotFoundException;
 import lk.srilankannews.processing.ArticleDiscoveredNotifier;
 import lk.srilankannews.source.Source;
 import lk.srilankannews.source.SourceRepository;
+import lk.srilankannews.ingestion.run.IngestionRunRepository;
+import lk.srilankannews.ingestion.run.IngestionRunStatus;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,6 +24,7 @@ public class AdminService {
     private final AdminMongoOperations operations;
     private final SourceRepository sourceRepository;
     private final ArticleRepository articleRepository;
+    private final IngestionRunRepository ingestionRunRepository;
     private final ArticleDiscoveredNotifier notifier;
     private final Clock clock;
 
@@ -29,11 +32,13 @@ public class AdminService {
             AdminMongoOperations operations,
             SourceRepository sourceRepository,
             ArticleRepository articleRepository,
+            IngestionRunRepository ingestionRunRepository,
             ArticleDiscoveredNotifier notifier,
             Clock clock) {
         this.operations = operations;
         this.sourceRepository = sourceRepository;
         this.articleRepository = articleRepository;
+        this.ingestionRunRepository = ingestionRunRepository;
         this.notifier = notifier;
         this.clock = clock;
     }
@@ -48,10 +53,34 @@ public class AdminService {
                 operations.articleCount(ProcessingStatus.FAILED));
         List<AdminArticleResponse> failures = articleResponses(
                 operations.findArticles(ProcessingStatus.FAILED, null, RECENT_FAILURE_LIMIT));
+                
+        List<Source> allSources = sourceRepository.findAll();
+        long enabledSources = allSources.stream().filter(Source::enabled).count();
+        long pausedSources = allSources.size() - enabledSources;
+        var sourceCounts = new AdminOverviewResponse.SourceCounts(allSources.size(), enabledSources, pausedSources, 0);
+
+        var storyCounts = new AdminOverviewResponse.StoryCounts(
+                operations.storyCount(),
+                operations.storyCountSince(clock.instant().minusSeconds(86400)),
+                operations.storyActiveSince(clock.instant().minusSeconds(86400)));
+
+        long completedRuns = ingestionRunRepository.countByStatus(IngestionRunStatus.COMPLETED);
+        long failedRuns = ingestionRunRepository.countByStatus(IngestionRunStatus.FAILED);
+        long currentlyRunning = ingestionRunRepository.countByStatus(IngestionRunStatus.RUNNING);
+        var ingestionCounts = new AdminOverviewResponse.IngestionCounts(
+                completedRuns + failedRuns + currentlyRunning, completedRuns, failedRuns, currentlyRunning, 0);
+
+        var userCounts = new AdminOverviewResponse.UserCounts(
+                operations.userPreferencesCount(),
+                operations.totalBookmarks(),
+                operations.totalFollows());
+
         return new AdminOverviewResponse(
-                new AdminOverviewResponse.SourceCounts(operations.sourceCount()),
+                sourceCounts,
                 articleCounts,
-                new AdminOverviewResponse.StoryCounts(operations.storyCount()),
+                storyCounts,
+                ingestionCounts,
+                userCounts,
                 failures);
     }
 

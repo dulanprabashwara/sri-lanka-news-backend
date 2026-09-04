@@ -34,4 +34,6 @@ public interface IngestionRunRepository extends MongoRepository<IngestionRun, St
 
     // For health calculations:
     List<IngestionRun> findTop5BySourceSlugOrderByStartedAtDesc(String sourceSlug);
+
+    long countByStatus(IngestionRunStatus status);
 }

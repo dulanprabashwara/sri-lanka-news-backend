@@ -37,6 +37,14 @@ public class AdminMongoOperations {
         return mongo.count(Query.query(Criteria.where("articleCount").gt(0)), Story.class);
     }
 
+    public long storyCountSince(Instant since) {
+        return mongo.count(Query.query(Criteria.where("createdAt").gte(since)), Story.class);
+    }
+
+    public long storyActiveSince(Instant since) {
+        return mongo.count(Query.query(Criteria.where("lastPublishedAt").gte(since)), Story.class);
+    }
+
     public long articleCount() {
         return mongo.count(new Query(), Article.class);
     }
@@ -73,5 +81,43 @@ public class AdminMongoOperations {
                 .set("updatedAt", now);
         return mongo.findAndModify(query, update,
                 FindAndModifyOptions.options().returnNew(true), Article.class);
+    }
+
+    public org.springframework.data.domain.Page<Article> findArticlesPage(
+            ProcessingStatus status, String sourceId, org.springframework.data.domain.Pageable pageable) {
+        Query query = new Query();
+        if (status != null) query.addCriteria(Criteria.where("processingStatus").is(status));
+        if (sourceId != null) query.addCriteria(Criteria.where("sourceId").is(sourceId));
+        
+        long total = mongo.count(query, Article.class);
+        query.with(pageable);
+        List<Article> content = mongo.find(query, Article.class);
+        return org.springframework.data.support.PageableExecutionUtils.getPage(
+                content, pageable, () -> total);
+    }
+
+    public org.springframework.data.domain.Page<Story> findStoriesPage(org.springframework.data.domain.Pageable pageable) {
+        Query query = new Query();
+        long total = mongo.count(query, Story.class);
+        query.with(pageable);
+        List<Story> content = mongo.find(query, Story.class);
+        return org.springframework.data.support.PageableExecutionUtils.getPage(
+                content, pageable, () -> total);
+    }
+
+    public long userPreferencesCount() {
+        return mongo.count(new Query(), "user_preferences");
+    }
+
+    public long uniqueUsersWithBookmarks() {
+        return mongo.query(lk.srilankannews.user.UserBookmark.class).distinct("userId").as(String.class).all().size();
+    }
+
+    public long totalBookmarks() {
+        return mongo.count(new Query(), lk.srilankannews.user.UserBookmark.class);
+    }
+
+    public long totalFollows() {
+        return mongo.count(new Query(), lk.srilankannews.user.UserFollow.class);
     }
 }

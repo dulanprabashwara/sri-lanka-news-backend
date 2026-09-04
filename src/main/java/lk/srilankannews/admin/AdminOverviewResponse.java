@@ -6,13 +6,15 @@ public record AdminOverviewResponse(
         SourceCounts sources,
         ArticleCounts articles,
         StoryCounts stories,
+        IngestionCounts ingestion,
+        UserCounts users,
         List<AdminArticleResponse> recentFailures) {
 
     public AdminOverviewResponse {
         recentFailures = List.copyOf(recentFailures);
     }
 
-    public record SourceCounts(long total) {
+    public record SourceCounts(long total, long enabled, long paused, long failing) {
     }
 
     public record ArticleCounts(
@@ -20,6 +22,14 @@ public record AdminOverviewResponse(
             long retrying, long failed) {
     }
 
-    public record StoryCounts(long total) {
+    public record StoryCounts(long total, long createdRecently, long recentActive) {
+    }
+
+    public record IngestionCounts(
+            long totalRuns, long completedRuns, long failedRuns, long currentlyRunning, long failingSources) {
+    }
+
+    public record UserCounts(
+            long totalProfiles, long totalBookmarks, long totalFollows) {
     }
 }

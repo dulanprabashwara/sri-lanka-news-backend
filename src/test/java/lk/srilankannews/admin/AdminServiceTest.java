@@ -32,20 +32,20 @@ class AdminServiceTest {
     @Mock AdminMongoOperations operations;
     @Mock SourceRepository sourceRepository;
     @Mock ArticleRepository articleRepository;
+    @Mock lk.srilankannews.ingestion.run.IngestionRunRepository ingestionRunRepository;
     @Mock ArticleDiscoveredNotifier notifier;
     private AdminService service;
 
     @BeforeEach
     void setUp() {
         service = new AdminService(operations, sourceRepository, articleRepository,
-                notifier, Clock.fixed(NOW, ZoneOffset.UTC));
+                ingestionRunRepository, notifier, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     @Test
     void overviewReturnsStatusCountsAndBoundedSafeFailuresWithOneSourceLookup() {
         Source source = source();
         Article failed = article("article-1", ProcessingStatus.FAILED);
-        when(operations.sourceCount()).thenReturn(3L);
         when(operations.storyCount()).thenReturn(7L);
         when(operations.articleCount()).thenReturn(20L);
         when(operations.articleCount(ProcessingStatus.PENDING)).thenReturn(1L);
@@ -54,11 +54,12 @@ class AdminServiceTest {
         when(operations.articleCount(ProcessingStatus.RETRYING)).thenReturn(1L);
         when(operations.articleCount(ProcessingStatus.FAILED)).thenReturn(2L);
         when(operations.findArticles(ProcessingStatus.FAILED, null, 10)).thenReturn(List.of(failed));
+        when(sourceRepository.findAll()).thenReturn(List.of(source));
         when(sourceRepository.findAllById(Set.of("source-1"))).thenReturn(List.of(source));
 
         AdminOverviewResponse result = service.overview();
 
-        assertThat(result.sources().total()).isEqualTo(3);
+        assertThat(result.sources().total()).isEqualTo(1);
         assertThat(result.articles().failed()).isEqualTo(2);
         assertThat(result.stories().total()).isEqualTo(7);
         assertThat(result.recentFailures()).hasSize(1);
