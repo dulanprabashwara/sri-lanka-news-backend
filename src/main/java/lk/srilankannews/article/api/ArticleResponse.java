@@ -19,6 +19,7 @@ public record ArticleResponse(
         String summary,
         List<String> topics,
         SourceSummaryResponse source,
+        @JsonInclude(JsonInclude.Include.NON_NULL) ArticleLeadMediaResponse leadMedia,
         @JsonInclude(JsonInclude.Include.NON_NULL) LocalizedContentResponse localizedContent
 ) {
     public ArticleResponse {
@@ -32,7 +33,7 @@ public record ArticleResponse(
             ArticleCategory category, String summary, List<String> topics,
             SourceSummaryResponse source) {
         this(id, title, originalUrl, originalLanguage, authors, publishedAt,
-                discoveredAt, category, summary, topics, source, null);
+                discoveredAt, category, summary, topics, source, null, null);
     }
 
     public ArticleResponse(
@@ -40,6 +41,6 @@ public record ArticleResponse(
             List<String> authors, Instant publishedAt, Instant discoveredAt,
             ArticleCategory category, SourceSummaryResponse source) {
         this(id, title, originalUrl, originalLanguage, authors, publishedAt,
-                discoveredAt, category, null, List.of(), source, null);
+                discoveredAt, category, null, List.of(), source, null, null);
     }
 }

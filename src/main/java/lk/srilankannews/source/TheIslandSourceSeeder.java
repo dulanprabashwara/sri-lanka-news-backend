@@ -34,7 +34,8 @@ public class TheIslandSourceSeeder implements ApplicationRunner {
                     "https://island.lk",
                     Language.EN,
                     IngestionType.RSS,
-                    true));
+                    true,
+                    new lk.srilankannews.source.SourceImagePolicy(true, java.util.Set.of("island.lk", "www.island.lk"))));
             log.info("Seeded source slug={}", SOURCE_SLUG);
         } catch (DuplicateSourceSlugException exception) {
             log.info("Source slug={} was seeded concurrently", SOURCE_SLUG);

@@ -16,6 +16,8 @@ public record StoryDetailResponse(
         int sourceCount,
         List<ArticleResponse> articles,
         @JsonInclude(JsonInclude.Include.NON_NULL)
+        StoryRepresentativeMediaResponse representativeMedia,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         LocalizedStoryContentResponse localizedContent
 ) {
     public StoryDetailResponse {
@@ -27,6 +29,6 @@ public record StoryDetailResponse(
             Instant firstPublishedAt, Instant lastPublishedAt, long articleCount,
             int sourceCount, List<ArticleResponse> articles) {
         this(id, canonicalTitle, category, firstPublishedAt, lastPublishedAt,
-                articleCount, sourceCount, articles, null);
+                articleCount, sourceCount, articles, null, null);
     }
 }

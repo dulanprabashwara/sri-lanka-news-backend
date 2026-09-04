@@ -41,7 +41,24 @@ class StoryPersistence {
                 .min("firstPublishedAt", article.publishedAt())
                 .max("lastPublishedAt", article.publishedAt())
                 .set("updatedAt", now);
-        return mongo.updateFirst(missingArticle, update, Story.class).getModifiedCount() == 1;
+        boolean added = mongo.updateFirst(missingArticle, update, Story.class).getModifiedCount() == 1;
+        if (added && article.leadMedia() != null) {
+            Query missingMedia = Query.query(Criteria.where("_id").is(storyId)
+                    .and("representativeMedia").isNull());
+            Update updateMedia = new Update().set("representativeMedia", new StoryRepresentativeMedia(
+                    article.leadMedia().url(),
+                    article.leadMedia().type(),
+                    article.leadMedia().altText(),
+                    article.leadMedia().caption(),
+                    article.leadMedia().credit(),
+                    article.leadMedia().width(),
+                    article.leadMedia().height(),
+                    article.id(),
+                    article.sourceId()
+            ));
+            mongo.updateFirst(missingMedia, updateMedia, Story.class);
+        }
+        return added;
     }
 
     void discardIfUnused(Creation creation) {

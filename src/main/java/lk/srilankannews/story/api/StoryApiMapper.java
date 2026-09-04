@@ -22,6 +22,17 @@ public class StoryApiMapper {
                 story.lastPublishedAt(),
                 story.articleCount(),
                 story.sourceIds().size(),
+                story.representativeMedia() == null ? null : new StoryRepresentativeMediaResponse(
+                        story.representativeMedia().url(),
+                        story.representativeMedia().type(),
+                        story.representativeMedia().altText(),
+                        story.representativeMedia().caption(),
+                        story.representativeMedia().credit(),
+                        story.representativeMedia().width(),
+                        story.representativeMedia().height(),
+                        story.representativeMedia().articleId(),
+                        story.representativeMedia().source()
+                ),
                 localizedContent);
     }
 
@@ -42,6 +53,17 @@ public class StoryApiMapper {
                 story.articleCount(),
                 story.sourceIds().size(),
                 articles,
+                story.representativeMedia() == null ? null : new StoryRepresentativeMediaResponse(
+                        story.representativeMedia().url(),
+                        story.representativeMedia().type(),
+                        story.representativeMedia().altText(),
+                        story.representativeMedia().caption(),
+                        story.representativeMedia().credit(),
+                        story.representativeMedia().width(),
+                        story.representativeMedia().height(),
+                        story.representativeMedia().articleId(),
+                        story.representativeMedia().source()
+                ),
                 localizedContent);
     }
 }

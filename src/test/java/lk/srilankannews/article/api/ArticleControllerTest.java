@@ -103,6 +103,7 @@ class ArticleControllerTest {
                 Instant.parse("2026-08-30T00:01:00Z"), ArticleCategory.LOCAL,
                 "Original summary", List.of(),
                 new SourceSummaryResponse("Daily Mirror", "daily-mirror", "https://www.dailymirror.lk"),
+                null,
                 localized);
         when(articleApiService.detail(ARTICLE_ID, Language.SI)).thenReturn(response);
 

@@ -34,7 +34,8 @@ public class AdaDeranaSinhalaSourceSeeder implements ApplicationRunner {
                     "https://sinhala.adaderana.lk",
                     Language.SI,
                     IngestionType.RSS,
-                    false));
+                    false,
+                    new lk.srilankannews.source.SourceImagePolicy(false, java.util.Set.of())));
             log.info("Seeded source slug={}", SOURCE_SLUG);
         } catch (DuplicateSourceSlugException exception) {
             log.info("Source slug={} was seeded concurrently", SOURCE_SLUG);

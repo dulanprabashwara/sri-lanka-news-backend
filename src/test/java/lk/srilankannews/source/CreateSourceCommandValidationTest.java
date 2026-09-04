@@ -28,13 +28,7 @@ class CreateSourceCommandValidationTest {
 
     @Test
     void rejectsInvalidRequiredFieldsSlugAndUrl() {
-        CreateSourceCommand command = new CreateSourceCommand(
-                " ",
-                "Daily Mirror",
-                "ftp://example.com/news",
-                null,
-                null,
-                true);
+        CreateSourceCommand command = new CreateSourceCommand("", "Daily Mirror", "ftp://example.com/news", null, null, true, new lk.srilankannews.source.SourceImagePolicy(false, java.util.Set.of()));
 
         Set<String> invalidFields = validator.validate(command).stream()
                 .map(ConstraintViolation::getPropertyPath)
@@ -52,6 +46,7 @@ class CreateSourceCommandValidationTest {
                 "https://www.dailymirror.lk",
                 Language.EN,
                 IngestionType.RSS,
-                true);
+                true,
+                    new lk.srilankannews.source.SourceImagePolicy(false, java.util.Set.of()));
     }
 }

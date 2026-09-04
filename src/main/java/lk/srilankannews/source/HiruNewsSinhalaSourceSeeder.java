@@ -33,7 +33,8 @@ public class HiruNewsSinhalaSourceSeeder implements ApplicationRunner {
                     "https://www.hirunews.lk",
                     Language.SI,
                     IngestionType.HTML,
-                    true));
+                    true,
+                    new lk.srilankannews.source.SourceImagePolicy(true, java.util.Set.of("www.hirunews.lk", "cdn.hirunews.lk"))));
             log.info("Seeded source slug={}", SOURCE_SLUG);
         } catch (DuplicateSourceSlugException exception) {
             log.info("Source slug={} was seeded concurrently", SOURCE_SLUG);

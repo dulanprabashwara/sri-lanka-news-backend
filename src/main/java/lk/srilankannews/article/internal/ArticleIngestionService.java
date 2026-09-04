@@ -48,6 +48,36 @@ public class ArticleIngestionService {
             return duplicate(existing, ArticleIngestionResponse.DuplicateReason.CONTENT_DUPLICATE);
         }
 
+        lk.srilankannews.article.ArticleLeadMedia validLeadMedia = null;
+        if (source.imagePolicy().enabled() && request.leadMedia() != null) {
+            try {
+                java.net.URI uri = new java.net.URI(request.leadMedia().url());
+                String scheme = uri.getScheme();
+                String host = uri.getHost();
+                if (scheme != null && (scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https")) && host != null) {
+                    if (uri.getUserInfo() != null || isUnsafeHost(host)) {
+                        // Drop explicitly forbidden host structures (though they wouldn't match whitelist anyway)
+                    } else {
+                        boolean allowed = source.imagePolicy().allowedHosts().stream()
+                                .anyMatch(allowedHost -> host.equalsIgnoreCase(allowedHost));
+                        if (allowed) {
+                            validLeadMedia = new lk.srilankannews.article.ArticleLeadMedia(
+                                    request.leadMedia().url(),
+                                    lk.srilankannews.article.MediaType.IMAGE,
+                                    request.leadMedia().altText(),
+                                    request.leadMedia().caption(),
+                                    request.leadMedia().credit(),
+                                    request.leadMedia().width(),
+                                    request.leadMedia().height(),
+                                    request.leadMedia().discoveredFrom()
+                            );
+                        }
+                    }
+                }
+            } catch (java.net.URISyntaxException ignored) {
+            }
+        }
+
         CreateArticleCommand command = new CreateArticleCommand(
                 source.id(),
                 request.title(),
@@ -58,7 +88,8 @@ public class ArticleIngestionService {
                 request.publishedAt(),
                 request.discoveredAt(),
                 request.category(),
-                request.extractedContent());
+                request.extractedContent(),
+                validLeadMedia);
 
         try {
             Article created = articleService.create(command);
@@ -109,5 +140,26 @@ public class ArticleIngestionService {
                 article.id(),
                 article.canonicalUrl(),
                 duplicateReason);
+    }
+
+    private boolean isUnsafeHost(String host) {
+        String h = host.toLowerCase();
+        if (h.equals("localhost")) return true;
+        // IPv4 explicit ranges
+        if (h.equals("127.0.0.1") || h.startsWith("127.")) return true;
+        if (h.startsWith("10.")) return true;
+        if (h.startsWith("172.")) return true;
+        if (h.startsWith("192.168.")) return true;
+        if (h.startsWith("169.254.")) return true;
+        if (h.startsWith("0.")) return true;
+
+        // IPv6 explicit ranges
+        if (h.contains(":")) {
+            String clean = h.replace("[", "").replace("]", "");
+            if (clean.equals("::1") || clean.equals("::")) return true;
+            if (clean.startsWith("fc") || clean.startsWith("fd")) return true; // fc00::/7
+            if (clean.startsWith("fe8") || clean.startsWith("fe9") || clean.startsWith("fea") || clean.startsWith("feb")) return true; // fe80::/10
+        }
+        return false;
     }
 }

@@ -16,6 +16,7 @@ public record CreateSourceCommand(
         @NotBlank @HttpUrl @Size(max = 2048) String baseUrl,
         @NotNull Language defaultLanguage,
         @NotNull IngestionType ingestionType,
-        boolean enabled
+        boolean enabled,
+        SourceImagePolicy imagePolicy
 ) {
 }

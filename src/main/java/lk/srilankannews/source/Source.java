@@ -15,9 +15,16 @@ public record Source(
         Language defaultLanguage,
         IngestionType ingestionType,
         boolean enabled,
+        SourceImagePolicy imagePolicy,
         Instant createdAt,
         Instant updatedAt
 ) {
+    public Source(
+            String id, String name, String slug, String baseUrl, Language defaultLanguage,
+            IngestionType ingestionType, boolean enabled, Instant createdAt, Instant updatedAt) {
+        this(id, name, slug, baseUrl, defaultLanguage, ingestionType, enabled,
+                new SourceImagePolicy(false, java.util.Set.of()), createdAt, updatedAt);
+    }
     static Source create(CreateSourceCommand command, Instant now) {
         return new Source(
                 null,
@@ -27,6 +34,7 @@ public record Source(
                 command.defaultLanguage(),
                 command.ingestionType(),
                 command.enabled(),
+                command.imagePolicy(),
                 now,
                 now);
     }
@@ -40,6 +48,7 @@ public record Source(
                 defaultLanguage,
                 ingestionType,
                 newEnabled,
+                imagePolicy,
                 createdAt,
                 now);
     }

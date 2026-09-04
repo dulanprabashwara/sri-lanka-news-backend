@@ -34,7 +34,8 @@ public class DailyMirrorSourceSeeder implements ApplicationRunner {
                     "https://www.dailymirror.lk",
                     Language.EN,
                     IngestionType.RSS,
-                    true));
+                    true,
+                    new lk.srilankannews.source.SourceImagePolicy(true, java.util.Set.of("www.dailymirror.lk", "static.dailymirror.lk", "cdn.dailymirror.lk"))));
             log.info("Seeded source slug={}", SOURCE_SLUG);
         } catch (DuplicateSourceSlugException exception) {
             log.info("Source slug={} was seeded concurrently", SOURCE_SLUG);

@@ -34,7 +34,8 @@ public class LankadeepaSourceSeeder implements ApplicationRunner {
                     "https://www.lankadeepa.lk",
                     Language.SI,
                     IngestionType.HTML,
-                    true));
+                    true,
+                    new lk.srilankannews.source.SourceImagePolicy(true, java.util.Set.of("www.lankadeepa.lk", "cdn.lankadeepa.lk"))));
             log.info("Seeded source slug={}", SOURCE_SLUG);
         } catch (DuplicateSourceSlugException exception) {
             log.info("Source slug={} was seeded concurrently", SOURCE_SLUG);

@@ -105,6 +105,7 @@ class SourceServiceTest {
                 "https://www.dailymirror.lk",
                 Language.EN,
                 IngestionType.RSS,
-                true);
+                true,
+                    new lk.srilankannews.source.SourceImagePolicy(false, java.util.Set.of()));
     }
 }

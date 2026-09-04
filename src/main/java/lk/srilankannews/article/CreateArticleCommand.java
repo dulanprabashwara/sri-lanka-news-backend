@@ -19,9 +19,17 @@ public record CreateArticleCommand(
         @NotNull @PastOrPresent Instant publishedAt,
         @NotNull @PastOrPresent Instant discoveredAt,
         ArticleCategory category,
-        @NotBlank @Size(max = 500_000) String extractedContent
+        @NotBlank @Size(max = 500_000) String extractedContent,
+        ArticleLeadMedia leadMedia
 ) {
     public CreateArticleCommand {
         authors = authors == null ? null : List.copyOf(authors);
+    }
+
+    public CreateArticleCommand(
+            String sourceId, String title, String originalUrl, String canonicalUrl,
+            Language originalLanguage, List<String> authors, Instant publishedAt,
+            Instant discoveredAt, ArticleCategory category, String extractedContent) {
+        this(sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors, publishedAt, discoveredAt, category, extractedContent, null);
     }
 }

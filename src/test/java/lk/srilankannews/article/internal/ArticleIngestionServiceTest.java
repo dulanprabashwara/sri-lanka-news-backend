@@ -139,6 +139,54 @@ class ArticleIngestionServiceTest {
         verify(articleService, never()).create(any());
     }
 
+    @Test
+    void dropsLeadMediaWithUnsafeUrlWhilePersistingArticle() {
+        Source sourceWithMedia = new Source(
+                "source-1", "News", "daily-mirror", "http://test", Language.EN, IngestionType.RSS, true,
+                new lk.srilankannews.source.SourceImagePolicy(true, java.util.Set.of("cdn.example.com")), Instant.now(), Instant.now());
+
+        when(sourceService.findBySlug("daily-mirror")).thenReturn(Optional.of(sourceWithMedia));
+        when(articleService.findByCanonicalUrl(CANONICAL_URL)).thenReturn(Optional.empty());
+        when(articleService.findByExtractedContent(any())).thenReturn(Optional.empty());
+        when(articleService.create(any(CreateArticleCommand.class))).thenReturn(article());
+
+        List<String> badUrls = List.of(
+                "javascript:alert(1)",
+                "http://10.0.0.1/x.jpg",
+                "http://172.16.0.1/x.jpg",
+                "http://192.168.1.1/x.jpg",
+                "http://169.254.1.1/x.jpg",
+                "http://0.0.0.0/x.jpg",
+                "http://[::1]/x.jpg",
+                "http://[fc00::1]/x.jpg",
+                "http://[fe80::1]/x.jpg",
+                "https://user:pass@cdn.example.com/x.jpg"
+        );
+
+        for (String badUrl : badUrls) {
+            ArticleIngestionRequest badMediaRequest = new ArticleIngestionRequest(
+                    "daily-mirror",
+                    "Fixture story",
+                    CANONICAL_URL + "?utm_source=rss",
+                    CANONICAL_URL,
+                    Language.EN,
+                    List.of("DM Editorial"),
+                    PUBLISHED_AT,
+                    PUBLISHED_AT,
+                    ArticleCategory.POLITICS,
+                    "Clean fixture body " + badUrl, // unique content
+                    new LeadMediaInput(badUrl, lk.srilankannews.article.MediaType.IMAGE, null, null, null, null, null, null)
+            );
+
+            ArticleIngestionResponse response = ingestionService.ingest(badMediaRequest);
+
+            assertThat(response.status()).isEqualTo(ArticleIngestionResponse.Status.CREATED);
+            ArgumentCaptor<CreateArticleCommand> command = ArgumentCaptor.forClass(CreateArticleCommand.class);
+            verify(articleService, org.mockito.Mockito.atLeastOnce()).create(command.capture());
+            assertThat(command.getValue().leadMedia()).isNull();
+        }
+    }
+
     private ArticleIngestionRequest request() {
         return new ArticleIngestionRequest(
                 "daily-mirror",
@@ -150,7 +198,8 @@ class ArticleIngestionServiceTest {
                 PUBLISHED_AT,
                 PUBLISHED_AT.plusSeconds(60),
                 ArticleCategory.LOCAL,
-                "Clean fixture body");
+                "Clean fixture body",
+                null);
     }
 
     private Source source() {

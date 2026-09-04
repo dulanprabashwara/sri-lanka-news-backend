@@ -34,7 +34,8 @@ public class DailyNewsSourceSeeder implements ApplicationRunner {
                     "https://www.dailynews.lk",
                     Language.EN,
                     IngestionType.HTML, // Blocked, so type doesn't matter much
-                    false));
+                    false,
+                    new lk.srilankannews.source.SourceImagePolicy(false, java.util.Set.of())));
             log.info("Seeded source slug={}", SOURCE_SLUG);
         } catch (DuplicateSourceSlugException exception) {
             log.info("Source slug={} was seeded concurrently", SOURCE_SLUG);

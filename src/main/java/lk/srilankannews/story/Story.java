@@ -35,11 +35,22 @@ public record Story(
         Set<String> articleIds,
         Instant createdAt,
         Instant updatedAt,
-        String matchingVersion
+        String matchingVersion,
+        StoryRepresentativeMedia representativeMedia
 ) {
     public Story {
         sourceIds = sourceIds == null ? Set.of() : Set.copyOf(sourceIds);
         articleIds = articleIds == null ? Set.of() : Set.copyOf(articleIds);
+    }
+
+    public Story(
+            String id, String canonicalTitle, String representativeArticleId, ArticleCategory category,
+            Instant firstPublishedAt, Instant lastPublishedAt, long articleCount,
+            Set<String> sourceIds, Set<String> articleIds, Instant createdAt,
+            Instant updatedAt, String matchingVersion) {
+        this(id, canonicalTitle, representativeArticleId, category, firstPublishedAt,
+                lastPublishedAt, articleCount, sourceIds, articleIds, createdAt,
+                updatedAt, matchingVersion, null);
     }
 
     static Story pending(Article article, Instant now, String matchingVersion) {
@@ -55,6 +66,17 @@ public record Story(
                 Set.of(),
                 now,
                 now,
-                matchingVersion);
+                matchingVersion,
+                article.leadMedia() == null ? null : new StoryRepresentativeMedia(
+                        article.leadMedia().url(),
+                        article.leadMedia().type(),
+                        article.leadMedia().altText(),
+                        article.leadMedia().caption(),
+                        article.leadMedia().credit(),
+                        article.leadMedia().width(),
+                        article.leadMedia().height(),
+                        article.id(),
+                        article.sourceId()
+                ));
     }
 }

@@ -35,6 +35,15 @@ public class ArticleApiMapper {
         List<String> topics = article.aiEnrichment() == null
                 ? List.of()
                 : article.aiEnrichment().topics();
+        ArticleLeadMediaResponse leadMediaResponse = article.leadMedia() == null ? null : new ArticleLeadMediaResponse(
+                article.leadMedia().url(),
+                article.leadMedia().type(),
+                article.leadMedia().altText(),
+                article.leadMedia().caption(),
+                article.leadMedia().credit(),
+                article.leadMedia().width(),
+                article.leadMedia().height()
+        );
         return new ArticleResponse(
                 article.id(),
                 article.title(),
@@ -47,6 +56,7 @@ public class ArticleApiMapper {
                 summary,
                 topics,
                 sourceApiMapper.toSummary(source),
+                leadMediaResponse,
                 displayLanguage == null ? null : localizationService.localize(article, displayLanguage));
     }
 }

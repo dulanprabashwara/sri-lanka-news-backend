@@ -10,6 +10,7 @@ import java.util.List;
 import lk.srilankannews.article.ArticleCategory;
 import lk.srilankannews.common.domain.Language;
 import lk.srilankannews.common.validation.HttpUrl;
+import jakarta.validation.Valid;
 
 public record ArticleIngestionRequest(
         @NotBlank
@@ -24,7 +25,8 @@ public record ArticleIngestionRequest(
         @NotNull @PastOrPresent Instant publishedAt,
         @NotNull @PastOrPresent Instant discoveredAt,
         ArticleCategory category,
-        @NotBlank @Size(max = 500_000) String extractedContent
+        @NotBlank @Size(max = 500_000) String extractedContent,
+        @Valid LeadMediaInput leadMedia
 ) {
     public ArticleIngestionRequest {
         authors = authors == null ? null : List.copyOf(authors);
