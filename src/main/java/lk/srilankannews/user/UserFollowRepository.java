@@ -18,4 +18,10 @@ public interface UserFollowRepository extends MongoRepository<UserFollow, String
     List<UserFollow> findAllByUserId(String userId);
     Page<UserFollow> findByUserIdAndTargetType(
             String userId, FollowTargetType targetType, Pageable pageable);
+
+    @org.springframework.data.mongodb.repository.Query(value = "{ 'targetType': ?0, 'targetKey': ?1 }", fields = "{ 'userId': 1 }")
+    List<UserFollow> findUserIdsByTargetTypeAndTargetKey(FollowTargetType targetType, String targetKey);
+
+    @org.springframework.data.mongodb.repository.Query(value = "{ 'targetType': ?0, 'targetKey': { $in: ?1 } }", fields = "{ 'userId': 1 }")
+    List<UserFollow> findUserIdsByTargetTypeAndTargetKeyIn(FollowTargetType targetType, Collection<String> targetKeys);
 }

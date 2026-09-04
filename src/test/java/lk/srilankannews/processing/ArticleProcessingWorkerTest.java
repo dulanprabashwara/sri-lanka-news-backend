@@ -69,6 +69,7 @@ class ArticleProcessingWorkerTest {
                 embeddingService,
                 clusteringService,
                 translationService,
+                null, // outboxService
                 Clock.fixed(NOW, ZoneOffset.UTC));
     }
 

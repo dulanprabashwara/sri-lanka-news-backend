@@ -17,6 +17,7 @@ import lk.srilankannews.article.cache.ArticleFeedCache;
 import lk.srilankannews.story.ArticleEmbeddingService;
 import lk.srilankannews.story.StoryClusteringService;
 import lk.srilankannews.translation.ArticleTranslationService;
+import lk.srilankannews.notifications.NotificationEventOutboxService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,7 @@ public class ArticleProcessingWorker {
     private final ArticleEmbeddingService embeddingService;
     private final StoryClusteringService clusteringService;
     private final ArticleTranslationService translationService;
+    private final NotificationEventOutboxService outboxService;
     private final Clock clock;
 
     @Autowired
@@ -48,6 +50,7 @@ public class ArticleProcessingWorker {
             ArticleEmbeddingService embeddingService,
             StoryClusteringService clusteringService,
             ArticleTranslationService translationService,
+            NotificationEventOutboxService outboxService,
             Clock clock) {
         this.articleService = articleService;
         this.aiProvider = aiProvider;
@@ -58,6 +61,7 @@ public class ArticleProcessingWorker {
         this.embeddingService = embeddingService;
         this.clusteringService = clusteringService;
         this.translationService = translationService;
+        this.outboxService = outboxService;
         this.clock = clock;
     }
 
@@ -70,9 +74,10 @@ public class ArticleProcessingWorker {
             ArticleFeedCache feedCache,
             ArticleEmbeddingService embeddingService,
             StoryClusteringService clusteringService,
+            NotificationEventOutboxService outboxService,
             Clock clock) {
         this(articleService, aiProvider, inputPolicy, outputValidator, properties, feedCache,
-                embeddingService, clusteringService, null, clock);
+                embeddingService, clusteringService, null, outboxService, clock);
     }
 
     public void process(ArticleDiscoveredEvent event) {
@@ -88,6 +93,10 @@ public class ArticleProcessingWorker {
         clusteringService.cluster(article.id());
         if (translationService != null) {
             translationService.ensureTranslations(article.id());
+        }
+        
+        if (outboxService != null && article.storyId() != null) {
+            outboxService.dispatch(article.id(), article.storyId(), article.sourceId(), article.id());
         }
     }
 

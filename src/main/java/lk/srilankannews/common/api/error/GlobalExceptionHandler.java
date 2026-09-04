@@ -81,6 +81,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpStatusCode status,
             WebRequest request
     ) {
+        log.error("HttpMessageNotReadableException: ", exception);
         return response(HttpStatus.BAD_REQUEST, ErrorCode.MALFORMED_REQUEST,
                 "Request body is malformed or unreadable.", servletRequest(request), List.of());
     }
