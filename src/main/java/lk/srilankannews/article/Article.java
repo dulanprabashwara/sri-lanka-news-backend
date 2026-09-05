@@ -117,7 +117,7 @@ public record Article(
                 null, command.sourceId(), command.title(), command.originalUrl(),
                 command.canonicalUrl(), command.originalLanguage(), command.authors(),
                 command.publishedAt(), command.discoveredAt(), command.category(),
-                command.extractedContent(), contentHash, null, null, Map.of(), null, ProcessingStatus.PENDING,
+                command.extractedContent(), contentHash, null, null, Map.of(), command.leadMedia(), ProcessingStatus.PENDING,
                 null, now, now);
     }
 
