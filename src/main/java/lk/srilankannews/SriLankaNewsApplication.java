@@ -12,6 +12,7 @@ import java.time.Clock;
 @SpringBootApplication
 @EnableConfigurationProperties(lk.srilankannews.config.PublicAiRateLimitProperties.class)
 @Import(SecurityConfiguration.class)
+@org.springframework.scheduling.annotation.EnableScheduling
 public class SriLankaNewsApplication {
 
     public static void main(String[] args) {

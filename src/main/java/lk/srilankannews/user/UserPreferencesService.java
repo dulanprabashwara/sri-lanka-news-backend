@@ -30,7 +30,7 @@ public class UserPreferencesService {
     public UserPreferencesResponse get(String userId) {
         return repository.findByUserId(userId).map(this::toResponse)
                 .orElseGet(() -> new UserPreferencesResponse(
-                        DisplayLanguagePreference.ORIGINAL, List.of(), null, null));
+                        DisplayLanguagePreference.ORIGINAL, List.of(), true, null, null));
     }
 
     public UserPreferencesResponse update(String userId, UserPreferencesRequest request) {
@@ -41,6 +41,7 @@ public class UserPreferencesService {
                 .setOnInsert("createdAt", now)
                 .set("preferredDisplayLanguage", request.preferredDisplayLanguage())
                 .set("preferredCategories", Set.copyOf(request.preferredCategories()))
+                .set("analyticsEnabled", request.analyticsEnabled() != null ? request.analyticsEnabled() : true)
                 .set("updatedAt", now);
         UserPreferences saved;
         try {
@@ -60,6 +61,6 @@ public class UserPreferencesService {
         List<ArticleCategory> categories = preferences.preferredCategories().stream()
                 .sorted(Comparator.comparing(Enum::name)).toList();
         return new UserPreferencesResponse(preferences.preferredDisplayLanguage(), categories,
-                preferences.createdAt(), preferences.updatedAt());
+                preferences.analyticsEnabled(), preferences.createdAt(), preferences.updatedAt());
     }
 }

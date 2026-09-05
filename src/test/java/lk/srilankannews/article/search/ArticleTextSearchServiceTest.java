@@ -34,12 +34,13 @@ class ArticleTextSearchServiceTest {
     @Mock ArticleTextSearchRepository repository;
     @Mock SourceService sourceService;
     @Mock ArticleApiMapper mapper;
+    @Mock lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
     private ArticleTextSearchService service;
 
     @BeforeEach
     void setUp() {
         service = new ArticleTextSearchService(new TextSearchQueryNormalizer(), repository,
-                sourceService, mapper);
+                sourceService, mapper, analyticsRecorder);
     }
 
     @Test

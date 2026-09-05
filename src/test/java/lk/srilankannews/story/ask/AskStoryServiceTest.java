@@ -47,6 +47,7 @@ class AskStoryServiceTest {
     @Mock EmbeddingProvider embeddingProvider;
     @Mock GroundedAnswerProvider answerProvider;
     @Mock ArticleLocalizationService localizationService;
+    @Mock lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
 
     AskStoryService service;
 
@@ -56,7 +57,7 @@ class AskStoryServiceTest {
         service = new AskStoryService(
                 storyRepository, articleRepository, sourceService, embeddingProvider,
                 answerProvider, localizationService, new AskStoryQuestionNormalizer(ask),
-                new StoryGroundingContextBuilder(ask), embeddingProperties(), ask);
+                new StoryGroundingContextBuilder(ask), embeddingProperties(), ask, analyticsRecorder);
         when(storyRepository.findById(STORY_ID)).thenReturn(java.util.Optional.of(story()));
     }
 
@@ -189,7 +190,7 @@ class AskStoryServiceTest {
         service = new AskStoryService(
                 storyRepository, articleRepository, sourceService, embeddingProvider,
                 answerProvider, localizationService, new AskStoryQuestionNormalizer(ask),
-                new StoryGroundingContextBuilder(ask), embeddingProperties(), ask);
+                new StoryGroundingContextBuilder(ask), embeddingProperties(), ask, analyticsRecorder);
         List<Article> articles = List.of(
                 article("a1", "source-1", List.of(1.0, 0.0, 0.0), "https://trusted/1"),
                 article("a2", "source-1", List.of(0.99, 0.01, 0.0), "https://trusted/2"),

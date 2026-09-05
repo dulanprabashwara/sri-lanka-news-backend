@@ -49,13 +49,13 @@ class UserPreferencesServiceTest {
     @Test
     void atomicallyUpsertsOwnerScopedPreferencesAndSortsCategories() {
         UserPreferences saved = new UserPreferences("id", "user-a", DisplayLanguagePreference.SI,
-                Set.of(ArticleCategory.SPORTS, ArticleCategory.BUSINESS), now, now);
+                Set.of(ArticleCategory.SPORTS, ArticleCategory.BUSINESS), true, now, now);
         when(mongoOperations.findAndModify(any(Query.class), any(Update.class),
                 any(FindAndModifyOptions.class), eq(UserPreferences.class))).thenReturn(saved);
 
         UserPreferencesResponse response = service.update("user-a", new UserPreferencesRequest(
                 DisplayLanguagePreference.SI,
-                Set.of(ArticleCategory.SPORTS, ArticleCategory.BUSINESS)));
+                Set.of(ArticleCategory.SPORTS, ArticleCategory.BUSINESS), true));
 
         assertThat(response.preferredCategories())
                 .containsExactly(ArticleCategory.BUSINESS, ArticleCategory.SPORTS);
@@ -80,14 +80,14 @@ class UserPreferencesServiceTest {
     @Test
     void concurrentFirstCreatesResolveToOneOwnerDocument() {
         UserPreferences saved = new UserPreferences("id", "user-a", DisplayLanguagePreference.EN,
-                Set.of(), now, now);
+                Set.of(), true, now, now);
         when(mongoOperations.findAndModify(any(Query.class), any(Update.class),
                 any(FindAndModifyOptions.class), eq(UserPreferences.class)))
                 .thenThrow(new DuplicateKeyException("concurrent preference create"))
                 .thenReturn(saved);
 
         assertThat(service.update("user-a", new UserPreferencesRequest(
-                DisplayLanguagePreference.EN, Set.of())).preferredDisplayLanguage())
+                DisplayLanguagePreference.EN, Set.of(), true)).preferredDisplayLanguage())
                 .isEqualTo(DisplayLanguagePreference.EN);
         verify(mongoOperations, org.mockito.Mockito.times(2)).findAndModify(any(Query.class),
                 any(Update.class), any(FindAndModifyOptions.class), eq(UserPreferences.class));

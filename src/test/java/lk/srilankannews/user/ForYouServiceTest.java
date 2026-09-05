@@ -184,7 +184,7 @@ class ForYouServiceTest {
 
     private UserPreferencesResponse preferences(
             DisplayLanguagePreference language, List<ArticleCategory> categories) {
-        return new UserPreferencesResponse(language, categories, null, null);
+        return new UserPreferencesResponse(language, categories, true, null, null);
     }
 
     private UserFollow follow(FollowTargetType type, String key, String label) {

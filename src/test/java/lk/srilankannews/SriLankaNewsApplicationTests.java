@@ -93,6 +93,30 @@ class SriLankaNewsApplicationTests {
     @MockitoBean
     private lk.srilankannews.ingestion.trigger.IngestionTriggerRequestRepository ingestionTriggerRequestRepository;
 
+    @MockitoBean
+    private lk.srilankannews.analytics.AnalyticsEventRepository analyticsEventRepository;
+
+    @MockitoBean
+    private lk.srilankannews.analytics.AnalyticsDailyVisitorRepository analyticsDailyVisitorRepository;
+
+    @MockitoBean
+    private lk.srilankannews.notifications.NotificationRepository notificationRepository;
+
+    @MockitoBean
+    private lk.srilankannews.notifications.NotificationPreferenceRepository notificationPreferenceRepository;
+
+    @MockitoBean
+    private lk.srilankannews.notifications.NotificationEventRepository notificationEventRepository;
+
+    @MockitoBean
+    private org.springframework.data.redis.core.StringRedisTemplate stringRedisTemplate;
+
+    @MockitoBean
+    private org.springframework.data.redis.connection.RedisConnectionFactory redisConnectionFactory;
+
+    @MockitoBean
+    private lk.srilankannews.notifications.NotificationEventConsumer notificationEventConsumer;
+
     @Test
     void contextLoads() {
     }

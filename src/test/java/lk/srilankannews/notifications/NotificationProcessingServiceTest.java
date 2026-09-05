@@ -10,7 +10,6 @@ import lk.srilankannews.user.UserFollowRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -21,7 +20,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 public class NotificationProcessingServiceTest {
@@ -34,6 +32,7 @@ public class NotificationProcessingServiceTest {
     private ArticleService articleService;
     private SourceService sourceService;
     private Clock clock;
+    private lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
     private NotificationProcessingService service;
 
     @BeforeEach
@@ -45,6 +44,7 @@ public class NotificationProcessingServiceTest {
         storyRepository = mock(StoryRepository.class);
         articleService = mock(ArticleService.class);
         sourceService = mock(SourceService.class);
+        analyticsRecorder = mock(lk.srilankannews.analytics.AnalyticsRecorder.class);
         clock = Clock.fixed(Instant.parse("2026-09-04T10:00:00Z"), ZoneId.of("UTC"));
         
         service = new NotificationProcessingService(
@@ -55,6 +55,7 @@ public class NotificationProcessingServiceTest {
                 preferenceRepository,
                 notificationRepository,
                 eventRepository,
+                analyticsRecorder,
                 clock
         );
     }

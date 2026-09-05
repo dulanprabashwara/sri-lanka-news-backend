@@ -10,7 +10,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -21,6 +20,7 @@ public class NotificationControllerTest {
     private UnsubscribeTokenService unsubscribeTokenService;
     private EmailNotificationProvider emailProvider;
     private Clock clock;
+    private lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
     private NotificationController controller;
 
     @BeforeEach
@@ -30,9 +30,10 @@ public class NotificationControllerTest {
         unsubscribeTokenService = mock(UnsubscribeTokenService.class);
         emailProvider = mock(EmailNotificationProvider.class);
         clock = Clock.fixed(Instant.parse("2026-09-04T10:00:00Z"), ZoneId.of("UTC"));
+        analyticsRecorder = mock(lk.srilankannews.analytics.AnalyticsRecorder.class);
         
         controller = new NotificationController(
-                notificationRepository, preferenceRepository, unsubscribeTokenService, emailProvider, clock
+                notificationRepository, preferenceRepository, unsubscribeTokenService, emailProvider, clock, analyticsRecorder
         );
     }
 

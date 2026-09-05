@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import lk.srilankannews.analytics.AnalyticsRecorder;
+import lk.srilankannews.analytics.AnalyticsEventType;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -24,17 +26,20 @@ public class NotificationController {
     private final UnsubscribeTokenService unsubscribeTokenService;
     private final EmailNotificationProvider emailProvider;
     private final Clock clock;
+    private final AnalyticsRecorder analyticsRecorder;
 
     public NotificationController(NotificationRepository notificationRepository,
                                   NotificationPreferenceRepository preferenceRepository,
                                   UnsubscribeTokenService unsubscribeTokenService,
                                   EmailNotificationProvider emailProvider,
-                                  Clock clock) {
+                                  Clock clock,
+                                  AnalyticsRecorder analyticsRecorder) {
         this.notificationRepository = notificationRepository;
         this.preferenceRepository = preferenceRepository;
         this.unsubscribeTokenService = unsubscribeTokenService;
         this.emailProvider = emailProvider;
         this.clock = clock;
+        this.analyticsRecorder = analyticsRecorder;
     }
 
     @GetMapping("/me/notifications")
@@ -75,6 +80,9 @@ public class NotificationController {
                         notification.emailDelivery()
                 );
                 notificationRepository.save(updated);
+                
+                analyticsRecorder.recordBestEffort(AnalyticsEventType.NOTIFICATION_READ, notification.id(), 
+                        notification.triggeringArticleId(), notification.storyId(), notification.sourceId(), null, null, null);
             }
         });
         return ResponseEntity.ok().build();

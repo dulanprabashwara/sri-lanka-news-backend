@@ -7,6 +7,7 @@ import lk.srilankannews.article.ArticleCategory;
 public record UserPreferencesResponse(
         DisplayLanguagePreference preferredDisplayLanguage,
         List<ArticleCategory> preferredCategories,
+        Boolean analyticsEnabled,
         Instant createdAt,
         Instant updatedAt
 ) {

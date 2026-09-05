@@ -15,6 +15,8 @@ import lk.srilankannews.source.SourceService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import lk.srilankannews.analytics.AnalyticsRecorder;
+import lk.srilankannews.analytics.AnalyticsEventType;
 
 @Service
 public class ArticleTextSearchService {
@@ -22,14 +24,16 @@ public class ArticleTextSearchService {
     private final ArticleTextSearchRepository repository;
     private final SourceService sourceService;
     private final ArticleApiMapper mapper;
+    private final AnalyticsRecorder analyticsRecorder;
 
     public ArticleTextSearchService(TextSearchQueryNormalizer normalizer,
             ArticleTextSearchRepository repository, SourceService sourceService,
-            ArticleApiMapper mapper) {
+            ArticleApiMapper mapper, AnalyticsRecorder analyticsRecorder) {
         this.normalizer = normalizer;
         this.repository = repository;
         this.sourceService = sourceService;
         this.mapper = mapper;
+        this.analyticsRecorder = analyticsRecorder;
     }
 
     public TextSearchResponse search(String query, int page, int size, String sourceSlug,
@@ -47,6 +51,11 @@ public class ArticleTextSearchService {
                 .collect(Collectors.toMap(Source::id, Function.identity()));
         Page<ArticleResponse> responses = articles.map(article -> mapper.toResponse(
                 article, requireSource(article, sources), displayLanguage));
+                
+        if (page == 0) {
+            analyticsRecorder.recordBestEffort(AnalyticsEventType.SEARCH_EXECUTED, null, null, null, sourceId.orElse(null), (int) articles.getTotalElements(), "TEXT", null);
+        }
+        
         return TextSearchResponse.from(normalized, responses);
     }
 

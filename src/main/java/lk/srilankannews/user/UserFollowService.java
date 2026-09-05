@@ -20,6 +20,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import lk.srilankannews.analytics.AnalyticsRecorder;
+import lk.srilankannews.analytics.AnalyticsEventType;
 
 @Service
 public class UserFollowService {
@@ -28,19 +30,23 @@ public class UserFollowService {
     private final SourceApiMapper sourceApiMapper;
     private final TopicNormalizer topicNormalizer;
     private final Clock clock;
+    private final AnalyticsRecorder analyticsRecorder;
 
     public UserFollowService(UserFollowRepository repository, SourceService sourceService,
-            SourceApiMapper sourceApiMapper, TopicNormalizer topicNormalizer, Clock clock) {
+            SourceApiMapper sourceApiMapper, TopicNormalizer topicNormalizer, Clock clock, AnalyticsRecorder analyticsRecorder) {
         this.repository = repository;
         this.sourceService = sourceService;
         this.sourceApiMapper = sourceApiMapper;
         this.topicNormalizer = topicNormalizer;
         this.clock = clock;
+        this.analyticsRecorder = analyticsRecorder;
     }
 
     public FollowStatusResponse followSource(String userId, String slug) {
         Source source = requireSource(slug);
-        return create(userId, FollowTargetType.SOURCE, source.id(), source.name());
+        FollowStatusResponse res = create(userId, FollowTargetType.SOURCE, source.id(), source.name());
+        analyticsRecorder.recordBestEffort(AnalyticsEventType.FOLLOW_CREATED, null, null, null, source.id(), null, null, null);
+        return res;
     }
 
     public FollowStatusResponse sourceStatus(String userId, String slug) {
@@ -52,11 +58,14 @@ public class UserFollowService {
         Source source = requireSource(slug);
         repository.deleteByUserIdAndTargetTypeAndTargetKey(
                 userId, FollowTargetType.SOURCE, source.id());
+        analyticsRecorder.recordBestEffort(AnalyticsEventType.FOLLOW_REMOVED, null, null, null, source.id(), null, null, null);
     }
 
     public FollowStatusResponse followTopic(String userId, String topic) {
         TopicNormalizer.NormalizedTopic normalized = topicNormalizer.normalize(topic);
-        return create(userId, FollowTargetType.TOPIC, normalized.key(), normalized.label());
+        FollowStatusResponse res = create(userId, FollowTargetType.TOPIC, normalized.key(), normalized.label());
+        analyticsRecorder.recordBestEffort(AnalyticsEventType.FOLLOW_CREATED, null, null, null, null, null, null, normalized.key());
+        return res;
     }
 
     public FollowStatusResponse topicStatus(String userId, String topic) {
@@ -66,6 +75,7 @@ public class UserFollowService {
     public void unfollowTopic(String userId, String topic) {
         repository.deleteByUserIdAndTargetTypeAndTargetKey(
                 userId, FollowTargetType.TOPIC, topicNormalizer.normalize(topic).key());
+        analyticsRecorder.recordBestEffort(AnalyticsEventType.FOLLOW_REMOVED, null, null, null, null, null, null, topicNormalizer.normalize(topic).key());
     }
 
     public FollowBatchStatusResponse batchStatus(

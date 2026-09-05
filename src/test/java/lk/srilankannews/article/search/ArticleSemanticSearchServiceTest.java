@@ -38,6 +38,7 @@ class ArticleSemanticSearchServiceTest {
     @Mock ArticleSemanticSearchRepository repository;
     @Mock SourceService sourceService;
     @Mock ArticleApiMapper mapper;
+    @Mock lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
     private ArticleSemanticSearchService service;
     private final StoryEmbeddingProperties embeddingProperties =
             new StoryEmbeddingProperties("gemini-embedding-2", 768,
@@ -47,7 +48,7 @@ class ArticleSemanticSearchServiceTest {
     void setUp() {
         service = new ArticleSemanticSearchService(new TextSearchQueryNormalizer(),
                 embeddingProvider, repository, sourceService, mapper, embeddingProperties,
-                new SemanticSearchProperties("idx_articles_semantic_vector", 0.65, 200));
+                new SemanticSearchProperties("idx_articles_semantic_vector", 0.65, 200), analyticsRecorder);
     }
 
     @Test

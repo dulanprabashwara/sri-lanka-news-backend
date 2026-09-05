@@ -33,6 +33,7 @@ import org.springframework.data.domain.Pageable;
 class UserFollowServiceTest {
     @Mock UserFollowRepository repository;
     @Mock SourceService sourceService;
+    @Mock lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
     private UserFollowService service;
     private final Instant now = Instant.parse("2026-09-02T03:00:00Z");
     private final Source source = new Source("source-1", "Daily Mirror", "daily-mirror",
@@ -41,7 +42,7 @@ class UserFollowServiceTest {
     @BeforeEach
     void setUp() {
         service = new UserFollowService(repository, sourceService, new SourceApiMapper(),
-                new TopicNormalizer(), Clock.fixed(now, ZoneOffset.UTC));
+                new TopicNormalizer(), Clock.fixed(now, ZoneOffset.UTC), analyticsRecorder);
     }
 
     @Test

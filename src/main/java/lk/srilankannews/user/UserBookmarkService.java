@@ -25,6 +25,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import lk.srilankannews.analytics.AnalyticsRecorder;
+import lk.srilankannews.analytics.AnalyticsEventType;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -37,6 +39,7 @@ public class UserBookmarkService {
     private final StoryApiMapper storyApiMapper;
     private final ArticleLocalizationService localizationService;
     private final Clock clock;
+    private final AnalyticsRecorder analyticsRecorder;
 
     public UserBookmarkService(
             UserBookmarkRepository repository,
@@ -46,7 +49,8 @@ public class UserBookmarkService {
             ArticleApiMapper articleApiMapper,
             StoryApiMapper storyApiMapper,
             ArticleLocalizationService localizationService,
-            Clock clock) {
+            Clock clock,
+            AnalyticsRecorder analyticsRecorder) {
         this.repository = repository;
         this.articleRepository = articleRepository;
         this.storyRepository = storyRepository;
@@ -55,6 +59,7 @@ public class UserBookmarkService {
         this.storyApiMapper = storyApiMapper;
         this.localizationService = localizationService;
         this.clock = clock;
+        this.analyticsRecorder = analyticsRecorder;
     }
 
     public BookmarkStatusResponse create(String userId, BookmarkTargetType type, String targetId) {
@@ -66,6 +71,12 @@ public class UserBookmarkService {
             bookmark = repository.findByUserIdAndTargetTypeAndTargetId(userId, type, targetId)
                     .orElseThrow(() -> exception);
         }
+        
+        analyticsRecorder.recordBestEffort(AnalyticsEventType.BOOKMARK_CREATED, null, 
+                type == BookmarkTargetType.ARTICLE ? targetId : null,
+                type == BookmarkTargetType.STORY ? targetId : null,
+                null, null, null, null);
+                
         return new BookmarkStatusResponse(true, bookmark.createdAt());
     }
 
@@ -77,6 +88,10 @@ public class UserBookmarkService {
 
     public void delete(String userId, BookmarkTargetType type, String targetId) {
         repository.deleteByUserIdAndTargetTypeAndTargetId(userId, type, targetId);
+        analyticsRecorder.recordBestEffort(AnalyticsEventType.BOOKMARK_REMOVED, null, 
+                type == BookmarkTargetType.ARTICLE ? targetId : null,
+                type == BookmarkTargetType.STORY ? targetId : null,
+                null, null, null, null);
     }
 
     public PagedResponse<BookmarkResponse> list(

@@ -45,6 +45,7 @@ public class AskStoryService {
     private final StoryGroundingContextBuilder contextBuilder;
     private final StoryEmbeddingProperties embeddingProperties;
     private final AskStoryProperties askProperties;
+    private final lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
 
     public AskStoryService(
             StoryRepository storyRepository, ArticleRepository articleRepository,
@@ -54,7 +55,8 @@ public class AskStoryService {
             AskStoryQuestionNormalizer normalizer,
             StoryGroundingContextBuilder contextBuilder,
             StoryEmbeddingProperties embeddingProperties,
-            AskStoryProperties askProperties) {
+            AskStoryProperties askProperties,
+            lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder) {
         this.storyRepository = storyRepository;
         this.articleRepository = articleRepository;
         this.sourceService = sourceService;
@@ -65,6 +67,7 @@ public class AskStoryService {
         this.contextBuilder = contextBuilder;
         this.embeddingProperties = embeddingProperties;
         this.askProperties = askProperties;
+        this.analyticsRecorder = analyticsRecorder;
     }
 
     public AskStoryResponse ask(String storyId, AskStoryRequest request) {
@@ -77,6 +80,7 @@ public class AskStoryService {
                 storyId, Sort.by(Sort.Order.asc("publishedAt"), Sort.Order.asc("id")));
         List<Article> usable = members.stream().filter(this::hasUsableEvidence).toList();
         if (usable.isEmpty()) {
+            recordAnalytics(storyId, false);
             return insufficient(storyId, displayLanguage);
         }
         Map<String, Source> sources = sources(usable);
@@ -87,6 +91,7 @@ public class AskStoryService {
                     SemanticSimilarityEmbeddingInput.format(question)));
             validateQueryVector(queryVector);
         } catch (RuntimeException exception) {
+            recordAnalytics(storyId, false);
             throw new AskStoryUnavailableException(exception);
         }
 
@@ -95,9 +100,11 @@ public class AskStoryService {
         try {
             context = contextBuilder.build(story, usable, selected, sources);
         } catch (RuntimeException exception) {
+            recordAnalytics(storyId, false);
             throw new AskStoryUnavailableException(exception);
         }
         if (context.sources().isEmpty()) {
+            recordAnalytics(storyId, false);
             return insufficient(storyId, displayLanguage);
         }
         selected = List.copyOf(selected.subList(0, context.sources().size()));
@@ -109,9 +116,25 @@ public class AskStoryService {
                     story.firstPublishedAt(), story.lastPublishedAt(), context.inventory(),
                     context.sources()));
         } catch (RuntimeException exception) {
+            recordAnalytics(storyId, false);
             throw new AskStoryUnavailableException(exception);
         }
-        return validateAndMap(storyId, result, selected, sources, displayLanguage);
+        AskStoryResponse response = validateAndMap(storyId, result, selected, sources, displayLanguage);
+        recordAnalytics(storyId, response.answerable());
+        return response;
+    }
+
+    private void recordAnalytics(String storyId, boolean success) {
+        analyticsRecorder.recordBestEffort(
+                lk.srilankannews.analytics.AnalyticsEventType.ASK_STORY_COMPLETED,
+                java.util.UUID.randomUUID().toString(),
+                null,
+                storyId,
+                null,
+                success ? 1 : 0,
+                null,
+                null
+        );
     }
 
     private List<Article> select(List<Article> articles, List<Double> queryVector) {

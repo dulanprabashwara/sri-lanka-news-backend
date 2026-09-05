@@ -13,10 +13,12 @@ public record UserPreferences(
         @Indexed(name = "uk_user_preferences_user", unique = true) String userId,
         DisplayLanguagePreference preferredDisplayLanguage,
         Set<ArticleCategory> preferredCategories,
+        Boolean analyticsEnabled,
         Instant createdAt,
         Instant updatedAt
 ) {
     public UserPreferences {
         preferredCategories = preferredCategories == null ? Set.of() : Set.copyOf(preferredCategories);
+        analyticsEnabled = analyticsEnabled == null ? true : analyticsEnabled;
     }
 }

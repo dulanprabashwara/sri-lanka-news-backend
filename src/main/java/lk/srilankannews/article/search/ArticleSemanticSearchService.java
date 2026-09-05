@@ -17,6 +17,8 @@ import lk.srilankannews.source.Source;
 import lk.srilankannews.source.SourceService;
 import lk.srilankannews.story.StoryEmbeddingProperties;
 import org.springframework.stereotype.Service;
+import lk.srilankannews.analytics.AnalyticsRecorder;
+import lk.srilankannews.analytics.AnalyticsEventType;
 
 @Service
 public class ArticleSemanticSearchService {
@@ -27,6 +29,7 @@ public class ArticleSemanticSearchService {
     private final ArticleApiMapper mapper;
     private final StoryEmbeddingProperties embeddingProperties;
     private final SemanticSearchProperties searchProperties;
+    private final AnalyticsRecorder analyticsRecorder;
 
     public ArticleSemanticSearchService(TextSearchQueryNormalizer normalizer,
             EmbeddingProvider embeddingProvider,
@@ -34,7 +37,8 @@ public class ArticleSemanticSearchService {
             SourceService sourceService,
             ArticleApiMapper mapper,
             StoryEmbeddingProperties embeddingProperties,
-            SemanticSearchProperties searchProperties) {
+            SemanticSearchProperties searchProperties,
+            AnalyticsRecorder analyticsRecorder) {
         this.normalizer = normalizer;
         this.embeddingProvider = embeddingProvider;
         this.repository = repository;
@@ -42,6 +46,7 @@ public class ArticleSemanticSearchService {
         this.mapper = mapper;
         this.embeddingProperties = embeddingProperties;
         this.searchProperties = searchProperties;
+        this.analyticsRecorder = analyticsRecorder;
     }
 
     public SemanticSearchResponse search(String query, int page, int size, String sourceSlug,
@@ -79,6 +84,11 @@ public class ArticleSemanticSearchService {
                 .map(article -> mapper.toResponse(
                         article, requireSource(article, sources), displayLanguage))
                 .toList();
+                
+        if (page == 0) {
+            analyticsRecorder.recordBestEffort(AnalyticsEventType.SEARCH_EXECUTED, null, null, null, sourceSlug, responses.size(), "SEMANTIC", null);
+        }
+        
         return new SemanticSearchResponse(normalized, responses, page, size,
                 result.hasMore(), page == 0);
     }

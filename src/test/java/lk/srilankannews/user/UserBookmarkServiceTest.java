@@ -41,6 +41,7 @@ class UserBookmarkServiceTest {
     @Mock ArticleApiMapper articleApiMapper;
     @Mock StoryApiMapper storyApiMapper;
     @Mock ArticleLocalizationService localizationService;
+    @Mock lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
     private UserBookmarkService service;
     private final Instant now = Instant.parse("2026-09-02T00:00:00Z");
 
@@ -48,7 +49,7 @@ class UserBookmarkServiceTest {
     void setUp() {
         service = new UserBookmarkService(repository, articleRepository, storyRepository,
                 sourceService, articleApiMapper, storyApiMapper, localizationService,
-                Clock.fixed(now, ZoneOffset.UTC));
+                Clock.fixed(now, ZoneOffset.UTC), analyticsRecorder);
     }
 
     @Test

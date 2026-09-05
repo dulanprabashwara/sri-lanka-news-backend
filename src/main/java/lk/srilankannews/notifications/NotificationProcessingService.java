@@ -8,7 +8,6 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -37,6 +36,7 @@ public class NotificationProcessingService {
     private final NotificationPreferenceRepository preferenceRepository;
     private final NotificationRepository notificationRepository;
     private final NotificationEventRepository eventRepository;
+    private final lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
     private final Clock clock;
 
     public NotificationProcessingService(ArticleService articleService,
@@ -46,6 +46,7 @@ public class NotificationProcessingService {
                                          NotificationPreferenceRepository preferenceRepository,
                                          NotificationRepository notificationRepository,
                                          NotificationEventRepository eventRepository,
+                                         lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder,
                                          Clock clock) {
         this.articleService = articleService;
         this.storyRepository = storyRepository;
@@ -54,6 +55,7 @@ public class NotificationProcessingService {
         this.preferenceRepository = preferenceRepository;
         this.notificationRepository = notificationRepository;
         this.eventRepository = eventRepository;
+        this.analyticsRecorder = analyticsRecorder;
         this.clock = clock;
     }
 
@@ -164,6 +166,19 @@ public class NotificationProcessingService {
 
         try {
             notificationRepository.save(notification);
+            
+            // Record analytics event
+            analyticsRecorder.recordBestEffort(
+                    lk.srilankannews.analytics.AnalyticsEventType.NOTIFICATION_CREATED,
+                    java.util.UUID.randomUUID().toString(),
+                    article.id(),
+                    story.id(),
+                    article.sourceId(),
+                    null,
+                    null,
+                    null
+            );
+            
         } catch (DuplicateKeyException e) {
             LOGGER.debug("Duplicate notification skipped for user {} eventVersion {}", userId, eventVersion);
         }

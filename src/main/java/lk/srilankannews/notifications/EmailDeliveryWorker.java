@@ -21,6 +21,7 @@ public class EmailDeliveryWorker {
     private final EmailNotificationProvider emailProvider;
     private final NotificationPreferenceRepository preferenceRepository;
     private final UnsubscribeTokenService unsubscribeTokenService;
+    private final lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
     private final Clock clock;
     private final String publicBaseUrl;
 
@@ -28,12 +29,14 @@ public class EmailDeliveryWorker {
                                EmailNotificationProvider emailProvider,
                                NotificationPreferenceRepository preferenceRepository,
                                UnsubscribeTokenService unsubscribeTokenService,
+                               lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder,
                                Clock clock,
                                @Value("${app.public.base-url:http://localhost:3000}") String publicBaseUrl) {
         this.notificationRepository = notificationRepository;
         this.emailProvider = emailProvider;
         this.preferenceRepository = preferenceRepository;
         this.unsubscribeTokenService = unsubscribeTokenService;
+        this.analyticsRecorder = analyticsRecorder;
         this.clock = clock;
         this.publicBaseUrl = publicBaseUrl;
     }
@@ -70,6 +73,18 @@ public class EmailDeliveryWorker {
 
             emailProvider.sendNotification(notification, email, unsubscribeUrl);
             markSent(notification);
+            
+            analyticsRecorder.recordBestEffort(
+                    lk.srilankannews.analytics.AnalyticsEventType.NOTIFICATION_EMAIL_SENT,
+                    java.util.UUID.randomUUID().toString(),
+                    notification.triggeringArticleId(),
+                    notification.storyId(),
+                    notification.sourceId(),
+                    null,
+                    null,
+                    null
+            );
+            
         } catch (Exception e) {
             LOGGER.error("Email delivery failed for notification {}", notification.id(), e);
             scheduleRetry(notification, e.getMessage());
@@ -96,6 +111,17 @@ public class EmailDeliveryWorker {
                 error
         );
         saveWithUpdatedDelivery(notification, updatedDelivery);
+        
+        analyticsRecorder.recordBestEffort(
+                lk.srilankannews.analytics.AnalyticsEventType.NOTIFICATION_EMAIL_FAILED,
+                java.util.UUID.randomUUID().toString(),
+                notification.triggeringArticleId(),
+                notification.storyId(),
+                notification.sourceId(),
+                null,
+                null,
+                null
+        );
     }
 
     private void scheduleRetry(Notification notification, String error) {

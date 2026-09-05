@@ -20,6 +20,7 @@ public class EmailDeliveryWorkerTest {
     private NotificationPreferenceRepository preferenceRepository;
     private EmailNotificationProvider emailProvider;
     private UnsubscribeTokenService unsubscribeTokenService;
+    private lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
     private Clock clock;
     private EmailDeliveryWorker worker;
 
@@ -29,8 +30,9 @@ public class EmailDeliveryWorkerTest {
         preferenceRepository = mock(NotificationPreferenceRepository.class);
         emailProvider = mock(EmailNotificationProvider.class);
         unsubscribeTokenService = mock(UnsubscribeTokenService.class);
+        analyticsRecorder = mock(lk.srilankannews.analytics.AnalyticsRecorder.class);
         clock = Clock.fixed(Instant.parse("2026-09-04T10:00:00Z"), ZoneId.of("UTC"));
-        worker = new EmailDeliveryWorker(notificationRepository, emailProvider, preferenceRepository, unsubscribeTokenService, clock, "http://localhost:3000");
+        worker = new EmailDeliveryWorker(notificationRepository, emailProvider, preferenceRepository, unsubscribeTokenService, analyticsRecorder, clock, "http://localhost:3000");
     }
 
     @Test
