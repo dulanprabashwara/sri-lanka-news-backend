@@ -1,448 +1,374 @@
-# Sri Lankan News Intelligence Platform — Backend
+# Sri Lankan Multilingual News Intelligence Platform
 
-Spring Boot REST API for the Sri Lankan News Intelligence Platform. The platform will collect and organize reporting from multiple Sri Lankan publishers while directing readers to the original journalism.
+A full-stack multilingual news intelligence platform for Sri Lankan news that collects reports from multiple publishers, processes and enriches them, groups related publisher reports into real-world Story clusters, supports English/Sinhala/Tamil experiences, and provides search, reporting-activity trending, coverage comparison, timelines, grounded Story Q&A, personalization, notifications, privacy-conscious analytics, and operational administration.
 
-## Current Phase
+The system is composed of three independently maintained services:
 
-**Phase 26 — Admin**
+- **Next.js Frontend** — reader, account, personalization, and admin experiences
+- **Spring Boot Backend** — APIs, persistence, processing, Story intelligence, search, AI orchestration, authentication, notifications, and analytics
+- **Python Ingestion Service** — publisher discovery, extraction, and scheduled ingestion
 
-Configured operators can securely inspect ingestion and processing health.
+---
 
-## Technology
+## Backend Repository
 
-- Java 17
-- Spring Boot 3.5
-- Maven
-- Spring Web and Bean Validation
-- Spring Data MongoDB
-- Spring Data Redis
-- Spring Boot Actuator
-- Google Gen AI Java SDK
-- JUnit 5 and Spring Boot Test
+This repository contains the core Spring Boot application (`lk.srilankannews`), serving as the central orchestration, persistence, domain logic, search, AI integration, and security layer for the entire Sri Lankan Multilingual News Intelligence Platform.
 
-## Prerequisites
+---
 
+## Table of Contents
+
+- [Responsibilities](#responsibilities)
+- [Technology Stack](#technology-stack)
+- [Backend Architecture Diagram](#backend-architecture-diagram)
+- [Domain Model](#domain-model)
+- [Article Lifecycle](#article-lifecycle)
+- [Deduplication](#deduplication)
+- [Story Clustering & Vector Intelligence](#story-clustering--vector-intelligence)
+- [AI Architecture](#ai-architecture)
+- [Search & Trending Engine](#search--trending-engine)
+- [Authentication & Authorization](#authentication--authorization)
+- [Notifications Architecture](#notifications-architecture)
+- [Analytics & Privacy System](#analytics--privacy-system)
+- [Redis Usage & Streaming](#redis-usage--streaming)
+- [MongoDB Collections](#mongodb-collections)
+- [API Overview](#api-overview)
+- [Environment Configuration](#environment-configuration)
+- [Running Locally](#running-locally)
+- [Testing & Quality Verification](#testing--quality-verification)
+- [Project Structure](#project-structure)
+- [Copyright & Content Safety](#copyright--content-safety)
+- [Related Repositories](#related-repositories)
+
+---
+
+## Responsibilities
+
+- **Public REST APIs**: Serves reader discovery feeds, story clusters, searches, timelines, and article attribution.
+- **Internal Ingestion API**: Validates and ingests normalized article payloads from the Python ingestion service using API Key authentication.
+- **Deduplication & Persistence**: Enforces canonical URL hashing and title similarity checks to prevent duplicate article ingestion into MongoDB.
+- **Story Intelligence & Clustering**: Groups multi-publisher articles into cohesive Story clusters using hybrid lexical matching and Gemini vector embeddings.
+- **AI Orchestration**: Manages Gemini API integrations for neutral executive story summaries, multi-publisher coverage comparisons, timelines, grounded Story Q&A, and translations.
+- **Personalization & Accounts**: Tracks bookmarks, source follows, topic follows, and personalized "For You" recommendations.
+- **Notifications Engine**: Manages in-app alerts, Redis stream dispatching, outbox patterns, and signed email unsubscriptions.
+- **Privacy-Conscious Analytics**: Collects pseudonymous engagement metrics, performs rollups, and respects DNT/GPC privacy signals.
+- **Admin Management APIs**: Powers ingestion health monitoring, processing queue inspection, AI operational metrics, audit logging, and user stats.
+
+---
+
+## Technology Stack
+
+- **Framework**: Spring Boot `3.5.16` (Java `17`)
+- **Web & Security**: Spring Web, Spring Security, Spring OAuth2 Resource Server (JWT verification)
+- **Database**: MongoDB Atlas (`spring-boot-starter-data-mongodb`)
+- **Cache & Messaging**: Redis / Valkey (`spring-boot-starter-data-redis`)
+- **AI SDK**: Google GenAI Java SDK (`com.google.genai:google-genai` `1.68.0`)
+- **Email**: Spring Starter Mail (`spring-boot-starter-mail`)
+- **Monitoring**: Spring Actuator (`spring-boot-starter-actuator`)
+- **Build Tool**: Apache Maven (`3.9+`)
+
+---
+
+## Backend Architecture Diagram
+
+```mermaid
+flowchart TD
+    subgraph Ingestion["Ingestion Tier"]
+        PY["Python Ingestion Service"]
+    end
+
+    subgraph Presentation["Presentation Tier"]
+        FE["Next.js Frontend"]
+    end
+
+    subgraph BackendApp["Spring Boot Backend Service (:8080)"]
+        ING_API["Internal Ingestion Controller"]
+        PUB_API["Public & Reader REST Controllers"]
+        ADM_API["Admin REST Controllers"]
+        SERVC["Domain Services & Processing Pipeline"]
+        DEDUP["Deduplication Engine"]
+        CLUST["Story Clustering & Vector Engine"]
+        AI_ORCH["AI Provider (Gemini Integration)"]
+        NOTIF["Notification & Outbox Engine"]
+    end
+
+    subgraph DataTier["Data & Security Infrastructure"]
+        MONGO[(MongoDB Atlas)]
+        REDIS[(Redis Cache / Streams)]
+        GEMINI["Google Gemini API"]
+        SUPA["Supabase Auth (JWKS)"]
+    end
+
+    PY -->|HTTP POST + X-Ingestion-API-Key| ING_API
+    FE -->|HTTP REST + Supabase JWT| PUB_API
+    FE -->|HTTP REST + Admin JWT| ADM_API
+
+    PUB_API --> SERVC
+    ADM_API --> SERVC
+    ING_API --> DEDUP --> MONGO
+
+    SERVC --> CLUST
+    SERVC --> NOTIF
+    CLUST --> GEMINI
+    SERVC --> MONGO
+    SERVC --> REDIS
+    PUB_API -->|Verify Token| SUPA
+```
+
+---
+
+## Domain Model
+
+Key MongoDB documents and domain models in `lk.srilankannews`:
+
+- **Source** (`Source`): Represents a publisher entity (e.g., Daily Mirror, NewsFirst, Hiru News) including URL, slug, language, and operational status.
+- **Article** (`Article`): Single report published by a news source. Contains canonical URL, title, snippet, body content (internal), publication timestamp, source attribution, and vector embedding.
+- **Story** (`Story`): Grouped real-world event cluster containing references to multiple publisher Articles, AI-generated summary, timeline, and coverage comparison matrix.
+- **UserProfile** (`UserProfile`): Reader account preferences, display language choices, and category preferences mapped to Supabase sub.
+- **Bookmark** (`Bookmark`): M:N relationship tracking saved user articles.
+- **Follow** (`Follow`): M:N relationship tracking source and topic subscriptions.
+- **Notification** (`Notification`): User alert record for story updates, system announcements, and delivery preferences.
+- **AnalyticsEvent** / **AnalyticsDailyMetric**: Pseudonymous reader event logs and daily aggregate engagement rollups.
+- **AdminAuditEvent**: Append-only log tracking administrative operations and configuration overrides.
+
+---
+
+## Article Lifecycle
+
+1. **Ingestion Request**: Python service POSTs extracted article DTO to `/api/v1/internal/ingestion/articles`.
+2. **Key Verification**: Backend validates `X-Ingestion-API-Key`.
+3. **Deduplication**: Checks canonical URL hash and exact title duplication in MongoDB.
+4. **Persistence**: Saves raw article payload to MongoDB `articles` collection.
+5. **Async Enrichment**: Enqueues processing task for language verification, keyword extraction, and vector embedding generation via Gemini API.
+6. **Story Clustering**: Evaluates temporal window (default 48h) and cosine vector similarity against existing active Stories. Assigns article to existing Story or spawns a new Story cluster.
+7. **Public Indexing**: Exposes updated Article and Story intelligence to frontend REST APIs.
+
+---
+
+## Deduplication
+
+The backend guarantees single-ingestion invariants through:
+- **Canonical URL Hashing**: Strips tracking parameters (`utm_*`, `ref`, session IDs) and normalizes protocols/trailing slashes before computing a deterministic hash.
+- **Unique Database Indexes**: MongoDB index on `canonicalUrl` prevents duplicate storage.
+- **Title Fingerprinting**: Near-duplicate window matching within recent publisher submissions.
+
+---
+
+## Story Clustering & Vector Intelligence
+
+- **Lexical Matching**: Initial candidate selection filters articles within a configurable temporal window (`STORY_CLUSTER_WINDOW_HOURS`, default 48h) sharing key entities and topic tags.
+- **Vector Embeddings**: Generates 784/768-dimensional dense vector embeddings using Google Gemini (`gemini-embedding-2`).
+- **Cosine Similarity Matching**: Evaluates semantic similarity scores against candidate Story vectors using thresholding (`STORY_SEMANTIC_THRESHOLD`, default 0.82; cross-language threshold 0.90).
+- **Cluster Evolution**: Dynamically updates Story topic tags, cover media, and time boundaries as new publisher reports arrive.
+
+---
+
+## AI Architecture
+
+The `lk.srilankannews.ai` package encapsulates all generative AI operations via Google Gemini:
+
+- `AiProvider`: Interface for text generation, story summarization, timeline extraction, coverage comparison, and grounded Q&A.
+- `EmbeddingProvider`: Interface for generating vector representations of text snippets.
+- `GroundedAnswerProvider`: Evaluates user questions against retrieved Story article context (`Ask This Story`).
+- `GeminiFailureMapper`: Intercepts API rate limits, quota limits, and timeouts to ensure fallback safety without breaking core reading workflows.
+
+---
+
+## Search & Trending Engine
+
+### Search Architecture
+- **Keyword Search**: Uses MongoDB text indexing across article titles, snippets, and topic keywords.
+- **Semantic Search**: Uses Atlas Vector Search (`idx_articles_semantic_vector`) to find articles matching the semantic meaning of search queries.
+
+### Trending Architecture
+- **Activity-Based Ranking**: Ranks stories by calculating publisher reporting volume, multi-source diversity, and time decay using a 12-hour half-life exponential decay formula (`TRENDING_RECENCY_HALF_LIFE_HOURS`).
+- **No Manipulation**: Does not use raw clicks, viral metrics, or user activity tracking to determine trending topics.
+
+---
+
+## Authentication & Authorization
+
+- **Supabase Integration**: Spring Security validates incoming `Authorization: Bearer <JWT>` tokens using Supabase's public JWKS endpoint (`SUPABASE_AUTH_JWKS_URI`).
+- **Role Authority**: Compares validated JWT subject (`sub`) against configured `ADMIN_USER_IDS` to grant `ROLE_ADMIN` permissions.
+- **Zero Raw Input Trust**: All user actions (`/me`, bookmarks, follows) derive the user identity strictly from the verified JWT token claims.
+
+---
+
+## Notifications Architecture
+
+- **Mongo Outbox Pattern**: Persists pending notifications atomically alongside state changes.
+- **Redis Streams**: Dispatches notification events asynchronously to background consumers.
+- **Preference Verification**: Filters notifications against user quiet hours, timezone settings, and topic choices before dispatching.
+- **Email Unsubscribe Security**: Issues cryptographic signatures on email unsubscription URLs, allowing users to safely opt-out without authentication.
+
+---
+
+## Analytics & Privacy System
+
+- **Pseudonymous Collection**: Hashes user identifiers using a rotating daily salt.
+- **Data Scrubbing**: Strips raw search query strings, user email addresses, notification bodies, and Ask Q&A text.
+- **Runtime Suppression**: Checks reader request headers for `DNT: 1` or `Sec-GPC: 1` and suppresses event recording.
+- **Daily Rollups**: Automatically aggregates events into `AnalyticsDailyMetric` collections for admin reporting.
+
+---
+
+## Redis Usage & Streaming
+
+Redis / Valkey handles transient state:
+- **`article-discovered` / Notification Streams**: Asynchronous event streams for decoupling background ingestion processing.
+- **Public Feed Caching**: Short-lived TTL caching for public discovery endpoints.
+- **Rate Limiting**: Protects grounded Q&A (`/ask`) endpoints from abuse.
+
+---
+
+## MongoDB Collections
+
+- `sources` — Registered publisher specifications and health metrics
+- `articles` — Extracted news articles and vector embeddings
+- `stories` — Clustered stories, AI summaries, timelines, and comparisons
+- `user_profiles` — Reader settings, language choices, and preferences
+- `bookmarks` — User saved article references
+- `follows` — Followed publisher sources and topic tags
+- `notifications` — In-app notification history
+- `analytics_events` — Raw pseudonymous telemetry events (with TTL index)
+- `analytics_daily_metrics` — Aggregate daily engagement statistics
+- `admin_audit_events` — Append-only administrative operation logs
+
+---
+
+## API Overview
+
+### Public & Reader APIs
+- `GET /api/v1/articles` — Paginated article feed
+- `GET /api/v1/articles/{id}` — Article detail by ID
+- `GET /api/v1/stories` — Clustered Story index
+- `GET /api/v1/stories/{id}` — Story detail, summary, and coverage comparison
+- `GET /api/v1/stories/{id}/timeline` — Chronological event timeline
+- `POST /api/v1/stories/{id}/ask` — Grounded Story Q&A
+- `GET /api/v1/trending` — Publisher activity trending stories
+- `GET /api/v1/search` — Keyword and semantic search
+- `GET /api/v1/sources` — Publisher source registry
+
+### Authenticated User APIs (`/me`)
+- `GET/PUT /api/v1/me/profile` — Reader profile & preferences
+- `GET/POST/DELETE /api/v1/me/bookmarks` — Saved articles
+- `GET/POST/DELETE /api/v1/me/follows` — Source & topic subscriptions
+- `GET /api/v1/me/notifications` — Notification feed
+- `GET /api/v1/me/for-you` — Personalized story recommendations
+
+### Internal Ingestion API (Protected)
+- `POST /api/v1/internal/ingestion/articles` — Submit extracted article (Requires `X-Ingestion-API-Key`)
+
+### Admin Operational APIs (Requires `ROLE_ADMIN`)
+- `GET /api/v1/admin/overview` — System operational dashboard
+- `GET/PUT /api/v1/admin/ingestion/settings` — Ingestion settings & scheduler controls
+- `GET /api/v1/admin/processing/queue` — Processing queue & DLQ status
+- `GET /api/v1/admin/ai/overview` — Gemini AI metrics & provider latency
+- `GET /api/v1/admin/audit/logs` — Security audit logs
+- `GET /api/v1/admin/analytics/summary` — Aggregate analytics reports
+
+---
+
+## Environment Configuration
+
+Configure `.env` or application environment using variables from `.env.example`:
+
+| Environment Variable | Purpose |
+|---|---|
+| `MONGODB_URI` | MongoDB Atlas connection string |
+| `REDIS_URL` | Redis / Valkey connection URL |
+| `INGESTION_API_KEY` | Shared secret key for internal ingestion API |
+| `SUPABASE_AUTH_ISSUER` | Supabase Auth issuer URL |
+| `SUPABASE_AUTH_JWKS_URI` | Supabase public JWKS endpoint |
+| `SUPABASE_AUTH_AUDIENCE` | Expected JWT audience (`authenticated`) |
+| `ADMIN_USER_IDS` | Comma-separated Supabase `sub` strings granted Admin role |
+| `GEMINI_API_KEY` | Google Gemini API key for AI summarization & embeddings |
+| `GEMINI_MODEL` | Gemini model ID (e.g., `gemini-2.5-flash`) |
+| `MULTILINGUAL_MODEL` | Gemini model ID for translation tasks |
+
+> **Security Alert**: Never commit secret keys, MongoDB credentials, or actual admin user IDs.
+
+---
+
+## Running Locally
+
+### Prerequisites
 - JDK 17
-- Maven 3.6.3 or later
-- A MongoDB Atlas account and development cluster
+- Maven 3.9+
+- MongoDB instance (local or Atlas)
+- Redis instance
 
-## Local Setup
-
-1. Create or select a development cluster in MongoDB Atlas.
-2. Create an Atlas database user with access to the development database. Do not reuse your Atlas account password.
-3. In Atlas Network Access, add the IP address of each developer who needs to connect. Avoid unrestricted network access for routine development.
-4. Obtain the application connection string from Atlas and replace its username, password, and cluster-host placeholders with the database user's values.
-5. Set the completed connection string locally as `MONGODB_URI`. Obtain a
-   provider-neutral Redis connection URL from a development Redis service and
-   set it as `REDIS_URL`. Generate a
-   separate strong random value for `INGESTION_API_KEY`; configure the same
-   value in the Python ingestion service. Spring Boot does not load `.env`
-   files automatically, so export both variables in your shell or configure
-   them in your IDE.
-
-   PowerShell:
-
-   ```powershell
-   $env:MONGODB_URI = "mongodb+srv://<username>:<password>@<cluster-host>/sri_lanka_news?retryWrites=true&w=majority"
-   $env:INGESTION_API_KEY = "<strong-random-shared-secret>"
-   $env:REDIS_URL = "rediss://:<password>@<redis-host>:<port>"
-   $env:ARTICLE_FEED_CACHE_TTL_SECONDS = "60"
-   $env:FOR_YOU_CANDIDATE_LIMIT = "500"
-   $env:ADMIN_USER_IDS = "<supabase-user-sub>"
-   $env:TRENDING_WINDOW_HOURS = "72"
-   $env:TRENDING_RECENCY_HALF_LIFE_HOURS = "12"
-   $env:TRENDING_SOURCE_NORMALIZATION = "3"
-   $env:TRENDING_REPORT_NORMALIZATION = "5"
-   $env:TRENDING_MAX_CANDIDATES = "500"
-   $env:STORY_CLUSTER_WINDOW_HOURS = "48"
-   $env:STORY_CLUSTER_THRESHOLD = "0.72"
-   $env:STORY_CLUSTER_CANDIDATE_LIMIT = "200"
-   $env:STORY_CLUSTER_BACKFILL_LIMIT = "100"
-   $env:STORY_EMBEDDING_MODEL = "gemini-embedding-2"
-   $env:STORY_EMBEDDING_DIMENSIONS = "768"
-   $env:STORY_SEMANTIC_THRESHOLD = "0.82"
-   $env:STORY_CROSS_LANGUAGE_SEMANTIC_THRESHOLD = "0.90"
-   $env:STORY_EMBEDDING_BACKFILL_LIMIT = "50"
-   $env:GEMINI_API_KEY = "<google-ai-studio-api-key>"
-   $env:GEMINI_MODEL = "<gemini-model-id>"
-   ```
-
-6. Run the application only after `MONGODB_URI` is available in its environment.
-
-The application intentionally has no localhost fallback. Never commit the completed Atlas URI or real database credentials.
-
-## Environment Variables
-
-| Variable | Required | Default | Purpose |
-| --- | --- | --- | --- |
-| `MONGODB_URI` | Yes | None | MongoDB Atlas application connection string. |
-| `INGESTION_API_KEY` | Yes | None | Shared secret accepted only by internal ingestion endpoints. |
-| `SUPABASE_AUTH_ISSUER` | Yes for user auth | Local invalid placeholder | Supabase Auth issuer, ending in `/auth/v1`. |
-| `SUPABASE_AUTH_JWKS_URI` | Yes for user auth | Local invalid placeholder | Public JWKS endpoint for asymmetric Supabase signing keys. |
-| `SUPABASE_AUTH_AUDIENCE` | No | `authenticated` | Required access-token audience. |
-| `ADMIN_USER_IDS` | No | Empty | Comma-separated verified Supabase user `sub` values permitted to use Admin APIs. Empty grants nobody access. |
-| `REDIS_URL` | Yes | None | Provider-neutral `redis://` or TLS `rediss://` connection URL. |
-| `REDIS_PROCESSING_ENABLED` | No | `true` | Enables Redis Streams publishing and consumption. |
-| `ARTICLE_FEED_CACHE_TTL_SECONDS` | No | `60` | TTL in seconds for public Article feed cache entries. |
-| `FOR_YOU_CANDIDATE_LIMIT` | No | `500` | Maximum newest Articles considered by one personalized feed request; accepted range is 1–2000. |
-| `TRENDING_WINDOW_HOURS` | No | `72` | Recent Story candidate window; accepted range is 6–336 hours. |
-| `TRENDING_RECENCY_HALF_LIFE_HOURS` | No | `12` | Positive recency-decay half-life and recently-updated reason period. |
-| `TRENDING_SOURCE_NORMALIZATION` | No | `3` | Positive distinct-publisher count at which source coverage is fully normalized. |
-| `TRENDING_REPORT_NORMALIZATION` | No | `5` | Positive report count at which report coverage is fully normalized. |
-| `TRENDING_MAX_CANDIDATES` | No | `500` | Maximum recent Stories ranked per request; accepted range is 50–5000. |
-| `STORY_CLUSTER_WINDOW_HOURS` | No | `48` | Publication-time window on either side of an Article for Story candidates. |
-| `STORY_CLUSTER_THRESHOLD` | No | `0.72` | Minimum deterministic lexical score from 0 to 1. |
-| `STORY_CLUSTER_CANDIDATE_LIMIT` | No | `200` | Maximum candidate Stories scored for one Article. |
-| `STORY_CLUSTER_BACKFILL_LIMIT` | No | `100` | Maximum enriched, unassigned Articles clustered at startup; `0` disables backfill. |
-| `STORY_EMBEDDING_MODEL` | No | `gemini-embedding-2` | Provider model used for private Story-matching embeddings. |
-| `STORY_EMBEDDING_DIMENSIONS` | No | `768` | Required embedding vector dimensions. |
-| `STORY_EMBEDDING_MAX_INPUT_CHARACTERS` | No | `8000` | Maximum deterministic semantic metadata input length; full article content is excluded. |
-| `STORY_SEMANTIC_THRESHOLD` | No | `0.82` | Minimum semantic evidence used to strengthen same-language matching. |
-| `STORY_CROSS_LANGUAGE_SEMANTIC_THRESHOLD` | No | `0.90` | Conservative minimum for cross-language matching. |
-| `STORY_EMBEDDING_BACKFILL_LIMIT` | No | `50` | Maximum enriched Articles embedded at startup; `0` disables embedding backfill. |
-| `SEMANTIC_SEARCH_VECTOR_INDEX` | No | `idx_articles_semantic_vector` | Atlas Vector Search index used only by public semantic Article search. |
-| `SEMANTIC_SEARCH_MIN_SCORE` | No | `0.65` | Minimum normalized vector-search score retained as a semantic result. |
-| `SEMANTIC_SEARCH_MAX_WINDOW` | No | `200` | Maximum bounded result window available through semantic pagination. |
-| `GEMINI_API_KEY` | Yes | None | Google AI Studio API key; never logged or exposed. |
-| `GEMINI_MODEL` | Yes | None | Configurable Gemini model identifier. |
-| `GEMINI_MAX_INPUT_CHARACTERS` | No | `30000` | Maximum deterministic article-content excerpt sent for enrichment. |
-| `MULTILINGUAL_MODEL` | No | `GEMINI_MODEL` | Gemini model used behind the translation provider abstraction. |
-| `MULTILINGUAL_PROMPT_VERSION` | No | `translation-v1` | Translation input/prompt contract version used for idempotency. |
-| `MULTILINGUAL_MAX_INPUT_CHARACTERS` | No | `8000` | Maximum combined title and AI-summary translation input. |
-| `MULTILINGUAL_BACKFILL_LIMIT` | No | `10` | Maximum stale/missing translations generated at startup; `0` disables backfill. |
-
-Never commit real credentials or a populated `.env` file.
-
-## Running
-
+### Build & Run
 ```bash
+# Clone backend repository
+git clone https://github.com/dulanprabashwara/sri-lanka-news-backend.git
+cd sri-lanka-news-backend
+
+# Compile project
+mvn clean compile
+
+# Run Spring Boot application
 mvn spring-boot:run
 ```
+The backend server will start on port `8080`.
 
-The application listens on `http://localhost:8080` by default. The deliberately limited Actuator health endpoint is available at:
+---
 
-```text
-GET /actuator/health
-```
-
-## Public API
-
-```text
-GET /api/v1/sources
-GET /api/v1/sources/{slug}
-GET /api/v1/articles
-GET /api/v1/articles/{id}
-GET /api/v1/search/articles?q={query}
-GET /api/v1/search/semantic?q={query}
-GET /api/v1/stories
-GET /api/v1/stories/trending
-GET /api/v1/stories/{id}
-GET /api/v1/stories/{id}/coverage
-GET /api/v1/stories/{id}/timeline
-GET /api/v1/articles/{id}/story
-GET /api/v1/admin/me
-GET /api/v1/admin/overview
-GET /api/v1/admin/sources
-GET /api/v1/admin/articles
-POST /api/v1/admin/articles/{id}/retry
-```
-
-`GET /api/v1/me` and `/api/v1/me/preferences` and `/api/v1/me/bookmarks` routes accept a Supabase bearer
-access token. Public endpoints
-remain available without a JWT. Internal ingestion remains independently protected by
-`X-Ingestion-API-Key`; a Supabase token cannot replace that key, and an ingestion key does not
-authenticate `/api/v1/me`.
-
-The validated JWT `sub` is the sole ownership identity for MongoDB `user_preferences` and
-`user_bookmarks`; request bodies cannot select an owner. Preferences store an explicitly saved
-display language and a bounded, deterministic category set for later personalization. An explicit
-`displayLanguage` API parameter always overrides the saved preference. Article and Story bookmarks
-are owner-scoped, idempotent, paginated, and hydrated from existing public-safe DTOs. A compound
-unique index prevents duplicate bookmarks during concurrent requests. User-specific data is never
-placed in the shared Redis feed cache.
-
-Phase 20 adds private MongoDB `user_follows` records for exactly two target types: `SOURCE` and
-`TOPIC`. Source slugs are validated and resolved to stable internal Source IDs before storage;
-those IDs are never returned by follow APIs. Topic identity uses NFC Unicode normalization,
-trimmed/collapsed whitespace, and locale-neutral lowercase while retaining a readable label.
-This is exact text identity only: synonyms, translations, and semantically equivalent topics stay
-separate. Follow state is owner-scoped by JWT `sub`, protected by a unique compound index, and is
-never added to shared Redis caches or public feed DTOs. Phase 20 does not change Article or Story
-ranking.
-
-Phase 21 adds protected `GET /api/v1/me/for-you`. It loads preferred categories, Source follows,
-and Topic follows once, ranks at most `FOR_YOU_CANDIDATE_LIMIT` recent Articles in memory, and
-batch-loads Source attribution. Followed Sources add 40 points, each exact normalized followed
-Topic adds 30 points up to 60, and an exact preferred Category adds 20. Results sort by score,
-then newest publication time, then descending Article ID. Matching Articles appear first and
-newest score-zero Articles follow as fallback content; cold-start users therefore receive normal
-recent news rather than an empty or error response. Pagination applies to this bounded ranked set.
-
-The response exposes public-safe Article DTOs and neutral reason labels, never numeric scores,
-ownership IDs, normalization keys, or private processing data. Presentation language and
-translation availability do not affect ranking. Topic matching remains exact and language-specific.
-The feed uses no behavior tracking, Gemini, embeddings, collaborative data, or Redis. The shared
-`GET /api/v1/articles` ordering and Redis cache remain unchanged and contain no user-specific data.
-
-Phase 22 adds public `GET /api/v1/search/articles`. Queries are NFC-normalized, trimmed,
-and whitespace-collapsed, with a 2–200 Unicode-code-point limit. Optional `source`,
-`category`, and original `language` filters and the existing `displayLanguage` presentation
-parameter are supported. Results use MongoDB text score, then publication time and Article ID
-for deterministic ties, with the standard zero-based pagination and maximum page size of 100.
-
-One explicit `idx_articles_public_text` index uses MongoDB language `none` for predictable
-English, Sinhala, and Tamil token handling. Weights are title and translated titles 10,
-topics 6, and summaries and translated summaries 4. The startup initializer creates this index
-only when no text index exists, accepts the exact existing definition, and refuses to alter or
-delete an incompatible Atlas index. Private extracted content, keywords, entities, hashes,
-embeddings, processing metadata, and internal IDs are never indexed, returned, or logged.
-Search does not use Redis, Gemini, embeddings, personalization, behavior tracking, or a live AI
-call; it searches only public-safe fields already stored in MongoDB.
-
-Phase 23 adds the separate public `GET /api/v1/search/semantic` path. Each valid request creates
-exactly one transient query embedding through the existing `EmbeddingProvider` and
-`gemini-embedding-2` configuration. Query text uses NFC and whitespace normalization plus the same
-`task: sentence similarity | query:` provider-visible instruction as the existing
-`story-semantic-v2` Article vectors. Queries and query vectors are never persisted or cached.
-Semantic retrieval does not regenerate or mutate Article embeddings, invoke generative AI,
-translation, clustering, feed invalidation, or Redis.
-
-Atlas `$vectorSearch` reads `semanticEmbedding.values` and prefilters to `COMPLETED` Articles whose
-embedding model, 768 dimensions, and input version match the active configuration. Optional Source,
-Category, and original-language filters are applied inside vector search. Results below the
-configurable `0.65` minimum are discarded, then ordered by vector score, publication time, and
-Article ID. Scores are internal ranking metadata and are never returned. Pagination exposes
-`hasMore` rather than fabricated totals and is bounded to the first 200 results. Presentation
-localization happens after ranking and cannot influence retrieval.
-
-Semantic search requires a manually configured Atlas Vector Search index on the `articles`
-collection. In Atlas, open Search & Vector Search, create a JSON editor index named
-`idx_articles_semantic_vector`, and use:
-
-```json
-{
-  "fields": [
-    {
-      "type": "vector",
-      "path": "semanticEmbedding.values",
-      "numDimensions": 768,
-      "similarity": "cosine"
-    },
-    { "type": "filter", "path": "sourceId" },
-    { "type": "filter", "path": "category" },
-    { "type": "filter", "path": "originalLanguage" },
-    { "type": "filter", "path": "processingStatus" },
-    { "type": "filter", "path": "semanticEmbedding.model" },
-    { "type": "filter", "path": "semanticEmbedding.dimensions" },
-    { "type": "filter", "path": "semanticEmbedding.inputVersion" }
-  ]
-}
-```
-
-This is an Atlas Vector Search index, not the normal MongoDB text index
-`idx_articles_public_text`. Wait until Atlas reports the vector index as active before testing.
-Missing, building, unsupported, or temporarily unavailable vector search and embedding-provider
-failures return safe `503 SEMANTIC_SEARCH_UNAVAILABLE` responses without affecting application
-startup or keyword search. Articles without compatible Phase 13 embeddings do not participate.
-Cross-language EN/SI/TA quality depends on the configured embedding model; queries are never
-translated. Public provider quota and rate limiting should be revisited during Phase 27 production
-hardening.
-
-Phase 24 adds guest-accessible `POST /api/v1/stories/{storyId}/ask`. It is Story-scoped grounded
-RAG, not general chat: the backend loads only Articles assigned to the requested Story, creates one
-temporary question embedding, ranks their existing compatible Article vectors locally, and makes
-one bounded grounded-generation request. It never uses global Atlas Vector Search for this path,
-creates missing embeddings, or retrieves Articles from another Story.
-
-The model receives a compact Story inventory plus separated, publisher-attributed evidence from at
-most five selected reports by default. Titles and AI summaries are preferred, while private
-`extractedContent` is aggressively truncated to 6,000 characters per report and 24,000 characters
-across context. Source text and questions are explicitly treated as untrusted data, and the prompt
-forbids following embedded instructions, revealing prompts/configuration, using outside knowledge,
-or reproducing publisher articles. Output is bounded structured JSON. Internal citation labels are
-validated and mapped to trusted persisted Article URLs; private text, vectors, scores, prompts, and
-provider metadata are never returned.
-
-English, Sinhala, and Tamil answers follow optional `displayLanguage=en|si|ta`; presentation does
-not alter retrieval. Insufficient or unrelated evidence returns `200` with `answerable=false`.
-Embedding, generation, malformed-output, or invalid-citation failures return a sanitized
-`503 ASK_STORY_UNAVAILABLE`. Questions, vectors, contexts, answers, histories, identities, and
-clicks are not persisted, logged explicitly, or cached in Redis. Each normal request costs one
-embedding and one generation call, so public quota and rate limiting remain Phase 27 concerns.
-
-Phase 25 adds guest-accessible `GET /api/v1/stories/trending`. Trending means recent reporting
-activity plus report count and distinct publisher coverage; it does not mean popularity, importance,
-virality, clicks, bookmarks, follows, searches, or other user behavior. Candidates must have a
-report within the configured 72-hour window, are fetched newest-first with a bounded default cap of
-500, and may be filtered by Story category before ranking.
-
-The deterministic score is `0.60 * exp(-ageHours / halfLifeHours)`, plus `0.25` times normalized
-distinct-source coverage and `0.15` times normalized report coverage. Ties use latest report time,
-report count, and descending Story ID. Scores and components stay internal; the API exposes only
-truthful `RECENTLY_UPDATED`, `MULTIPLE_SOURCES`, and `MULTIPLE_REPORTS` reasons. Distinct stored
-source IDs prevent repeated reports from one publisher increasing source count.
-
-`displayLanguage=en|si|ta` reuses existing representative-Article localization after ranking, so
-language changes presentation but never Story order. Trending performs no Gemini, embedding,
-translation-generation, grounded-answer, Redis, personalization, or user-repository operation and
-does not affect the public feed cache.
-
-Phase 26 adds a small operational Admin API protected by the existing verified Supabase JWT and a
-comma-separated `ADMIN_USER_IDS` allowlist. Authorization compares only the JWT `sub`; email and
-request headers cannot grant access. Empty configuration means nobody is an administrator. Obtain
-your stable subject from authenticated `GET /api/v1/me`, then configure it locally without
-committing the value. No Supabase service-role key or role database is used.
-
-Admin overview, Source, and Article routes use Mongo counts, bounded newest-first processing
-queries, batched Source hydration, and grouped Article counts. Responses include only operational
-titles, publisher attribution, statuses, and timestamps—never extracted content, hashes,
-embeddings, prompts, provider errors, queue payloads, tokens, or credentials. Admin reads use no
-Redis, Gemini, translations, vector search, or analytics.
-
-Retry atomically claims only a `FAILED` Article by changing it to `RETRYING`, then reuses the
-existing `ArticleDiscoveredNotifier`. Repeated clicks cannot claim the same failure twice; MongoDB
-remains authoritative, and existing startup recovery can redispatch a retry if Redis was
-temporarily unavailable. The controller never invokes Gemini or duplicates processing logic.
-
-For Supabase setup, use a project with asymmetric Auth signing keys and confirm that its JWKS URL is
-available. Configure the project-specific issuer and JWKS URL only through environment variables.
-The backend validates signature, issuer, `authenticated` audience, expiry, and a nonblank subject.
-Do not configure a Supabase service-role key, database password, signing private key, or legacy JWT
-secret in this application.
-
-The Article list accepts zero-based `page`, `size`, optional `source`, `category`, and `language` filters, plus `sort=publishedAt,asc|desc`. Defaults are `page=0`, `size=20`, and newest-first publication sorting. Requests above the maximum page size of `100` are rejected.
-
-Story coverage comparison groups assigned Articles by publisher and compares normalized
-topics and entities already stored by enrichment. It makes no AI provider or network call.
-"Source-specific" means only that metadata is not present in another currently available
-publisher report; it does not imply intentional omission. Equality uses conservative Unicode,
-whitespace, and case normalization, so equivalent terms written in different languages are
-not merged. Single-source Stories return a valid response with `comparisonAvailable=false`.
-Only public summaries and metadata are returned; extracted content, keywords, model/prompt
-metadata, embeddings, clustering fields, and internal IDs remain private.
-
-Story timelines order all assigned Articles by `publishedAt` and stable Article ID, then
-calculate elapsed whole minutes from the earliest available report. The timeline describes
-publisher-report publication chronology only; it does not establish event occurrence time or
-infer discovery, copying, causation, credibility, or publisher intent. It makes no AI/provider
-or network call. Single-report Stories return one event at minute zero. Timeline DTOs expose
-only public summaries and attribution; private content, hashes, embeddings, processing,
-clustering, model/prompt, and MongoDB metadata remain internal.
-
-## Internal Ingestion API
-
-```text
-POST /api/internal/v1/articles
-X-Ingestion-API-Key: <INGESTION_API_KEY>
-```
-
-The endpoint resolves `sourceSlug`, validates article metadata and bounded
-cleaned `extractedContent`, and returns `201 CREATED` for a new article or
-`200 OK` with `URL_DUPLICATE` or `CONTENT_DUPLICATE` duplicate information.
-It is not a public
-write API. Extracted content is stored only for internal processing and is
-never exposed by either public Article endpoint. Lead-image metadata is not
-stored or exposed.
-
-The backend owns exact-content fingerprinting: NFC Unicode normalization and
-whitespace normalization are applied before SHA-256 hashing. A sparse unique
-`contentHash` index is safe for legacy documents where the field is absent.
-An idempotent startup backfill hashes legacy content where possible and skips
-pre-existing same-content collisions without deleting or overwriting articles.
-
-## Public Article Feed Cache
-
-`GET /api/v1/articles` uses cache-aside Redis reads for normalized page, size, source, category, original language, display language, and publication-sort combinations. Only the completed public `PagedResponse<ArticleResponse>` JSON is cached; MongoDB documents and private ingestion or AI metadata are never cached.
-
-Keys use the `news:feed:` namespace and a generation value. New article creation and successful public AI enrichment increment `news:feed:generation`; duplicate ingestion and failed processing do not. Previous generations become unreachable and expire naturally after `ARTICLE_FEED_CACHE_TTL_SECONDS` (60 seconds by default). Redis read, write, or invalidation failures are logged safely and never fail public MongoDB reads, article persistence, or enrichment.
-
-## Asynchronous Article Processing
-
-Newly persisted articles publish a minimal `ARTICLE_DISCOVERED` Redis Stream event. The worker loads title and internal `extractedContent` from MongoDB; article content is never placed in Redis.
-
-One schema-constrained request through `AiProvider` and `GeminiAiProvider` returns a same-language summary, category, topics, keywords, and simple entities. The prompt forbids translation, outside knowledge, fabricated facts or quotations, and unsupported motive inference.
-
-Structured output is validated before persistence: summaries are limited to 2,000 characters, with at most 8 topics, 15 keywords, and 20 entities plus bounded individual strings. Raw Gemini responses and prompts are not stored.
-
-Input is a deterministic leading excerpt capped at 30,000 characters by default through `GEMINI_MAX_INPUT_CHARACTERS`. Truncation avoids splitting surrogate pairs, is disclosed to the model, and content shorter than 50 characters is rejected.
-
-Validated enrichment stores private model, prompt version `v1`, and UTC processing time. Public Article DTOs expose only summary, topics, and category. Matching model-and-prompt replays skip Gemini.
-
-Provider outages, timeouts, rate limits, invalid JSON, and incomplete output use the existing bounded retry and dead-letter flow. MongoDB persistence and ingestion remain successful independently.
-
-At normal application startup, Daily Mirror is registered as an enabled English
-RSS source if its `daily-mirror` slug does not already exist. No other source
-is seeded.
-
-## Story Clustering
-
-After successful AI enrichment, the worker generates a private semantic embedding and then assigns the Article to one internal Story. The provider-neutral `EmbeddingProvider` currently uses Gemini's configurable `gemini-embedding-2` model with 768 dimensions by default. Because that model does not accept the embedding `taskType` field, input version `story-semantic-v2` deterministically prefixes the provider-visible text with `task: sentence similarity | query:`. The remaining input contains only title, AI summary, topics, entities, and category; `extractedContent` is never sent to the embedding endpoint.
-
-Candidate Stories remain bounded to the configurable +/-48-hour publication window and representative Articles are batch-loaded before scoring. Active matching version `hybrid-v1` preserves the `lexical-v1` score for same-language reports and uses conservative semantic evidence to improve borderline matches. Cross-language English, Sinhala, and Tamil matching requires compatible embeddings, category compatibility, and the higher cross-language semantic threshold. Legacy `lexical-v1` Stories remain eligible candidates.
-
-Embedding values and their model, dimensions, input version/hash, and UTC timestamp are stored only on the private Article document. A matching model/version/hash is reused on replay; changed semantic input regenerates the embedding. Embedding failures retain completed AI enrichment and enter the existing Redis retry/DLQ flow without calling generative AI again.
-
-`Article.storyId` is internal and is not exposed by public DTOs. Story membership updates use an internal article-ID set and conditional MongoDB updates so replay cannot increment `articleCount` twice. Article assignment is an atomic set-if-null operation; the winning MongoDB assignment remains authoritative during concurrent attempts. Story-only changes do not invalidate the public Article feed cache.
-
-Story decisions run in an Atlas transaction. The transaction first increments the private global `hybrid-v1` `story_cluster_partitions` revision, then reloads candidates, creates or selects the Story, assigns the Article, and updates membership. One global partition serializes cross-language decisions as well as same-language decisions. Concurrent decisions produce a MongoDB write conflict; the complete transaction retries at most three times with a fresh snapshot.
-
-A bounded startup embedding backfill processes enriched Articles with missing or stale embedding metadata, then clusters unassigned Articles. The existing bounded clustering backfill remains available. Both are oldest-first and reuse persisted enrichment; neither calls generative AI. Keep the backfill limit conservative and monitor Google AI Studio free-tier quota/rate usage; recurring embedding scheduling is intentionally outside this phase.
-
-## Testing
-
-Run the automated tests:
+## Testing & Quality Verification
 
 ```bash
+# Compile and verify test classes
+mvn test-compile
+
+# Run unit and integration tests
 mvn test
+
+# Build executable JAR package
+mvn package
 ```
 
-Create the executable application package:
+---
 
-```bash
-mvn clean package
+## Project Structure
+
+```
+sri-lanka-news-backend/
+├── src/
+│   ├── main/
+│   │   ├── java/lk/srilankannews/
+│   │   │   ├── admin/           # Admin operational controllers & audit logging
+│   │   │   ├── ai/              # Google Gemini AI provider & embedding integration
+│   │   │   ├── analytics/       # Pseudonymous engagement collection & rollups
+│   │   │   ├── articles/        # Article domain models & persistence
+│   │   │   ├── bookmarks/       # Reader bookmark management
+│   │   │   ├── follows/         # Source & topic subscription management
+│   │   │   ├── foryou/          # Recommendation engine
+│   │   │   ├── ingestion/       # Internal ingestion controller & validation
+│   │   │   ├── notifications/   # In-app alerts, email outbox & unsubscriptions
+│   │   │   ├── search/          # Keyword & Atlas Vector search controllers
+│   │   │   ├── sources/         # Publisher source models & registry
+│   │   │   ├── stories/         # Story clustering, timeline & grounded Q&A
+│   │   │   ├── trending/        # Reporting activity ranking engine
+│   │   │   └── SriLankaNewsApplication.java # Main application entrypoint
+│   │   └── resources/
+│   │       └── application.yml  # Application properties & profile setup
+│   └── test/                    # JUnit 5 & Spring Boot test suite
+└── pom.xml                      # Maven dependencies & build configuration
 ```
 
-Automated tests require neither Atlas nor Redis. Their application test context
-disables both external integrations and their health checks.
+---
 
-## Architecture Conventions
+## Copyright & Content Safety
 
-- Application APIs use the `/api/v1` base path.
-- Packages are introduced by feature. Shared cross-cutting code belongs in `common`; application configuration belongs in `config`.
-- Controllers use request/response DTOs and never expose MongoDB persistence documents directly.
-- Controllers stay thin, services own business logic, and repositories only handle persistence.
-- Bean Validation is applied at API boundaries.
-- Source and Article documents are stored in separate `sources` and `articles` collections. MongoDB creates unique indexes for source slugs, canonical article URLs, and non-null article content hashes at application startup.
-- Public controllers expose dedicated DTOs, and Article pages resolve Source attribution with one batched lookup rather than one query per Article.
+- The platform respects publisher intellectual property rights.
+- Full extracted article bodies are stored internally for NLP analysis, clustering, and summarization only.
+- The public API exposes neutral summaries, topic tags, and source metadata, always linking directly to the original publisher's website for full article consumption.
 
-- Domain services use UTC `Instant` timestamps supplied by an injectable UTC clock.
-- REST errors use one centralized structure containing a timestamp, HTTP status, stable application code, safe message, request path, request ID, and optional field details.
-- Requests accept a safe `X-Request-ID` value or receive a generated one. The ID is returned in the same response header and included in application logs.
-- Normal HTTP status codes and response bodies are preferred over a generic success envelope.
-- List endpoints will use zero-based `page`, `size`, and `sort=field,direction`. The initial convention is `page=0`, `size=20`, with a maximum size of `100`; enforcement begins when paginated endpoints are introduced.
-- Configuration is externalized through Spring Boot properties and environment variables. Secrets must not be stored in source control.
+---
 
-## Multilingual presentation
+## Related Repositories
 
-Public Article and Story endpoints accept an optional `displayLanguage=en|si|ta` query
-parameter. This is separate from the Article list's existing `language` filter: `language`
-selects the publisher's original Article language, while `displayLanguage` requests a safe
-presentation language. Omitting `displayLanguage` preserves original behavior. Missing or stale
-translations fall back to the original title and AI summary.
-
-After enrichment, embedding, and Story clustering, the worker translates only the Article title
-and existing AI-generated summary into the other two supported languages. It never sends
-`extractedContent` to the translation provider or republishes full publisher content. Original
-fields remain authoritative. Private model, prompt version, deterministic input hash, and UTC time
-remain internal; public DTOs expose only safe `localizedContent`.
-
-Matching model/prompt/hash translations are reused. A bounded oldest-first startup backfill handles
-existing enriched Articles; `MULTILINGUAL_BACKFILL_LIMIT=0` disables it. Translation changes advance
-the feed-cache generation, while cache keys isolate Original, English, Sinhala, and Tamil. Story
-titles reuse batch-loaded representative Article translations without another AI call. Coverage
-topic/entity comparison remains based on original metadata, so chips can remain in mixed source
-languages. Timeline ordering and relative times remain unchanged.
-
-## Planned Next Phase
-
-Phase 27 — Reliability / Production Hardening
+| Repository | Description |
+|---|---|
+| [sri-lanka-news-frontend](https://github.com/dulanprabashwara/sri-lanka-news-frontend) | Next.js 16 App Router presentation layer |
+| [sri-lanka-news-ingestion](https://github.com/dulanprabashwara/sri-lanka-news-ingestion) | Python 3.12 scheduled publisher extraction & ingestion service |
