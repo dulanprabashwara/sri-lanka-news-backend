@@ -9,6 +9,7 @@ import lk.srilankannews.ingestion.run.api.ClaimRequest;
 import lk.srilankannews.ingestion.run.api.ClaimResponse;
 import lk.srilankannews.ingestion.run.api.CompleteRequest;
 import lk.srilankannews.ingestion.run.api.FailRequest;
+import lk.srilankannews.retention.RetentionPolicyService;
 import lk.srilankannews.source.Source;
 import lk.srilankannews.source.SourceService;
 import org.bson.types.ObjectId;
@@ -27,17 +28,20 @@ public class IngestionRunService {
     private final IngestionRunRepository runRepository;
     private final IngestionSourceLeaseRepository leaseRepository;
     private final SourceService sourceService;
+    private final RetentionPolicyService retentionPolicyService;
     private final Clock clock;
 
     public IngestionRunService(
             IngestionRunRepository runRepository,
             IngestionSourceLeaseRepository leaseRepository,
             SourceService sourceService,
+            RetentionPolicyService retentionPolicyService,
             Clock clock
     ) {
         this.runRepository = runRepository;
         this.leaseRepository = leaseRepository;
         this.sourceService = sourceService;
+        this.retentionPolicyService = retentionPolicyService;
         this.clock = clock;
     }
 
@@ -76,7 +80,7 @@ public class IngestionRunService {
             return ClaimResponse.activeRun();
         }
 
-        // 4. Create RUNNING IngestionRun
+        // 4. Create RUNNING IngestionRun (expiresAt = null while active)
         IngestionRun newRun = IngestionRun.createRunning(
                 newRunId,
                 source.id(),
@@ -108,7 +112,9 @@ public class IngestionRunService {
         // Direct lookup by lease.runId (normal case after ID fix)
         runRepository.findById(runId).ifPresent(run -> {
             if (run.status() == IngestionRunStatus.RUNNING) {
-                runRepository.save(run.withInterrupted(now));
+                Instant retentionExpiresAt = retentionPolicyService
+                        .calculateIngestionRunExpiry(IngestionRunStatus.INTERRUPTED, now).orElse(null);
+                runRepository.save(run.withInterrupted(now, retentionExpiresAt));
                 LOGGER.info("Interrupted stale ingestion run runId={}", runId);
             }
         });
@@ -121,7 +127,9 @@ public class IngestionRunService {
         runRepository.findBySourceIdAndStatusAndLeaseExpiresAtBefore(
                 sourceId, IngestionRunStatus.RUNNING, now
         ).forEach(orphanedRun -> {
-            runRepository.save(orphanedRun.withInterrupted(now));
+            Instant retentionExpiresAt = retentionPolicyService
+                    .calculateIngestionRunExpiry(IngestionRunStatus.INTERRUPTED, now).orElse(null);
+            runRepository.save(orphanedRun.withInterrupted(now, retentionExpiresAt));
             LOGGER.info("Interrupted orphaned stale run runId={} sourceId={}", orphanedRun.id(), sourceId);
         });
     }
@@ -158,12 +166,16 @@ public class IngestionRunService {
             throw new IngestionRunConflictException("Cannot complete run from status " + run.status());
         }
 
+        Instant retentionExpiresAt = retentionPolicyService
+                .calculateIngestionRunExpiry(IngestionRunStatus.COMPLETED, now).orElse(null);
+
         IngestionRun completed = run.withCompleted(
                 request.articlesDiscovered(),
                 request.articlesSubmitted(),
                 request.articlesSucceeded(),
                 request.articlesFailed(),
-                now
+                now,
+                retentionExpiresAt
         );
         runRepository.save(completed);
         leaseRepository.releaseLease(run.sourceId(), runId);
@@ -180,6 +192,9 @@ public class IngestionRunService {
             throw new IngestionRunConflictException("Cannot fail run from status " + run.status());
         }
 
+        Instant retentionExpiresAt = retentionPolicyService
+                .calculateIngestionRunExpiry(IngestionRunStatus.FAILED, now).orElse(null);
+
         IngestionRun failed = run.withFailed(
                 request.articlesDiscovered(),
                 request.articlesSubmitted(),
@@ -187,7 +202,8 @@ public class IngestionRunService {
                 request.articlesFailed(),
                 request.errorCode(),
                 request.errorMessage(),
-                now
+                now,
+                retentionExpiresAt
         );
         runRepository.save(failed);
         leaseRepository.releaseLease(run.sourceId(), runId);

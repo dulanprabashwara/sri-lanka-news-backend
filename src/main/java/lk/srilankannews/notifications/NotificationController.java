@@ -1,7 +1,11 @@
 package lk.srilankannews.notifications;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Map;
+import lk.srilankannews.analytics.AnalyticsEventType;
+import lk.srilankannews.analytics.AnalyticsRecorder;
+import lk.srilankannews.retention.RetentionPolicyService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -14,8 +18,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import lk.srilankannews.analytics.AnalyticsRecorder;
-import lk.srilankannews.analytics.AnalyticsEventType;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -25,6 +27,7 @@ public class NotificationController {
     private final NotificationPreferenceRepository preferenceRepository;
     private final UnsubscribeTokenService unsubscribeTokenService;
     private final EmailNotificationProvider emailProvider;
+    private final RetentionPolicyService retentionPolicyService;
     private final Clock clock;
     private final AnalyticsRecorder analyticsRecorder;
 
@@ -32,12 +35,14 @@ public class NotificationController {
                                   NotificationPreferenceRepository preferenceRepository,
                                   UnsubscribeTokenService unsubscribeTokenService,
                                   EmailNotificationProvider emailProvider,
+                                  RetentionPolicyService retentionPolicyService,
                                   Clock clock,
                                   AnalyticsRecorder analyticsRecorder) {
         this.notificationRepository = notificationRepository;
         this.preferenceRepository = preferenceRepository;
         this.unsubscribeTokenService = unsubscribeTokenService;
         this.emailProvider = emailProvider;
+        this.retentionPolicyService = retentionPolicyService;
         this.clock = clock;
         this.analyticsRecorder = analyticsRecorder;
     }
@@ -60,6 +65,9 @@ public class NotificationController {
     public ResponseEntity<Void> markRead(@PathVariable String id, Authentication authentication) {
         notificationRepository.findById(id).ifPresent(notification -> {
             if (notification.userId().equals(authentication.getName()) && notification.readAt() == null) {
+                Instant readAt = clock.instant();
+                Instant expiresAt = retentionPolicyService.calculateNotificationReadExpiry(readAt).orElse(null);
+
                 Notification updated = new Notification(
                         notification.id(),
                         notification.userId(),
@@ -76,8 +84,9 @@ public class NotificationController {
                         notification.eventVersion(),
                         notification.dedupeKey(),
                         notification.createdAt(),
-                        clock.instant(), // set readAt
-                        notification.emailDelivery()
+                        readAt, // set readAt
+                        notification.emailDelivery(),
+                        expiresAt
                 );
                 notificationRepository.save(updated);
                 
@@ -91,7 +100,9 @@ public class NotificationController {
     @PostMapping("/me/notifications/read-all")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> markAllRead(Authentication authentication) {
-        notificationRepository.markAllReadForUser(authentication.getName(), clock.instant());
+        Instant readAt = clock.instant();
+        Instant expiresAt = retentionPolicyService.calculateNotificationReadExpiry(readAt).orElse(null);
+        notificationRepository.markAllReadForUser(authentication.getName(), readAt, expiresAt);
         return ResponseEntity.ok().build();
     }
 

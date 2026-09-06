@@ -1,5 +1,6 @@
 package lk.srilankannews.notifications;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.data.annotation.Id;
@@ -31,7 +32,8 @@ public record Notification(
         @Indexed(unique = true) String dedupeKey,
         Instant createdAt,
         Instant readAt,
-        EmailDelivery emailDelivery
+        EmailDelivery emailDelivery,
+        @JsonIgnore Instant expiresAt
 ) {
     public enum NotificationType {
         STORY_ACTIVITY,

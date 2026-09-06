@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
+import lk.srilankannews.retention.RetentionPolicyService;
 import lk.srilankannews.source.Source;
 import lk.srilankannews.source.SourceService;
 import org.springframework.stereotype.Service;
@@ -13,11 +14,16 @@ public class IngestionTriggerService {
 
     private final IngestionTriggerRequestRepository repository;
     private final SourceService sourceService;
+    private final RetentionPolicyService retentionPolicyService;
     private final Clock clock;
 
-    public IngestionTriggerService(IngestionTriggerRequestRepository repository, SourceService sourceService, Clock clock) {
+    public IngestionTriggerService(IngestionTriggerRequestRepository repository,
+                                   SourceService sourceService,
+                                   RetentionPolicyService retentionPolicyService,
+                                   Clock clock) {
         this.repository = repository;
         this.sourceService = sourceService;
+        this.retentionPolicyService = retentionPolicyService;
         this.clock = clock;
     }
 
@@ -46,7 +52,10 @@ public class IngestionTriggerService {
         repository.findById(triggerId).ifPresent(trigger -> {
             // Bounded retries: max 5 attempts, exponential-ish backoff
             if (trigger.attemptCount() >= 5) {
-                repository.save(trigger.withCancelled(Instant.now(clock)));
+                Instant now = Instant.now(clock);
+                Instant expiresAt = retentionPolicyService
+                        .calculateIngestionTriggerExpiry(IngestionTriggerRequest.STATUS_CANCELLED, now).orElse(null);
+                repository.save(trigger.withCancelled(now, expiresAt));
             } else {
                 Instant next = Instant.now(clock).plus(trigger.attemptCount() * 15L, ChronoUnit.SECONDS);
                 repository.save(trigger.withRetryPending(next));
@@ -56,13 +65,21 @@ public class IngestionTriggerService {
 
     public void complete(String triggerId) {
         repository.findById(triggerId).ifPresent(trigger -> {
-            repository.save(trigger.withCompleted(Instant.now(clock)));
+            Instant now = Instant.now(clock);
+            Instant expiresAt = retentionPolicyService
+                    .calculateIngestionTriggerExpiry(IngestionTriggerRequest.STATUS_CANCELLED.equals(trigger.status()) 
+                            ? IngestionTriggerRequest.STATUS_CANCELLED 
+                            : IngestionTriggerRequest.STATUS_COMPLETED, now).orElse(null);
+            repository.save(trigger.withCompleted(now, expiresAt));
         });
     }
 
     public void fail(String triggerId) {
         repository.findById(triggerId).ifPresent(trigger -> {
-            repository.save(trigger.withFailed(Instant.now(clock)));
+            Instant now = Instant.now(clock);
+            Instant expiresAt = retentionPolicyService
+                    .calculateIngestionTriggerExpiry(IngestionTriggerRequest.STATUS_FAILED, now).orElse(null);
+            repository.save(trigger.withFailed(now, expiresAt));
         });
     }
 }

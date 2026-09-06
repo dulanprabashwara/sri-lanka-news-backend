@@ -159,7 +159,8 @@ public class EmailDeliveryWorker {
                 notification.dedupeKey(),
                 notification.createdAt(),
                 notification.readAt(),
-                emailDelivery
+                emailDelivery,
+                notification.expiresAt()
         );
         notificationRepository.save(updated);
     }

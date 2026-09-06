@@ -1,5 +1,6 @@
 package lk.srilankannews.admin.audit;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.Instant;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -12,6 +13,7 @@ public record AdminAuditEvent(
         String eventType,
         String targetSourceId,
         Object metadata,
-        @Indexed(direction = org.springframework.data.mongodb.core.index.IndexDirection.DESCENDING) Instant createdAt
+        @Indexed(direction = org.springframework.data.mongodb.core.index.IndexDirection.DESCENDING) Instant createdAt,
+        @JsonIgnore Instant expiresAt
 ) {
 }

@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 import lk.srilankannews.article.Article;
 import lk.srilankannews.article.ArticleService;
+import lk.srilankannews.retention.RetentionPolicyService;
 import lk.srilankannews.source.Source;
 import lk.srilankannews.source.SourceService;
 import lk.srilankannews.story.Story;
@@ -37,6 +38,7 @@ public class NotificationProcessingService {
     private final NotificationRepository notificationRepository;
     private final NotificationEventRepository eventRepository;
     private final lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
+    private final RetentionPolicyService retentionPolicyService;
     private final Clock clock;
 
     public NotificationProcessingService(ArticleService articleService,
@@ -47,6 +49,7 @@ public class NotificationProcessingService {
                                          NotificationRepository notificationRepository,
                                          NotificationEventRepository eventRepository,
                                          lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder,
+                                         RetentionPolicyService retentionPolicyService,
                                          Clock clock) {
         this.articleService = articleService;
         this.storyRepository = storyRepository;
@@ -56,6 +59,7 @@ public class NotificationProcessingService {
         this.notificationRepository = notificationRepository;
         this.eventRepository = eventRepository;
         this.analyticsRecorder = analyticsRecorder;
+        this.retentionPolicyService = retentionPolicyService;
         this.clock = clock;
     }
 
@@ -144,6 +148,9 @@ public class NotificationProcessingService {
         String title = story.canonicalTitle() != null ? story.canonicalTitle() : article.title();
         String message = article.aiEnrichment() != null ? article.aiEnrichment().summary() : "";
 
+        Instant createdAt = clock.instant();
+        Instant expiresAt = retentionPolicyService.calculateNotificationUnreadMaxExpiry(createdAt).orElse(null);
+
         Notification notification = new Notification(
                 null,
                 userId,
@@ -159,9 +166,10 @@ public class NotificationProcessingService {
                 "/story/" + story.id(),
                 eventVersion,
                 dedupeKey,
-                clock.instant(),
+                createdAt,
                 null, // readAt
-                emailDelivery
+                emailDelivery,
+                expiresAt
         );
 
         try {
@@ -219,6 +227,10 @@ public class NotificationProcessingService {
     }
 
     private void markEvent(NotificationEvent event, NotificationEvent.EventStatus status, String error) {
+        Instant processedAt = status == NotificationEvent.EventStatus.PROCESSED ? clock.instant() : event.processedAt();
+        Instant terminalAt = status == NotificationEvent.EventStatus.PROCESSED ? processedAt : (status == NotificationEvent.EventStatus.FAILED ? clock.instant() : null);
+        Instant expiresAt = retentionPolicyService.calculateNotificationOutboxExpiry(status, terminalAt).orElse(null);
+
         NotificationEvent updated = new NotificationEvent(
                 event.id(),
                 event.articleId(),
@@ -230,8 +242,9 @@ public class NotificationProcessingService {
                 event.attemptCount(),
                 null,
                 event.publishedAt(),
-                status == NotificationEvent.EventStatus.PROCESSED ? clock.instant() : event.processedAt(),
-                error
+                processedAt,
+                error,
+                expiresAt
         );
         eventRepository.save(updated);
     }

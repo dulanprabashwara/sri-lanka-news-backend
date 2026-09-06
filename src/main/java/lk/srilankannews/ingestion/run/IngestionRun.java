@@ -1,5 +1,6 @@
 package lk.srilankannews.ingestion.run;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.Instant;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -29,7 +30,8 @@ public record IngestionRun(
         String safeErrorCode,
         String safeErrorMessage,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        @JsonIgnore Instant expiresAt
 ) {
     public static IngestionRun createRunning(
             String id,
@@ -54,18 +56,24 @@ public record IngestionRun(
                 leaseExpiresAt,
                 0, 0, 0, 0,
                 null, null,
-                now, now
+                now, now,
+                null
         );
     }
 
     public IngestionRun withInterrupted(Instant now) {
+        return withInterrupted(now, null);
+    }
+
+    public IngestionRun withInterrupted(Instant now, Instant expiresAt) {
         return new IngestionRun(
                 id, sourceId, sourceSlug, triggerType,
                 IngestionRunStatus.INTERRUPTED,
                 scheduledFor, startedAt, now, workerId, leaseExpiresAt,
                 articlesDiscovered, articlesSubmitted, articlesSucceeded, articlesFailed,
                 "INTERRUPTED", "Run was interrupted by a new lease claim",
-                createdAt, now
+                createdAt, now,
+                expiresAt
         );
     }
 
@@ -75,12 +83,19 @@ public record IngestionRun(
                 scheduledFor, startedAt, finishedAt, workerId, newLeaseExpiresAt,
                 articlesDiscovered, articlesSubmitted, articlesSucceeded, articlesFailed,
                 safeErrorCode, safeErrorMessage,
-                createdAt, now
+                createdAt, now,
+                expiresAt
         );
     }
 
     public IngestionRun withCompleted(
             int discovered, int submitted, int succeeded, int failed, Instant now
+    ) {
+        return withCompleted(discovered, submitted, succeeded, failed, now, null);
+    }
+
+    public IngestionRun withCompleted(
+            int discovered, int submitted, int succeeded, int failed, Instant now, Instant expiresAt
     ) {
         return new IngestionRun(
                 id, sourceId, sourceSlug, triggerType,
@@ -88,13 +103,21 @@ public record IngestionRun(
                 scheduledFor, startedAt, now, workerId, leaseExpiresAt,
                 discovered, submitted, succeeded, failed,
                 safeErrorCode, safeErrorMessage,
-                createdAt, now
+                createdAt, now,
+                expiresAt
         );
     }
 
     public IngestionRun withFailed(
             int discovered, int submitted, int succeeded, int failed,
             String errorCode, String errorMessage, Instant now
+    ) {
+        return withFailed(discovered, submitted, succeeded, failed, errorCode, errorMessage, now, null);
+    }
+
+    public IngestionRun withFailed(
+            int discovered, int submitted, int succeeded, int failed,
+            String errorCode, String errorMessage, Instant now, Instant expiresAt
     ) {
         String boundErrorMessage = errorMessage != null && errorMessage.length() > 255 
                 ? errorMessage.substring(0, 252) + "..." 
@@ -106,7 +129,8 @@ public record IngestionRun(
                 scheduledFor, startedAt, now, workerId, leaseExpiresAt,
                 discovered, submitted, succeeded, failed,
                 errorCode, boundErrorMessage,
-                createdAt, now
+                createdAt, now,
+                expiresAt
         );
     }
 }

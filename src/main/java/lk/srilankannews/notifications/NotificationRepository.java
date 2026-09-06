@@ -19,8 +19,8 @@ public interface NotificationRepository extends MongoRepository<Notification, St
     long countUnreadByUserId(String userId);
 
     @Query("{ 'userId': ?0, 'readAt': null }")
-    @Update("{ '$set': { 'readAt': ?1 } }")
-    void markAllReadForUser(String userId, Instant now);
+    @Update("{ '$set': { 'readAt': ?1, 'expiresAt': ?2 } }")
+    void markAllReadForUser(String userId, Instant now, Instant expiresAt);
 
     @Query("{ 'emailDelivery.status': { $in: ?0 }, 'emailDelivery.nextAttemptAt': { $lte: ?1 } }")
     List<Notification> findEmailsToDelivery(List<Notification.EmailDelivery.DeliveryStatus> statuses, Instant now);

@@ -1,10 +1,10 @@
 package lk.srilankannews.notifications;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.Instant;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "notification_events")
@@ -24,7 +24,8 @@ public record NotificationEvent(
         Instant nextAttemptAt,
         Instant publishedAt,
         Instant processedAt,
-        String lastErrorCode
+        String lastErrorCode,
+        @JsonIgnore Instant expiresAt
 ) {
     public enum EventStatus {
         PENDING,

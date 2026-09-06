@@ -1,5 +1,6 @@
 package lk.srilankannews.ingestion.trigger;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.Instant;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -23,53 +24,66 @@ public record IngestionTriggerRequest(
         Instant claimedAt,
         String workerId,
         String runId,
-        Instant completedAt
+        Instant completedAt,
+        @JsonIgnore Instant expiresAt
 ) {
     public static final String STATUS_PENDING = "PENDING";
     public static final String STATUS_CLAIMED = "CLAIMED";
     public static final String STATUS_COMPLETED = "COMPLETED";
     public static final String STATUS_FAILED = "FAILED";
     public static final String STATUS_CANCELLED = "CANCELLED";
-    
+
     public IngestionTriggerRequest withClaimed(String workerId, Instant now) {
         return new IngestionTriggerRequest(
                 id, sourceId, sourceSlug, requestedBy, requestedAt,
-                STATUS_CLAIMED, attemptCount + 1, null, now, workerId, runId, null
+                STATUS_CLAIMED, attemptCount + 1, null, now, workerId, runId, null, null
         );
     }
-    
+
     public IngestionTriggerRequest withRunId(String runId) {
         return new IngestionTriggerRequest(
                 id, sourceId, sourceSlug, requestedBy, requestedAt,
-                status, attemptCount, nextAttemptAt, claimedAt, workerId, runId, completedAt
+                status, attemptCount, nextAttemptAt, claimedAt, workerId, runId, completedAt, expiresAt
         );
     }
-    
+
     public IngestionTriggerRequest withRetryPending(Instant nextAttemptAt) {
         return new IngestionTriggerRequest(
                 id, sourceId, sourceSlug, requestedBy, requestedAt,
-                STATUS_PENDING, attemptCount, nextAttemptAt, null, null, null, null
+                STATUS_PENDING, attemptCount, nextAttemptAt, null, null, null, null, null
         );
     }
-    
+
     public IngestionTriggerRequest withCompleted(Instant now) {
+        return withCompleted(now, null);
+    }
+
+    public IngestionTriggerRequest withCompleted(Instant now, Instant expiresAt) {
         return new IngestionTriggerRequest(
                 id, sourceId, sourceSlug, requestedBy, requestedAt,
-                STATUS_COMPLETED, attemptCount, nextAttemptAt, claimedAt, workerId, runId, now
+                STATUS_COMPLETED, attemptCount, nextAttemptAt, claimedAt, workerId, runId, now, expiresAt
         );
     }
-    
+
     public IngestionTriggerRequest withFailed(Instant now) {
+        return withFailed(now, null);
+    }
+
+    public IngestionTriggerRequest withFailed(Instant now, Instant expiresAt) {
         return new IngestionTriggerRequest(
                 id, sourceId, sourceSlug, requestedBy, requestedAt,
-                STATUS_FAILED, attemptCount, nextAttemptAt, claimedAt, workerId, runId, now
+                STATUS_FAILED, attemptCount, nextAttemptAt, claimedAt, workerId, runId, now, expiresAt
         );
     }
-    
+
     public IngestionTriggerRequest withCancelled(Instant now) {
+        return withCancelled(now, null);
+    }
+
+    public IngestionTriggerRequest withCancelled(Instant now, Instant expiresAt) {
         return new IngestionTriggerRequest(
                 id, sourceId, sourceSlug, requestedBy, requestedAt,
-                STATUS_CANCELLED, attemptCount, nextAttemptAt, claimedAt, workerId, runId, now
+                STATUS_CANCELLED, attemptCount, nextAttemptAt, claimedAt, workerId, runId, now, expiresAt
         );
     }
 }

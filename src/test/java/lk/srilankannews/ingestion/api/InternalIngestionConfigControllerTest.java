@@ -119,7 +119,7 @@ class InternalIngestionConfigControllerTest {
         Instant now = Instant.now();
         IngestionTriggerRequest claimed = new IngestionTriggerRequest(
                 "trigger-1", "src1", "daily-mirror", "admin-sub", now,
-                IngestionTriggerRequest.STATUS_CLAIMED, 1, null, now, "w1", null, null
+                IngestionTriggerRequest.STATUS_CLAIMED, 1, null, now, "w1", null, null, null
         );
         when(triggerService.claimNextPending(anyString())).thenReturn(Optional.of(claimed));
 

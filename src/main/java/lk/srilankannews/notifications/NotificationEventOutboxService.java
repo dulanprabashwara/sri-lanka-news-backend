@@ -39,7 +39,8 @@ public class NotificationEventOutboxService {
                 clock.instant(), // nextAttemptAt
                 null,
                 null,
-                null
+                null,
+                null // expiresAt (null for active PENDING status)
         );
 
         event = repository.save(event);

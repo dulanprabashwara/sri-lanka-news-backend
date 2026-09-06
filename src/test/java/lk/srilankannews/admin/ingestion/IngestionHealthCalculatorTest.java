@@ -27,7 +27,7 @@ class IngestionHealthCalculatorTest {
                 startedAt, startedAt, startedAt.plus(1, ChronoUnit.MINUTES),
                 "worker-1", NOW.plus(5, ChronoUnit.MINUTES),
                 10, 10, 9, status == IngestionRunStatus.FAILED ? 1 : 0,
-                null, null, startedAt, startedAt
+                null, null, startedAt, startedAt, null
         );
     }
 

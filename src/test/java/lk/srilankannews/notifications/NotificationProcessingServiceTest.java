@@ -2,6 +2,8 @@ package lk.srilankannews.notifications;
 
 import lk.srilankannews.article.Article;
 import lk.srilankannews.article.ArticleService;
+import lk.srilankannews.retention.RetentionPolicyService;
+import lk.srilankannews.retention.RetentionProperties;
 import lk.srilankannews.source.SourceService;
 import lk.srilankannews.story.Story;
 import lk.srilankannews.story.StoryRepository;
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
@@ -31,9 +34,12 @@ public class NotificationProcessingServiceTest {
     private StoryRepository storyRepository;
     private ArticleService articleService;
     private SourceService sourceService;
+    private RetentionPolicyService retentionPolicyService;
     private Clock clock;
     private lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
     private NotificationProcessingService service;
+
+    private final Instant NOW = Instant.parse("2026-09-04T10:00:00Z");
 
     @BeforeEach
     void setUp() {
@@ -45,7 +51,8 @@ public class NotificationProcessingServiceTest {
         articleService = mock(ArticleService.class);
         sourceService = mock(SourceService.class);
         analyticsRecorder = mock(lk.srilankannews.analytics.AnalyticsRecorder.class);
-        clock = Clock.fixed(Instant.parse("2026-09-04T10:00:00Z"), ZoneId.of("UTC"));
+        retentionPolicyService = new RetentionPolicyService(RetentionProperties.defaults());
+        clock = Clock.fixed(NOW, ZoneId.of("UTC"));
         
         service = new NotificationProcessingService(
                 articleService,
@@ -56,6 +63,7 @@ public class NotificationProcessingServiceTest {
                 notificationRepository,
                 eventRepository,
                 analyticsRecorder,
+                retentionPolicyService,
                 clock
         );
     }
@@ -68,7 +76,7 @@ public class NotificationProcessingServiceTest {
         
         NotificationEvent event = new NotificationEvent(
                 "event-1", "article-100", "story-200", sourceId, Instant.now(clock), "v1", 
-                NotificationEvent.EventStatus.PENDING, 0, Instant.now(clock), Instant.now(clock), null, null
+                NotificationEvent.EventStatus.PENDING, 0, Instant.now(clock), Instant.now(clock), null, null, null
         );
         when(eventRepository.findById("event-1")).thenReturn(Optional.of(event));
         
@@ -114,6 +122,8 @@ public class NotificationProcessingServiceTest {
         
         Notification captured = notificationCaptor.getValue();
         assertThat(captured.userId()).isEqualTo(userId);
+        assertThat(captured.expiresAt()).isNotNull(); // Unread notification expires after 365 days
+        assertThat(captured.expiresAt()).isEqualTo(NOW.plus(Duration.ofDays(365)));
         
         assertThat(captured.reasons()).containsExactlyInAnyOrder(Notification.NotificationReason.FOLLOWED_SOURCE, Notification.NotificationReason.FOLLOWED_TOPIC);
     }
@@ -123,7 +133,7 @@ public class NotificationProcessingServiceTest {
         String userId = "user-123";
         NotificationEvent event = new NotificationEvent(
                 "event-2", "art1", "st1", "src1", Instant.now(clock), "v1", 
-                NotificationEvent.EventStatus.PENDING, 0, Instant.now(clock), Instant.now(clock), null, null
+                NotificationEvent.EventStatus.PENDING, 0, Instant.now(clock), Instant.now(clock), null, null, null
         );
         when(eventRepository.findById("event-2")).thenReturn(Optional.of(event));
         

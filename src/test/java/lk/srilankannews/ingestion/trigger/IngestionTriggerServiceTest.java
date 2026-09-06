@@ -12,6 +12,8 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
 import lk.srilankannews.common.domain.Language;
+import lk.srilankannews.retention.RetentionPolicyService;
+import lk.srilankannews.retention.RetentionProperties;
 import lk.srilankannews.source.IngestionType;
 import lk.srilankannews.source.Source;
 import lk.srilankannews.source.SourceService;
@@ -33,11 +35,13 @@ class IngestionTriggerServiceTest {
     @Mock
     private SourceService sourceService;
 
+    private RetentionPolicyService retentionPolicyService;
     private IngestionTriggerService service;
 
     @BeforeEach
     void setUp() {
-        service = new IngestionTriggerService(repository, sourceService, FIXED_CLOCK);
+        retentionPolicyService = new RetentionPolicyService(RetentionProperties.defaults());
+        service = new IngestionTriggerService(repository, sourceService, retentionPolicyService, FIXED_CLOCK);
     }
 
     private static Source testSource() {
@@ -53,7 +57,7 @@ class IngestionTriggerServiceTest {
 
         IngestionTriggerRequest enqueued = new IngestionTriggerRequest(
                 "t1", "src1", "daily-mirror", "admin-sub", NOW,
-                IngestionTriggerRequest.STATUS_PENDING, 0, null, null, null, null, null
+                IngestionTriggerRequest.STATUS_PENDING, 0, null, null, null, null, null, null
         );
         when(repository.atomicEnqueueTrigger(anyString(), anyString(), anyString(), any()))
                 .thenReturn(Optional.of(enqueued));
@@ -78,13 +82,14 @@ class IngestionTriggerServiceTest {
     void claimNextPending_atomicTransition() {
         IngestionTriggerRequest claimed = new IngestionTriggerRequest(
                 "t1", "src1", "daily-mirror", "admin-sub", NOW,
-                IngestionTriggerRequest.STATUS_CLAIMED, 1, null, NOW, "w1", null, null
+                IngestionTriggerRequest.STATUS_CLAIMED, 1, null, NOW, "w1", null, null, null
         );
         when(repository.claimNextPendingTrigger("w1", NOW)).thenReturn(Optional.of(claimed));
 
-        Optional<IngestionTriggerRequest> result = service.claimNextPending("w1");
+        Optional<IngestionTriggerRequest> result = result = service.claimNextPending("w1");
         assertThat(result).isPresent();
         assertThat(result.get().status()).isEqualTo(IngestionTriggerRequest.STATUS_CLAIMED);
+        assertThat(result.get().expiresAt()).isNull(); // active claimed trigger has null expiresAt
     }
 
     @Test
@@ -101,7 +106,7 @@ class IngestionTriggerServiceTest {
     void retryLater_withinBound_setsPendingWithNextAttemptAt() {
         IngestionTriggerRequest trigger = new IngestionTriggerRequest(
                 "t1", "src1", "daily-mirror", "admin-sub", NOW,
-                IngestionTriggerRequest.STATUS_CLAIMED, 2, null, NOW, "w1", null, null
+                IngestionTriggerRequest.STATUS_CLAIMED, 2, null, NOW, "w1", null, null, null
         );
         when(repository.findById("t1")).thenReturn(Optional.of(trigger));
 
@@ -114,13 +119,14 @@ class IngestionTriggerServiceTest {
         assertThat(saved.status()).isEqualTo(IngestionTriggerRequest.STATUS_PENDING);
         assertThat(saved.nextAttemptAt()).isNotNull();
         assertThat(saved.nextAttemptAt()).isAfter(NOW);
+        assertThat(saved.expiresAt()).isNull();
     }
 
     @Test
     void retryLater_atMaxAttempts_becomesCancelled() {
         IngestionTriggerRequest trigger = new IngestionTriggerRequest(
                 "t1", "src1", "daily-mirror", "admin-sub", NOW,
-                IngestionTriggerRequest.STATUS_CLAIMED, 5, null, NOW, "w1", null, null
+                IngestionTriggerRequest.STATUS_CLAIMED, 5, null, NOW, "w1", null, null, null
         );
         when(repository.findById("t1")).thenReturn(Optional.of(trigger));
 
@@ -131,6 +137,7 @@ class IngestionTriggerServiceTest {
 
         IngestionTriggerRequest saved = captor.getValue();
         assertThat(saved.status()).isEqualTo(IngestionTriggerRequest.STATUS_CANCELLED);
+        assertThat(saved.expiresAt()).isNotNull(); // CANCELLED has expiresAt
     }
 
     // === Trigger RunId Linkage ===
@@ -139,7 +146,7 @@ class IngestionTriggerServiceTest {
     void markRunStarted_setsRunId() {
         IngestionTriggerRequest trigger = new IngestionTriggerRequest(
                 "t1", "src1", "daily-mirror", "admin-sub", NOW,
-                IngestionTriggerRequest.STATUS_CLAIMED, 1, null, NOW, "w1", null, null
+                IngestionTriggerRequest.STATUS_CLAIMED, 1, null, NOW, "w1", null, null, null
         );
         when(repository.findById("t1")).thenReturn(Optional.of(trigger));
 
@@ -156,7 +163,7 @@ class IngestionTriggerServiceTest {
     void complete_transitionsToCompleted() {
         IngestionTriggerRequest trigger = new IngestionTriggerRequest(
                 "t1", "src1", "daily-mirror", "admin-sub", NOW,
-                IngestionTriggerRequest.STATUS_CLAIMED, 1, null, NOW, "w1", "run-1", null
+                IngestionTriggerRequest.STATUS_CLAIMED, 1, null, NOW, "w1", "run-1", null, null
         );
         when(repository.findById("t1")).thenReturn(Optional.of(trigger));
 
@@ -166,13 +173,14 @@ class IngestionTriggerServiceTest {
         verify(repository).save(captor.capture());
         assertThat(captor.getValue().status()).isEqualTo(IngestionTriggerRequest.STATUS_COMPLETED);
         assertThat(captor.getValue().completedAt()).isNotNull();
+        assertThat(captor.getValue().expiresAt()).isNotNull();
     }
 
     @Test
     void fail_transitionsToFailed() {
         IngestionTriggerRequest trigger = new IngestionTriggerRequest(
                 "t1", "src1", "daily-mirror", "admin-sub", NOW,
-                IngestionTriggerRequest.STATUS_CLAIMED, 1, null, NOW, "w1", "run-1", null
+                IngestionTriggerRequest.STATUS_CLAIMED, 1, null, NOW, "w1", "run-1", null, null
         );
         when(repository.findById("t1")).thenReturn(Optional.of(trigger));
 
@@ -181,6 +189,7 @@ class IngestionTriggerServiceTest {
         ArgumentCaptor<IngestionTriggerRequest> captor = ArgumentCaptor.forClass(IngestionTriggerRequest.class);
         verify(repository).save(captor.capture());
         assertThat(captor.getValue().status()).isEqualTo(IngestionTriggerRequest.STATUS_FAILED);
+        assertThat(captor.getValue().expiresAt()).isNotNull();
     }
 
     @Test
