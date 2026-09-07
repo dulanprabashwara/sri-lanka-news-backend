@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
@@ -13,6 +15,7 @@ import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -114,5 +117,34 @@ class RetentionMongoStorageServiceTest {
         assertThat(notificationsStatus.withoutExpiresAt()).isEqualTo(20L);
         assertThat(notificationsStatus.expiredAwaitingCleanup()).isEqualTo(5L);
         assertThat(notificationsStatus.missingExpiryClassification()).contains("ACTIVE PROTECTED");
+    }
+
+    @Test
+    void getTtlDocumentHealthClassifiesNotificationEventMissingExpiryByLifecycle() {
+        Instant now = Instant.parse("2026-09-07T12:00:00Z");
+        when(mongoTemplate.collectionExists("notification_events")).thenReturn(true);
+        when(mongoTemplate.count(any(Query.class), eq("notification_events")))
+                .thenReturn(6L, 0L, 6L, 0L, 3L, 1L);
+
+        List<RetentionMongoStorageService.TtlDocumentLifecycleStatus> docHealth = service.getTtlDocumentHealth(now);
+
+        RetentionMongoStorageService.TtlDocumentLifecycleStatus status = docHealth.stream()
+                .filter(item -> item.collectionName().equals("notification_events"))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(status.activeProtected()).isEqualTo(3L);
+        assertThat(status.failedDeferred()).isEqualTo(1L);
+        assertThat(status.unexpectedMissing()).isEqualTo(2L);
+        assertThat(status.missingExpiryClassification())
+                .isEqualTo("ACTIVE_PROTECTED=3; FAILED_DEFERRED=1; UNEXPECTED_MISSING=2");
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate, times(6)).count(queryCaptor.capture(), eq("notification_events"));
+        String lifecycleQueries = queryCaptor.getAllValues().stream()
+                .map(query -> query.getQueryObject().toString())
+                .reduce("", (left, right) -> left + right);
+        assertThat(lifecycleQueries)
+                .contains("PENDING", "PROCESSING", "RETRYING", "FAILED");
     }
 }

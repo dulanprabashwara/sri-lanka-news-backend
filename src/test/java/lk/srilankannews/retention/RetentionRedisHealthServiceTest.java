@@ -142,7 +142,8 @@ class RetentionRedisHealthServiceTest {
                 new RetentionMongoStorageService.TtlIndexHealthStatus("notifications", "expiresAt", "MISSING", "Index Missing"));
 
         List<RetentionMongoStorageService.TtlDocumentLifecycleStatus> docHealth = List.of(
-                new RetentionMongoStorageService.TtlDocumentLifecycleStatus("notifications", 100L, 80L, 20L, 1500L, null, "ACTIVE PROTECTED"));
+                new RetentionMongoStorageService.TtlDocumentLifecycleStatus(
+                        "notifications", 100L, 80L, 20L, 0L, 0L, 0L, 1500L, null, "ACTIVE PROTECTED"));
 
         RetentionRedisHealthService.StreamHealthMetrics dlqStream = new RetentionRedisHealthService.StreamHealthMetrics(
                 "article-discovered-dlq", 10L, "1788000000000-0", Duration.ofDays(5), "1788500000000-0", Duration.ofHours(1), List.of(), "DLQ NONEMPTY", true);
@@ -163,7 +164,7 @@ class RetentionRedisHealthServiceTest {
     }
 
     @Test
-    void detectTypedWarningsEmitsFailedNotificationEventsUnboundedOnlyWhenWithoutExpiresAtGreaterThanZero() {
+    void detectTypedWarningsUsesFailedDeferredCountInsteadOfAllMissingExpiryEvents() {
         RetentionMongoStorageService.MongoStorageOverview mongoOverview = new RetentionMongoStorageService.MongoStorageOverview(
                 true, 1000L, 2000L, 500L, 500L, 10L, List.of());
 
@@ -173,24 +174,51 @@ class RetentionRedisHealthServiceTest {
         RetentionRedisHealthService.SchedulerHealthStatus scheduler = new RetentionRedisHealthService.SchedulerHealthStatus(
                 true, false, false, "0 0 */6 * * *", "IMPLEMENTED / MANUAL ACTIVATION REQUIRED");
 
-        // Case 1: notification_events withoutExpiresAt = 0 (FAILED count = 0) -> Warning ABSENT
-        List<RetentionMongoStorageService.TtlDocumentLifecycleStatus> docHealthZeroFailed = List.of(
-                new RetentionMongoStorageService.TtlDocumentLifecycleStatus("notification_events", 2L, 2L, 0L, 0L, null, "NONE"));
+        List<RetentionMongoStorageService.TtlDocumentLifecycleStatus> activeOnly = List.of(
+                new RetentionMongoStorageService.TtlDocumentLifecycleStatus(
+                        "notification_events", 3L, 0L, 3L, 3L, 0L, 0L, 0L, null,
+                        "ACTIVE_PROTECTED=3; FAILED_DEFERRED=0; UNEXPECTED_MISSING=0"));
 
         List<RetentionRedisHealthService.RetentionWarning> warningsZero = service.detectTypedWarnings(
-                mongoOverview, List.of(), docHealthZeroFailed, List.of(), memory, scheduler);
+                mongoOverview, List.of(), activeOnly, List.of(), memory, scheduler);
 
         assertThat(warningsZero).extracting(RetentionRedisHealthService.RetentionWarning::warningCode)
                 .doesNotContain("FAILED_NOTIFICATION_EVENTS_UNBOUNDED");
 
-        // Case 2: notification_events withoutExpiresAt = 3 (FAILED count > 0) -> Warning PRESENT
-        List<RetentionMongoStorageService.TtlDocumentLifecycleStatus> docHealthWithFailed = List.of(
-                new RetentionMongoStorageService.TtlDocumentLifecycleStatus("notification_events", 5L, 2L, 3L, 0L, null, "FAILED DEFERRED"));
+        List<RetentionMongoStorageService.TtlDocumentLifecycleStatus> mixedActiveAndFailed = List.of(
+                new RetentionMongoStorageService.TtlDocumentLifecycleStatus(
+                        "notification_events", 5L, 0L, 5L, 3L, 2L, 0L, 0L, null,
+                        "ACTIVE_PROTECTED=3; FAILED_DEFERRED=2; UNEXPECTED_MISSING=0"));
 
         List<RetentionRedisHealthService.RetentionWarning> warningsWithFailed = service.detectTypedWarnings(
-                mongoOverview, List.of(), docHealthWithFailed, List.of(), memory, scheduler);
+                mongoOverview, List.of(), mixedActiveAndFailed, List.of(), memory, scheduler);
 
-        assertThat(warningsWithFailed).extracting(RetentionRedisHealthService.RetentionWarning::warningCode)
-                .contains("FAILED_NOTIFICATION_EVENTS_UNBOUNDED");
+        assertThat(warningsWithFailed)
+                .filteredOn(warning -> warning.warningCode().equals("FAILED_NOTIFICATION_EVENTS_UNBOUNDED"))
+                .singleElement()
+                .extracting(RetentionRedisHealthService.RetentionWarning::message)
+                .asString()
+                .contains("2 records");
+    }
+
+    @Test
+    void detectTypedWarningsReportsUnexpectedTerminalMissingExpirySeparately() {
+        RetentionMongoStorageService.MongoStorageOverview mongoOverview = new RetentionMongoStorageService.MongoStorageOverview(
+                true, 1000L, 2000L, 500L, 500L, 10L, List.of());
+        RetentionRedisHealthService.RedisMemoryOverview memory = new RetentionRedisHealthService.RedisMemoryOverview(
+                true, 100L, "100B", 200L, "200B", 1000L, "1000B", "noeviction");
+        RetentionRedisHealthService.SchedulerHealthStatus scheduler = new RetentionRedisHealthService.SchedulerHealthStatus(
+                true, false, false, "0 0 */6 * * *", "IMPLEMENTED / MANUAL ACTIVATION REQUIRED");
+        List<RetentionMongoStorageService.TtlDocumentLifecycleStatus> unexpectedMissing = List.of(
+                new RetentionMongoStorageService.TtlDocumentLifecycleStatus(
+                        "notification_events", 1L, 0L, 1L, 0L, 0L, 1L, 0L, null,
+                        "ACTIVE_PROTECTED=0; FAILED_DEFERRED=0; UNEXPECTED_MISSING=1"));
+
+        List<RetentionRedisHealthService.RetentionWarning> warnings = service.detectTypedWarnings(
+                mongoOverview, List.of(), unexpectedMissing, List.of(), memory, scheduler);
+
+        assertThat(warnings).extracting(RetentionRedisHealthService.RetentionWarning::warningCode)
+                .contains("NOTIFICATION_EVENTS_UNEXPECTED_MISSING_EXPIRY")
+                .doesNotContain("FAILED_NOTIFICATION_EVENTS_UNBOUNDED");
     }
 }

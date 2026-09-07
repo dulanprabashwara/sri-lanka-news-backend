@@ -84,7 +84,7 @@ The following core domain entities **MUST NEVER** receive automatic TTL expirati
 |---|---|---|---|
 | **Raw Analytics** (`analytics_events`) | **30 Days** | Active TTL index on `receivedAt` | Daily metrics already rolled up into `analytics_daily_metrics`. |
 | **Notifications** (`notifications`) | **180 Days** | Explicit `expiresAt` set upon `readAt` or terminal state | Preserves 6 months of reader notification history. |
-| **Notification Outbox** (`notification_events`) | **30 Days** | Explicit `expiresAt` set when status becomes `PUBLISHED` or `FAILED` | Prevents outbox pipeline buildup after processing completes. |
+| **Notification Outbox** (`notification_events`) | **30 Days after `PUBLISHED`/`PROCESSED`; `FAILED` deferred** | Explicit `expiresAt` set from the applicable publish/process timestamp; active and failed-without-canonical-timestamp records remain null | Active `PENDING`/`PROCESSING`/`RETRYING` work is protected. Only `FAILED` records lacking expiry represent the known deferred-retention limitation. |
 | **Ingestion Runs** (`ingestion_runs`) | **90 Days** | Explicit `expiresAt` set when run enters `COMPLETED` or `FAILED` | Preserves 3 months of operational health history for admin diagnostics. |
 | **Trigger Requests** (`ingestion_trigger_requests`) | **30 Days** | Explicit `expiresAt` set when status becomes `PROCESSED` | Cleans up manual run request logs. |
 | **Resolved DLQ** (`article-events-dlq`) | **90 Days** | Scheduled trimming / age-based trimming | Allows 90 days for admin inspection before cleanup. |

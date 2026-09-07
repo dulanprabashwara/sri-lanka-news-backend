@@ -26,7 +26,7 @@ The Data Retention framework provides deterministic, automated data lifecycle ma
 | Collection | Role | Retention Policy | Index / Trigger Field | Expiry Mechanics |
 | :--- | :--- | :--- | :--- | :--- |
 | `notifications` | Delivery records | 180d (read) / 365d (unread) | `{ expiresAt: 1 }`, `expireAfterSeconds = 0` | `expiresAt` computed at creation |
-| `notification_events` | Outbox event log | 30d (published) / Deferred (failed) | `{ expiresAt: 1 }`, `expireAfterSeconds = 0` | `expiresAt` set upon successful dispatch |
+| `notification_events` | Outbox event log | 30d (`PUBLISHED`/`PROCESSED`) / Deferred (`FAILED`) | `{ expiresAt: 1 }`, `expireAfterSeconds = 0` | Active `PENDING`/`PROCESSING`/`RETRYING` records intentionally have no expiry; only failed records without expiry are deferred retention debt |
 | `ingestion_runs` | Ingestion pipeline state | 90 days | `{ expiresAt: 1 }`, `expireAfterSeconds = 0` | `expiresAt = startTime + 90d` |
 | `ingestion_trigger_requests` | API trigger audit | 30 days | `{ expiresAt: 1 }`, `expireAfterSeconds = 0` | `expiresAt = requestedAt + 30d` |
 | `admin_audit_events` | Governance audit log | 365 days | `{ expiresAt: 1 }`, `expireAfterSeconds = 0` | `expiresAt = timestamp + 365d` |

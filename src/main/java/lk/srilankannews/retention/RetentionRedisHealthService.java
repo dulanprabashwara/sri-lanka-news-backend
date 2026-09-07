@@ -256,11 +256,17 @@ public class RetentionRedisHealthService {
                         "WARNING",
                         "High expired document backlog awaiting TTL cleanup in: " + docLifecycle.collectionName() + " (" + docLifecycle.expiredAwaitingCleanup() + " docs)"));
             }
-            if ("notification_events".equals(docLifecycle.collectionName()) && docLifecycle.withoutExpiresAt() > 0) {
+            if ("notification_events".equals(docLifecycle.collectionName()) && docLifecycle.failedDeferred() > 0) {
                 warnings.add(new RetentionWarning(
                         "FAILED_NOTIFICATION_EVENTS_UNBOUNDED",
                         "INFO",
-                        "Failed NotificationEvent records without expiresAt exist (" + docLifecycle.withoutExpiresAt() + " records). Awaiting canonical failure timestamp lifecycle design."));
+                        "Failed NotificationEvent records without expiresAt exist (" + docLifecycle.failedDeferred() + " records). Awaiting canonical failure timestamp lifecycle design."));
+            }
+            if ("notification_events".equals(docLifecycle.collectionName()) && docLifecycle.unexpectedMissing() > 0) {
+                warnings.add(new RetentionWarning(
+                        "NOTIFICATION_EVENTS_UNEXPECTED_MISSING_EXPIRY",
+                        "WARNING",
+                        "NotificationEvent records unexpectedly missing expiresAt exist (" + docLifecycle.unexpectedMissing() + " records)."));
             }
         }
 

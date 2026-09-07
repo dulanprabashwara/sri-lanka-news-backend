@@ -67,7 +67,8 @@ class AdminRetentionControllerTest {
                 new RetentionMongoStorageService.TtlIndexHealthStatus("notifications", "expiresAt", "HEALTHY", "Healthy"));
 
         List<RetentionMongoStorageService.TtlDocumentLifecycleStatus> docHealth = List.of(
-                new RetentionMongoStorageService.TtlDocumentLifecycleStatus("notifications", 100L, 80L, 20L, 0L, null, "ACTIVE PROTECTED"));
+                new RetentionMongoStorageService.TtlDocumentLifecycleStatus(
+                        "notifications", 100L, 80L, 20L, 0L, 0L, 0L, 0L, null, "ACTIVE PROTECTED"));
 
         RetentionRedisHealthService.RedisMemoryOverview memory = new RetentionRedisHealthService.RedisMemoryOverview(
                 true, 1024L, "1KB", 2048L, "2KB", 10000L, "10KB", "noeviction");

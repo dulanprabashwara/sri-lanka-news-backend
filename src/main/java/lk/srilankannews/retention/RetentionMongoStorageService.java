@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lk.srilankannews.notifications.NotificationEvent;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,7 +173,7 @@ public class RetentionMongoStorageService {
         for (String collName : TTL_CONTROLLED_COLLECTIONS) {
             if (!mongoTemplate.collectionExists(collName)) {
                 docHealthList.add(new TtlDocumentLifecycleStatus(
-                        collName, 0L, 0L, 0L, 0L, null, "COLLECTION ABSENT"));
+                        collName, 0L, 0L, 0L, 0L, 0L, 0L, 0L, null, "COLLECTION ABSENT"));
                 continue;
             }
 
@@ -185,6 +186,22 @@ public class RetentionMongoStorageService {
                             Criteria.where("expiresAt").is(null))), collName);
             long expiredAwaitingCleanup = mongoTemplate.count(
                     Query.query(Criteria.where("expiresAt").lt(nowDate)), collName);
+
+            long activeProtected = 0L;
+            long failedDeferred = 0L;
+            long unexpectedMissing = 0L;
+            if ("notification_events".equals(collName)) {
+                activeProtected = mongoTemplate.count(Query.query(new Criteria().andOperator(
+                        missingExpiresAtCriteria(),
+                        Criteria.where("status").in(
+                                NotificationEvent.EventStatus.PENDING,
+                                NotificationEvent.EventStatus.PROCESSING,
+                                NotificationEvent.EventStatus.RETRYING))), collName);
+                failedDeferred = mongoTemplate.count(Query.query(new Criteria().andOperator(
+                        missingExpiresAtCriteria(),
+                        Criteria.where("status").is(NotificationEvent.EventStatus.FAILED))), collName);
+                unexpectedMissing = Math.max(0L, withoutExpiresAt - activeProtected - failedDeferred);
+            }
 
             Instant nextEarliestExpiresAt = null;
             Query earliestQuery = Query.query(Criteria.where("expiresAt").gt(nowDate))
@@ -200,7 +217,9 @@ public class RetentionMongoStorageService {
                 if ("notifications".equals(collName)) {
                     missingClassification = "ACTIVE PROTECTED (UNREAD NOTIFICATIONS)";
                 } else if ("notification_events".equals(collName)) {
-                    missingClassification = "FAILED DEFERRED (FAILED EVENTS LACK CANONICAL TIMESTAMP)";
+                    missingClassification = "ACTIVE_PROTECTED=" + activeProtected
+                            + "; FAILED_DEFERRED=" + failedDeferred
+                            + "; UNEXPECTED_MISSING=" + unexpectedMissing;
                 } else {
                     missingClassification = "UNEXPECTED MISSING EXPIRESAT";
                 }
@@ -211,12 +230,21 @@ public class RetentionMongoStorageService {
                     total,
                     withExpiresAt,
                     withoutExpiresAt,
+                    activeProtected,
+                    failedDeferred,
+                    unexpectedMissing,
                     expiredAwaitingCleanup,
                     nextEarliestExpiresAt,
                     missingClassification));
         }
 
         return docHealthList;
+    }
+
+    private Criteria missingExpiresAtCriteria() {
+        return new Criteria().orOperator(
+                Criteria.where("expiresAt").exists(false),
+                Criteria.where("expiresAt").is(null));
     }
 
     private TtlIndexCheck checkCollectionTtlIndex(String collName, String expectedField, long expectedExpireAfterSecs) {
@@ -311,6 +339,9 @@ public class RetentionMongoStorageService {
             long totalDocuments,
             long withExpiresAt,
             long withoutExpiresAt,
+            long activeProtected,
+            long failedDeferred,
+            long unexpectedMissing,
             long expiredAwaitingCleanup,
             Instant nextEarliestExpiresAt,
             String missingExpiryClassification) {
