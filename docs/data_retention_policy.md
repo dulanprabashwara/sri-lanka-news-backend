@@ -4,7 +4,7 @@
 
 This document specifies the centralized, strongly typed retention configuration foundation introduced in Phase DR2 and the persisted metadata lifecycle transitions added in Phase DR3 for the Sri Lankan Multilingual News Intelligence Platform backend.
 
-> **CRITICAL**: Phase DR3 establishes `expiresAt` metadata fields and lifecycle calculation for target Mongo entities. **NO TTL indexes were created (except for the pre-existing 30d TTL on `analytics_events`), NO automatic deletions are active, NO background cleanup tasks run, and NO existing database records were backfilled or modified.**
+> **CRITICAL**: Phase DR3 established `expiresAt` metadata fields and lifecycle calculation for target Mongo entities. Phase DR4B performed controlled historical retention backfill across all 213 historical records. Phase DR5 activated single-field TTL indexes on `{ expiresAt: 1 }` with `expireAfterSeconds = 0` across all 5 target collections on MongoDB Atlas (`sri_lanka_news`). Phase DR6 introduced non-destructive, acknowledgement-aware Redis stream trimming (`article-discovered`, `notification-events`) with exact `XTRIM MINID`, pending entry protection, and distributed SET-if-absent lease scheduling. Permanent datasets, deferred datasets, and DLQ streams remain untouched.
 
 ---
 
