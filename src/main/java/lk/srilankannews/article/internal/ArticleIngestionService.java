@@ -74,7 +74,9 @@ public class ArticleIngestionService {
             existing = articleService.findByExtractedContent(request.extractedContent()).orElse(null);
         }
         if (existing != null) {
-            if (existing.leadMedia() == null && validLeadMedia != null) {
+            boolean isLogoFallback = existing.leadMedia() != null && existing.leadMedia().url() != null &&
+                    (existing.leadMedia().url().contains("image_8df7de9e07") || existing.leadMedia().url().contains("image_ef4bce8a81") || existing.leadMedia().url().toLowerCase().contains("logo"));
+            if ((existing.leadMedia() == null || isLogoFallback) && validLeadMedia != null) {
                 articleService.updateLeadMedia(existing.id(), validLeadMedia);
                 invalidateFeedCache(existing.id());
                 LOGGER.info("article_media_enriched articleId={}", existing.id());
