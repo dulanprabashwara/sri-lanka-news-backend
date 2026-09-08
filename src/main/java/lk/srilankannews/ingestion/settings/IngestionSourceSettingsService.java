@@ -27,7 +27,7 @@ public class IngestionSourceSettingsService {
         seedSource("daily-mirror", true, 10, 120, now);
         seedSource("newsfirst", true, 10, 120, now);
         seedSource("hiru-news-sinhala", true, 10, 120, now);
-        seedSource("ada-derana-sinhala", false, 10, 120, now);
+        seedSource("newswire", true, 10, 120, now);
 
         // Phase 31 Sources
         seedSource("the-island", true, 15, 120, now);

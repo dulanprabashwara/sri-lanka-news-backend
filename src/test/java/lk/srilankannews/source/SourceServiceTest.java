@@ -75,10 +75,10 @@ class SourceServiceTest {
         Instant createdAt = Instant.parse("2026-08-29T10:15:30Z");
         Source existing = new Source(
                 "source-1",
-                "Ada Derana Sinhala",
-                "ada-derana-sinhala",
-                "https://sinhala.adaderana.lk",
-                Language.SI,
+                "Newswire",
+                "newswire",
+                "https://www.newswire.lk",
+                Language.EN,
                 IngestionType.RSS,
                 true,
                 createdAt,

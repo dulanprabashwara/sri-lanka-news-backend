@@ -171,15 +171,6 @@ public record Article(
                 null, Map.of(), null, processingStatus, storyId, createdAt, updatedAt);
     }
 
-    public Article(
-            String id, String sourceId, String title, String originalUrl, String canonicalUrl,
-            Language originalLanguage, List<String> authors, Instant publishedAt,
-            Instant discoveredAt, ArticleCategory category, String extractedContent,
-            Instant createdAt, Instant updatedAt) {
-        this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
-                publishedAt, discoveredAt, category, extractedContent, null, null, null, null, Map.of(),
-                null, ProcessingStatus.PENDING, null, createdAt, updatedAt);
-    }
 
     static Article create(CreateArticleCommand command, String contentHash, Instant now) {
         return new Article(
