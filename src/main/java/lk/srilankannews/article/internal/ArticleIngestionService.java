@@ -76,10 +76,21 @@ public class ArticleIngestionService {
         if (existing != null) {
             boolean isLogoFallback = existing.leadMedia() != null && existing.leadMedia().url() != null &&
                     (existing.leadMedia().url().contains("image_8df7de9e07") || existing.leadMedia().url().contains("image_ef4bce8a81") || existing.leadMedia().url().toLowerCase().contains("logo"));
+            boolean mediaEnriched = false;
             if ((existing.leadMedia() == null || isLogoFallback) && validLeadMedia != null) {
                 articleService.updateLeadMedia(existing.id(), validLeadMedia);
-                invalidateFeedCache(existing.id());
+                mediaEnriched = true;
                 LOGGER.info("article_media_enriched articleId={}", existing.id());
+            }
+            boolean summaryEnriched = false;
+            if ((existing.summary() == null || existing.summary().trim().isEmpty())
+                    && request.summary() != null && !request.summary().trim().isEmpty()) {
+                articleService.updateSummary(existing.id(), request.summary().trim());
+                summaryEnriched = true;
+                LOGGER.info("article_summary_enriched articleId={}", existing.id());
+            }
+            if (mediaEnriched || summaryEnriched) {
+                invalidateFeedCache(existing.id());
             }
             return duplicate(existing, isUrlDuplicate ? ArticleIngestionResponse.DuplicateReason.URL_DUPLICATE : ArticleIngestionResponse.DuplicateReason.CONTENT_DUPLICATE);
         }
@@ -95,6 +106,7 @@ public class ArticleIngestionService {
                 request.discoveredAt(),
                 request.category(),
                 request.extractedContent(),
+                request.summary(),
                 validLeadMedia);
 
         try {

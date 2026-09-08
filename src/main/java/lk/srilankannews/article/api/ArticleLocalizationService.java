@@ -18,9 +18,10 @@ public class ArticleLocalizationService {
         if (requested == null) {
             return null;
         }
-        String originalSummary = article.aiEnrichment() == null
+        String aiSummary = article.aiEnrichment() == null
                 ? null
                 : article.aiEnrichment().summary();
+        String originalSummary = article.summary() != null ? article.summary() : aiSummary;
         if (requested == article.originalLanguage()) {
             return new LocalizedContentResponse(
                     requested, requested, false, false, article.title(), originalSummary);

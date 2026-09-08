@@ -31,7 +31,8 @@ public class ArticleApiMapper {
 
     public ArticleResponse toResponse(
             Article article, Source source, lk.srilankannews.common.domain.Language displayLanguage) {
-        String summary = article.aiEnrichment() == null ? null : article.aiEnrichment().summary();
+        String aiSummary = article.aiEnrichment() == null ? null : article.aiEnrichment().summary();
+        String summary = article.summary() != null ? article.summary() : aiSummary;
         List<String> topics = article.aiEnrichment() == null
                 ? List.of()
                 : article.aiEnrichment().topics();

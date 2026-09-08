@@ -20,6 +20,7 @@ public record CreateArticleCommand(
         @NotNull @PastOrPresent Instant discoveredAt,
         ArticleCategory category,
         @NotBlank @Size(max = 500_000) String extractedContent,
+        @Size(max = 2000) String summary,
         ArticleLeadMedia leadMedia
 ) {
     public CreateArticleCommand {
@@ -29,7 +30,8 @@ public record CreateArticleCommand(
     public CreateArticleCommand(
             String sourceId, String title, String originalUrl, String canonicalUrl,
             Language originalLanguage, List<String> authors, Instant publishedAt,
-            Instant discoveredAt, ArticleCategory category, String extractedContent) {
-        this(sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors, publishedAt, discoveredAt, category, extractedContent, null);
+            Instant discoveredAt, ArticleCategory category, String extractedContent,
+            String summary) {
+        this(sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors, publishedAt, discoveredAt, category, extractedContent, summary, null);
     }
 }

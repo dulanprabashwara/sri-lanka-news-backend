@@ -26,6 +26,7 @@ public record ArticleIngestionRequest(
         @NotNull @PastOrPresent Instant discoveredAt,
         ArticleCategory category,
         @NotBlank @Size(max = 500_000) String extractedContent,
+        @Size(max = 2000) String summary,
         @Valid LeadMediaInput leadMedia
 ) {
     public ArticleIngestionRequest {

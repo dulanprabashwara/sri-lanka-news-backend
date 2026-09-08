@@ -129,6 +129,37 @@ class ArticleIngestionServiceTest {
 
     }
 
+
+    @Test
+    void enrichesExistingDuplicateWithMissingSummary() {
+        Article existing = article(); // Note: article() currently creates with null summary
+        when(sourceService.findBySlug("daily-mirror")).thenReturn(Optional.of(source()));
+        when(articleService.findByCanonicalUrl(CANONICAL_URL)).thenReturn(Optional.of(existing));
+
+        ArticleIngestionRequest req = new ArticleIngestionRequest("daily-mirror", "Fixture story", CANONICAL_URL, CANONICAL_URL, Language.EN, List.of(), PUBLISHED_AT, PUBLISHED_AT.plusSeconds(60), ArticleCategory.LOCAL, "Clean fixture body", "A fixture summary", null);
+        ArticleIngestionResponse response = ingestionService.ingest(req);
+
+        assertThat(response.status()).isEqualTo(ArticleIngestionResponse.Status.DUPLICATE);
+        verify(articleService).updateSummary("article-1", "A fixture summary");
+        verify(articleService, never()).create(any());
+        verify(feedCache).invalidate();
+    }
+
+    @Test
+    void doesNotOverwriteExistingSummaryOnDuplicate() {
+        Article existing = article().withSummary("An already great summary", Instant.now());
+        when(sourceService.findBySlug("daily-mirror")).thenReturn(Optional.of(source()));
+        when(articleService.findByCanonicalUrl(CANONICAL_URL)).thenReturn(Optional.of(existing));
+
+        ArticleIngestionRequest req = new ArticleIngestionRequest("daily-mirror", "Fixture story", CANONICAL_URL, CANONICAL_URL, Language.EN, List.of(), PUBLISHED_AT, PUBLISHED_AT.plusSeconds(60), ArticleCategory.LOCAL, "Clean fixture body", "A fixture summary", null);
+        ArticleIngestionResponse response = ingestionService.ingest(req);
+
+        assertThat(response.status()).isEqualTo(ArticleIngestionResponse.Status.DUPLICATE);
+        verify(articleService, never()).updateSummary(any(), any());
+        verify(articleService, never()).create(any());
+        verify(feedCache, never()).invalidate();
+    }
+
     @Test
     void rejectsUnknownSourceSlug() {
         when(sourceService.findBySlug("daily-mirror")).thenReturn(Optional.empty());
@@ -175,6 +206,7 @@ class ArticleIngestionServiceTest {
                     PUBLISHED_AT,
                     ArticleCategory.POLITICS,
                     "Clean fixture body " + badUrl, // unique content
+                    "A fixture summary",
                     new LeadMediaInput(badUrl, lk.srilankannews.article.MediaType.IMAGE, null, null, null, null, null, null)
             );
 
@@ -199,6 +231,7 @@ class ArticleIngestionServiceTest {
                 PUBLISHED_AT.plusSeconds(60),
                 ArticleCategory.LOCAL,
                 "Clean fixture body",
+                null,
                 null);
     }
 

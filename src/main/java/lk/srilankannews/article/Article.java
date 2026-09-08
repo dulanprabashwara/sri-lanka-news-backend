@@ -31,6 +31,7 @@ public record Article(
         Instant discoveredAt,
         ArticleCategory category,
         String extractedContent,
+        String summary,
         @Indexed(name = "uk_articles_content_hash", unique = true, sparse = true) String contentHash,
         ArticleAiEnrichment aiEnrichment,
         ArticleSemanticEmbedding semanticEmbedding,
@@ -46,6 +47,7 @@ public record Article(
         translations = translations == null ? Map.of() : Map.copyOf(translations);
     }
 
+
     public Article(
             String id, String sourceId, String title, String originalUrl, String canonicalUrl,
             Language originalLanguage, List<String> authors, Instant publishedAt,
@@ -53,7 +55,7 @@ public record Article(
             String contentHash, ArticleAiEnrichment aiEnrichment,
             ArticleSemanticEmbedding semanticEmbedding, Map<Language, ArticleTranslation> translations,
             ProcessingStatus processingStatus, String storyId, Instant createdAt, Instant updatedAt) {
-        this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors, publishedAt, discoveredAt, category, extractedContent, contentHash, aiEnrichment, semanticEmbedding, translations, null, processingStatus, storyId, createdAt, updatedAt);
+        this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors, publishedAt, discoveredAt, category, extractedContent, null, contentHash, aiEnrichment, semanticEmbedding, translations, null, processingStatus, storyId, createdAt, updatedAt);
     }
 
     public Article(
@@ -63,7 +65,7 @@ public record Article(
             String contentHash, ProcessingStatus processingStatus,
             Instant createdAt, Instant updatedAt) {
         this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
-                publishedAt, discoveredAt, category, extractedContent, contentHash, null, null,
+                publishedAt, discoveredAt, category, extractedContent, null, contentHash, null, null,
                 Map.of(), null, processingStatus, null, createdAt, updatedAt);
     }
 
@@ -75,7 +77,7 @@ public record Article(
             ArticleSemanticEmbedding semanticEmbedding, ProcessingStatus processingStatus,
             String storyId, Instant createdAt, Instant updatedAt) {
         this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
-                publishedAt, discoveredAt, category, extractedContent, contentHash, aiEnrichment,
+                publishedAt, discoveredAt, category, extractedContent, null, contentHash, aiEnrichment,
                 semanticEmbedding, Map.of(), null, processingStatus, storyId, createdAt, updatedAt);
     }
 
@@ -86,7 +88,7 @@ public record Article(
             String contentHash, ArticleAiEnrichment aiEnrichment, ProcessingStatus processingStatus,
             Instant createdAt, Instant updatedAt) {
         this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
-                publishedAt, discoveredAt, category, extractedContent, contentHash, aiEnrichment,
+                publishedAt, discoveredAt, category, extractedContent, null, contentHash, aiEnrichment,
                 null, Map.of(), null, processingStatus, null, createdAt, updatedAt);
     }
 
@@ -98,7 +100,7 @@ public record Article(
             ProcessingStatus processingStatus, String storyId,
             Instant createdAt, Instant updatedAt) {
         this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
-                publishedAt, discoveredAt, category, extractedContent, contentHash, aiEnrichment,
+                publishedAt, discoveredAt, category, extractedContent, null, contentHash, aiEnrichment,
                 null, Map.of(), null, processingStatus, storyId, createdAt, updatedAt);
     }
 
@@ -108,7 +110,74 @@ public record Article(
             Instant discoveredAt, ArticleCategory category, String extractedContent,
             Instant createdAt, Instant updatedAt) {
         this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
-                publishedAt, discoveredAt, category, extractedContent, null, null, null, Map.of(),
+                publishedAt, discoveredAt, category, extractedContent, null, null, null, null, Map.of(),
+                null, ProcessingStatus.PENDING, null, createdAt, updatedAt);
+    }
+
+
+    public Article(
+            String id, String sourceId, String title, String originalUrl, String canonicalUrl,
+            Language originalLanguage, List<String> authors, Instant publishedAt,
+            Instant discoveredAt, ArticleCategory category, String extractedContent, String summary,
+            String contentHash, ArticleAiEnrichment aiEnrichment,
+            ArticleSemanticEmbedding semanticEmbedding, Map<Language, ArticleTranslation> translations,
+            ProcessingStatus processingStatus, String storyId, Instant createdAt, Instant updatedAt) {
+        this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors, publishedAt, discoveredAt, category, extractedContent, summary, contentHash, aiEnrichment, semanticEmbedding, translations, null, processingStatus, storyId, createdAt, updatedAt);
+    }
+
+    public Article(
+            String id, String sourceId, String title, String originalUrl, String canonicalUrl,
+            Language originalLanguage, List<String> authors, Instant publishedAt,
+            Instant discoveredAt, ArticleCategory category, String extractedContent, String summary,
+            String contentHash, ProcessingStatus processingStatus,
+            Instant createdAt, Instant updatedAt) {
+        this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
+                publishedAt, discoveredAt, category, extractedContent, summary, contentHash, null, null,
+                Map.of(), null, processingStatus, null, createdAt, updatedAt);
+    }
+
+    public Article(
+            String id, String sourceId, String title, String originalUrl, String canonicalUrl,
+            Language originalLanguage, List<String> authors, Instant publishedAt,
+            Instant discoveredAt, ArticleCategory category, String extractedContent, String summary,
+            String contentHash, ArticleAiEnrichment aiEnrichment,
+            ArticleSemanticEmbedding semanticEmbedding, ProcessingStatus processingStatus,
+            String storyId, Instant createdAt, Instant updatedAt) {
+        this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
+                publishedAt, discoveredAt, category, extractedContent, summary, contentHash, aiEnrichment,
+                semanticEmbedding, Map.of(), null, processingStatus, storyId, createdAt, updatedAt);
+    }
+
+    public Article(
+            String id, String sourceId, String title, String originalUrl, String canonicalUrl,
+            Language originalLanguage, List<String> authors, Instant publishedAt,
+            Instant discoveredAt, ArticleCategory category, String extractedContent, String summary,
+            String contentHash, ArticleAiEnrichment aiEnrichment, ProcessingStatus processingStatus,
+            Instant createdAt, Instant updatedAt) {
+        this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
+                publishedAt, discoveredAt, category, extractedContent, summary, contentHash, aiEnrichment,
+                null, Map.of(), null, processingStatus, null, createdAt, updatedAt);
+    }
+
+    public Article(
+            String id, String sourceId, String title, String originalUrl, String canonicalUrl,
+            Language originalLanguage, List<String> authors, Instant publishedAt,
+            Instant discoveredAt, ArticleCategory category, String extractedContent, String summary,
+            String contentHash, ArticleAiEnrichment aiEnrichment,
+            ProcessingStatus processingStatus, String storyId,
+            Instant createdAt, Instant updatedAt) {
+        this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
+                publishedAt, discoveredAt, category, extractedContent, summary, contentHash, aiEnrichment,
+                null, Map.of(), null, processingStatus, storyId, createdAt, updatedAt);
+    }
+
+    public Article(
+            String id, String sourceId, String title, String originalUrl, String canonicalUrl,
+            Language originalLanguage, List<String> authors, Instant publishedAt,
+            Instant discoveredAt, ArticleCategory category, String extractedContent,
+            Instant createdAt, Instant updatedAt) {
+        this(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
+                publishedAt, discoveredAt, category, extractedContent, null, null, null, null, Map.of(),
                 null, ProcessingStatus.PENDING, null, createdAt, updatedAt);
     }
 
@@ -117,39 +186,45 @@ public record Article(
                 null, command.sourceId(), command.title(), command.originalUrl(),
                 command.canonicalUrl(), command.originalLanguage(), command.authors(),
                 command.publishedAt(), command.discoveredAt(), command.category(),
-                command.extractedContent(), contentHash, null, null, Map.of(), command.leadMedia(), ProcessingStatus.PENDING,
+                command.extractedContent(), command.summary(), contentHash, null, null, Map.of(), command.leadMedia(), ProcessingStatus.PENDING,
                 null, now, now);
     }
 
     Article withProcessingStatus(ProcessingStatus status, Instant now) {
         return new Article(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage,
-                authors, publishedAt, discoveredAt, category, extractedContent, contentHash,
+                authors, publishedAt, discoveredAt, category, extractedContent, summary, contentHash,
                 aiEnrichment, semanticEmbedding, translations, leadMedia, status, storyId, createdAt, now);
+    }
+
+    public Article withSummary(String summary, Instant now) {
+        return new Article(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage,
+                authors, publishedAt, discoveredAt, category, extractedContent, summary, contentHash,
+                aiEnrichment, semanticEmbedding, translations, leadMedia, processingStatus, storyId, createdAt, now);
     }
 
     Article withAiEnrichment(
             ArticleAiEnrichment enrichment, ArticleCategory enrichedCategory, Instant now) {
         return new Article(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage,
-                authors, publishedAt, discoveredAt, enrichedCategory, extractedContent, contentHash,
+                authors, publishedAt, discoveredAt, enrichedCategory, extractedContent, summary, contentHash,
                 enrichment, null, translations, leadMedia, ProcessingStatus.COMPLETED, storyId, createdAt, now);
     }
 
     Article withSemanticEmbedding(ArticleSemanticEmbedding embedding, Instant now) {
         return new Article(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage,
-                authors, publishedAt, discoveredAt, category, extractedContent, contentHash,
+                authors, publishedAt, discoveredAt, category, extractedContent, summary, contentHash,
                 aiEnrichment, embedding, translations, leadMedia, processingStatus, storyId, createdAt, now);
     }
 
     Article withTranslations(Map<Language, ArticleTranslation> updatedTranslations, Instant now) {
         return new Article(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage,
-                authors, publishedAt, discoveredAt, category, extractedContent, contentHash,
+                authors, publishedAt, discoveredAt, category, extractedContent, summary, contentHash,
                 aiEnrichment, semanticEmbedding, updatedTranslations, leadMedia, processingStatus, storyId,
                 createdAt, now);
     }
 
     Article withLeadMedia(ArticleLeadMedia newLeadMedia, Instant now) {
         return new Article(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage,
-                authors, publishedAt, discoveredAt, category, extractedContent, contentHash,
+                authors, publishedAt, discoveredAt, category, extractedContent, summary, contentHash,
                 aiEnrichment, semanticEmbedding, translations, newLeadMedia, processingStatus, storyId,
                 createdAt, now);
     }

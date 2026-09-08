@@ -105,6 +105,13 @@ public class ArticleService {
                         article.withLeadMedia(leadMedia, clock.instant())));
     }
 
+    public Optional<Article> updateSummary(
+            String articleId, String summary) {
+        return articleRepository.findById(articleId)
+                .map(article -> articleRepository.save(
+                        article.withSummary(summary, clock.instant())));
+    }
+
     public java.util.List<Article> findAwaitingProcessing() {
         return articleRepository.findAwaitingProcessing();
     }
