@@ -36,7 +36,7 @@ public class UpdatePoliciesRunner implements ApplicationRunner {
             sourceRepository.save(new Source(s.id(), s.name(), s.slug(), s.baseUrl(), s.defaultLanguage(), s.ingestionType(), s.enabled(), new SourceImagePolicy(true, Set.of("island.lk", "www.island.lk")), s.createdAt(), Instant.now()))
         );
         sourceRepository.findBySlug("lankadeepa").ifPresent(s -> 
-            sourceRepository.save(new Source(s.id(), s.name(), s.slug(), s.baseUrl(), s.defaultLanguage(), s.ingestionType(), s.enabled(), new SourceImagePolicy(true, Set.of("www.lankadeepa.lk", "cdn.lankadeepa.lk")), s.createdAt(), Instant.now()))
+            sourceRepository.save(new Source(s.id(), s.name(), s.slug(), s.baseUrl(), s.defaultLanguage(), s.ingestionType(), s.enabled(), new SourceImagePolicy(true, Set.of("www.lankadeepa.lk", "cdn.lankadeepa.lk", "bmkltsly13vb.compat.objectstorage.ap-mumbai-1.oraclecloud.com")), s.createdAt(), Instant.now()))
         );
         sourceRepository.findBySlug("divaina").ifPresent(s -> 
             sourceRepository.save(new Source(s.id(), s.name(), s.slug(), s.baseUrl(), s.defaultLanguage(), s.ingestionType(), s.enabled(), new SourceImagePolicy(true, Set.of("divaina.lk", "www.divaina.lk")), s.createdAt(), Instant.now()))

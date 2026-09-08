@@ -98,6 +98,13 @@ public class ArticleService {
                         article.withTranslations(translations, clock.instant())));
     }
 
+    public Optional<Article> updateLeadMedia(
+            String articleId, ArticleLeadMedia leadMedia) {
+        return articleRepository.findById(articleId)
+                .map(article -> articleRepository.save(
+                        article.withLeadMedia(leadMedia, clock.instant())));
+    }
+
     public java.util.List<Article> findAwaitingProcessing() {
         return articleRepository.findAwaitingProcessing();
     }

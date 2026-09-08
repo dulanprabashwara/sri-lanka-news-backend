@@ -38,16 +38,6 @@ public class ArticleIngestionService {
         Source source = sourceService.findBySlug(request.sourceSlug())
                 .orElseThrow(() -> new ResourceNotFoundException("Source"));
 
-        Article existing = articleService.findByCanonicalUrl(request.canonicalUrl()).orElse(null);
-        if (existing != null) {
-            return duplicate(existing, ArticleIngestionResponse.DuplicateReason.URL_DUPLICATE);
-        }
-
-        existing = articleService.findByExtractedContent(request.extractedContent()).orElse(null);
-        if (existing != null) {
-            return duplicate(existing, ArticleIngestionResponse.DuplicateReason.CONTENT_DUPLICATE);
-        }
-
         lk.srilankannews.article.ArticleLeadMedia validLeadMedia = null;
         if (source.imagePolicy().enabled() && request.leadMedia() != null) {
             try {
@@ -76,6 +66,20 @@ public class ArticleIngestionService {
                 }
             } catch (java.net.URISyntaxException ignored) {
             }
+        }
+
+        Article existing = articleService.findByCanonicalUrl(request.canonicalUrl()).orElse(null);
+        boolean isUrlDuplicate = existing != null;
+        if (existing == null) {
+            existing = articleService.findByExtractedContent(request.extractedContent()).orElse(null);
+        }
+        if (existing != null) {
+            if (existing.leadMedia() == null && validLeadMedia != null) {
+                articleService.updateLeadMedia(existing.id(), validLeadMedia);
+                invalidateFeedCache(existing.id());
+                LOGGER.info("article_media_enriched articleId={}", existing.id());
+            }
+            return duplicate(existing, isUrlDuplicate ? ArticleIngestionResponse.DuplicateReason.URL_DUPLICATE : ArticleIngestionResponse.DuplicateReason.CONTENT_DUPLICATE);
         }
 
         CreateArticleCommand command = new CreateArticleCommand(

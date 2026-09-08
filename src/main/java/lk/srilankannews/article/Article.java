@@ -146,4 +146,11 @@ public record Article(
                 aiEnrichment, semanticEmbedding, updatedTranslations, leadMedia, processingStatus, storyId,
                 createdAt, now);
     }
+
+    Article withLeadMedia(ArticleLeadMedia newLeadMedia, Instant now) {
+        return new Article(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage,
+                authors, publishedAt, discoveredAt, category, extractedContent, contentHash,
+                aiEnrichment, semanticEmbedding, translations, newLeadMedia, processingStatus, storyId,
+                createdAt, now);
+    }
 }
