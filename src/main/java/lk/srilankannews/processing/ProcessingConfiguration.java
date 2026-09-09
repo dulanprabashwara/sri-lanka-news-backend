@@ -7,6 +7,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
@@ -22,6 +23,14 @@ public class ProcessingConfiguration {
         executor.setThreadNamePrefix("article-event-dispatch-");
         executor.initialize();
         return executor;
+    }
+
+    @Bean
+    ThreadPoolTaskScheduler articleStreamStartupScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(1);
+        scheduler.setThreadNamePrefix("article-stream-startup-");
+        return scheduler;
     }
 
     @Bean

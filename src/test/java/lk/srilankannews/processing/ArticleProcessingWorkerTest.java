@@ -113,12 +113,12 @@ class ArticleProcessingWorkerTest {
         assertThat(enrichment.getValue().processedAt()).isEqualTo(NOW);
         verify(feedCache).invalidate();
         org.mockito.InOrder processingOrder = org.mockito.Mockito.inOrder(
-                articleService, embeddingService, clusteringService);
+                articleService, translationService, embeddingService, clusteringService);
         processingOrder.verify(articleService).completeEnrichment(
                 org.mockito.ArgumentMatchers.eq("article-1"), any(), any());
+        processingOrder.verify(translationService).ensureTranslations("article-1");
         processingOrder.verify(embeddingService).ensureEmbedding("article-1");
         processingOrder.verify(clusteringService).cluster("article-1");
-        verify(translationService).ensureTranslations("article-1");
     }
 
     @Test
@@ -196,6 +196,9 @@ class ArticleProcessingWorkerTest {
 
         assertThatThrownBy(() -> worker.process(event()))
                 .isInstanceOf(AiProviderException.class);
+        verify(translationService).ensureTranslations("article-1");
+        verify(embeddingService, never()).ensureEmbedding(any());
+        verify(clusteringService, never()).cluster(any());
     }
 
     @Test
