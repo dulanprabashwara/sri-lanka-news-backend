@@ -94,6 +94,28 @@ class ArticleTranslationServiceTest {
     }
 
     @Test
+    void titleOnlyArticleWithoutAiEnrichmentStillReceivesMissingTranslations() {
+        Article article = new Article(
+                "article-title-only", "source", "English title",
+                "https://example.com/title-only", "https://example.com/title-only",
+                Language.EN, List.of(), NOW, NOW, ArticleCategory.LOCAL,
+                "Private body", "hash-title-only", ProcessingStatus.PENDING, NOW, NOW);
+        when(articleService.findById(article.id())).thenReturn(Optional.of(article));
+        when(provider.translate(any())).thenReturn(List.of(
+                new TranslatedContent(Language.SI, "සිංහල ශීර්ෂය", null),
+                new TranslatedContent(Language.TA, "தமிழ் தலைப்பு", null)));
+        when(articleService.saveTranslations(any(), any())).thenReturn(Optional.of(article));
+
+        assertThat(service.ensureTranslations(article.id())).isTrue();
+
+        ArgumentCaptor<TranslationInput> input = ArgumentCaptor.forClass(TranslationInput.class);
+        verify(provider).translate(input.capture());
+        assertThat(input.getValue().summary()).isEmpty();
+        assertThat(input.getValue().targetLanguages())
+                .containsExactlyInAnyOrder(Language.SI, Language.TA);
+    }
+
+    @Test
     void changedSummaryOrTitleMakesTranslationStaleAndFailurePreservesStoredArticle() {
         Article old = article(Language.EN, "Old title", "Old summary", Map.of());
         String oldHash = inputFactory.prepare(old, properties).inputHash();

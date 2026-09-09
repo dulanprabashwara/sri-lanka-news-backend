@@ -4,6 +4,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.text.Normalizer;
 import lk.srilankannews.common.domain.Language;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,14 @@ public class TranslationOutputValidator {
             List<TranslatedContent> output,
             Set<Language> requested,
             boolean summaryRequired) {
+        return validate(output, requested, summaryRequired, null);
+    }
+
+    public Map<Language, TranslatedContent> validate(
+            List<TranslatedContent> output,
+            Set<Language> requested,
+            boolean summaryRequired,
+            TranslationInput source) {
         if (output == null) {
             throw new TranslationProviderException("Translation provider returned no output.");
         }
@@ -34,12 +43,28 @@ public class TranslationOutputValidator {
             } else if (summary != null && summary.length() > MAX_SUMMARY_CHARACTERS) {
                 throw new TranslationProviderException("Translated summary exceeds the maximum length.");
             }
-            validated.put(item.language(), new TranslatedContent(item.language(), title, summary));
+            if (source != null && sameText(title, source.title())) {
+                throw new TranslationProviderException(
+                        TranslationProviderException.Kind.INVALID_RESPONSE,
+                        "Translated title is identical to the source text.");
+            }
+            validated.put(item.language(), new TranslatedContent(
+                    item.language(), title, summary, item.provider(), item.model()));
         }
         if (!validated.keySet().equals(requested)) {
             throw new TranslationProviderException("Translation provider omitted a requested language.");
         }
         return Map.copyOf(validated);
+    }
+
+    private boolean sameText(String first, String second) {
+        return normalize(first).equals(normalize(second));
+    }
+
+    private String normalize(String value) {
+        return Normalizer.normalize(value == null ? "" : value, Normalizer.Form.NFC)
+                .replaceAll("\\s+", " ")
+                .trim();
     }
 
     private String requireText(String value, int maximum, String field) {

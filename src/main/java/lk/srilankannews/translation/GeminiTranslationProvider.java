@@ -55,7 +55,8 @@ public class GeminiTranslationProvider implements TranslationProvider {
             Payload payload = objectMapper.readValue(response.text(), Payload.class);
             return payload.translations().stream()
                     .map(item -> new TranslatedContent(
-                            Language.fromCode(item.language()), item.title(), item.summary()))
+                            Language.fromCode(item.language()), item.title(), item.summary(),
+                            "GEMINI", properties.model()))
                     .toList();
         } catch (TranslationProviderException exception) {
             throw exception;
@@ -63,8 +64,22 @@ public class GeminiTranslationProvider implements TranslationProvider {
             throw new TranslationProviderException("Gemini returned malformed translation output.", exception);
         } catch (RuntimeException exception) {
             AiProviderException mapped = GeminiFailureMapper.map(exception, properties.model());
-            throw new TranslationProviderException(mapped.getMessage(), mapped);
+            throw new TranslationProviderException(mapKind(mapped.kind()), mapped.getMessage(), mapped);
         }
+    }
+
+    private TranslationProviderException.Kind mapKind(AiProviderException.Kind kind) {
+        return switch (kind) {
+            case AUTHENTICATION -> TranslationProviderException.Kind.AUTHENTICATION;
+            case PERMISSION -> TranslationProviderException.Kind.PERMISSION;
+            case RATE_LIMIT -> TranslationProviderException.Kind.RATE_LIMIT;
+            case TIMEOUT_NETWORK -> TranslationProviderException.Kind.TIMEOUT_NETWORK;
+            case PROVIDER_5XX -> TranslationProviderException.Kind.PROVIDER_5XX;
+            case INVALID_REQUEST, MODEL_NOT_FOUND, UNUSABLE_INPUT ->
+                    TranslationProviderException.Kind.VALIDATION;
+            case INVALID_RESPONSE -> TranslationProviderException.Kind.INVALID_RESPONSE;
+            case PROVIDER_FAILURE -> TranslationProviderException.Kind.PROVIDER_FAILURE;
+        };
     }
 
     private String prompt(TranslationInput input) {

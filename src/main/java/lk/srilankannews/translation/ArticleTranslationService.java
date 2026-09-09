@@ -44,17 +44,24 @@ public class ArticleTranslationService {
     }
 
     public boolean ensureTranslations(String articleId) {
+        return ensureTranslations(articleId, null);
+    }
+
+    public boolean ensureTranslations(String articleId, Language onlyTarget) {
         Article article = articleService.findById(articleId)
                 .orElseThrow(() -> new IllegalStateException("Article does not exist"));
-        if (article.aiEnrichment() == null) {
-            throw new IllegalStateException("Article enrichment is required before translation.");
-        }
         var prepared = inputFactory.prepare(article, properties);
         if (prepared.title().length() + prepared.summary().length()
                 > properties.maxInputCharacters()) {
             throw new TranslationProviderException("Translation input exceeds the configured maximum.");
         }
         Set<Language> required = requiredTargets(article.originalLanguage());
+        if (onlyTarget != null) {
+            if (onlyTarget == article.originalLanguage()) {
+                return false;
+            }
+            required = Set.of(onlyTarget);
+        }
         Set<Language> stale = EnumSet.copyOf(required);
         stale.removeIf(language -> valid(article.translations().get(language), prepared.inputHash()));
         if (stale.isEmpty()) {
@@ -64,12 +71,14 @@ public class ArticleTranslationService {
         TranslationInput input = new TranslationInput(
                 article.originalLanguage(), prepared.title(), prepared.summary(), stale);
         Map<Language, TranslatedContent> output = outputValidator.validate(
-                provider.translate(input), stale, !prepared.summary().isBlank());
+                provider.translate(input), stale, !prepared.summary().isBlank(), input);
         Map<Language, ArticleTranslation> updated = new EnumMap<>(Language.class);
         updated.putAll(article.translations());
         output.forEach((language, content) -> updated.put(language, new ArticleTranslation(
-                content.title(), content.summary(), properties.model(), properties.promptVersion(),
-                prepared.inputHash(), clock.instant())));
+                content.title(), content.summary(),
+                content.model() == null ? properties.model() : content.model(),
+                properties.promptVersion(), prepared.inputHash(), clock.instant(),
+                content.provider() == null ? "GEMINI" : content.provider())));
         articleService.saveTranslations(article.id(), updated)
                 .orElseThrow(() -> new IllegalStateException("Article disappeared during translation"));
         invalidateFeedCache(article.id());
@@ -77,16 +86,21 @@ public class ArticleTranslationService {
     }
 
     public boolean needsTranslation(Article article) {
-        if (article.aiEnrichment() == null) {
-            return false;
-        }
         String hash = inputFactory.prepare(article, properties).inputHash();
         return requiredTargets(article.originalLanguage()).stream()
                 .anyMatch(language -> !valid(article.translations().get(language), hash));
     }
 
+    public boolean needsTranslation(Article article, Language target) {
+        if (target == article.originalLanguage()) {
+            return false;
+        }
+        String hash = inputFactory.prepare(article, properties).inputHash();
+        return !valid(article.translations().get(target), hash);
+    }
+
     public boolean valid(Article article, Language language) {
-        if (article.aiEnrichment() == null || language == article.originalLanguage()) {
+        if (language == article.originalLanguage()) {
             return false;
         }
         String hash = inputFactory.prepare(article, properties).inputHash();

@@ -84,19 +84,36 @@ public class ArticleProcessingWorker {
         Article article = articleService.findById(event.articleId())
                 .orElseThrow(() -> new IllegalStateException("Article does not exist"));
         validateEvent(event, article);
-        if (article.aiEnrichment() == null
-                || !article.aiEnrichment().matches(
-                        properties.model(), properties.promptVersion())) {
-            article = enrich(article);
+        try {
+            if (article.aiEnrichment() == null
+                    || !article.aiEnrichment().matches(
+                            properties.model(), properties.promptVersion())) {
+                article = enrich(article);
+            }
+        } catch (RuntimeException enrichmentFailure) {
+            ensureTranslationsAfterEnrichmentFailure(article.id());
+            throw enrichmentFailure;
         }
-        embeddingService.ensureEmbedding(article.id());
-        clusteringService.cluster(article.id());
         if (translationService != null) {
             translationService.ensureTranslations(article.id());
         }
+        embeddingService.ensureEmbedding(article.id());
+        clusteringService.cluster(article.id());
         
         if (outboxService != null && article.storyId() != null) {
             outboxService.dispatch(article.id(), article.storyId(), article.sourceId(), article.id());
+        }
+    }
+
+    private void ensureTranslationsAfterEnrichmentFailure(String articleId) {
+        if (translationService == null) {
+            return;
+        }
+        try {
+            translationService.ensureTranslations(articleId);
+        } catch (RuntimeException translationFailure) {
+            LOGGER.warn("translation_after_enrichment_failure_failed articleId={} reason={}",
+                    articleId, translationFailure.getClass().getSimpleName());
         }
     }
 

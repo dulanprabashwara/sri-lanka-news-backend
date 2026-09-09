@@ -33,7 +33,16 @@ news:
       model: ${MULTILINGUAL_MODEL:${GEMINI_MODEL}}
       prompt-version: ${MULTILINGUAL_PROMPT_VERSION:translation-v1}
       max-input-characters: ${MULTILINGUAL_MAX_INPUT_CHARACTERS:8000}
-      backfill-limit: ${MULTILINGUAL_BACKFILL_LIMIT:10}
+      backfill-limit: ${MULTILINGUAL_BACKFILL_LIMIT:0}
+      reliability:
+        gemini-max-attempts: ${TRANSLATION_GEMINI_MAX_ATTEMPTS:3}
+        initial-backoff: ${TRANSLATION_RETRY_INITIAL_BACKOFF:250ms}
+      azure:
+        key: ${AZURE_TRANSLATOR_KEY:}
+        endpoint: ${AZURE_TRANSLATOR_ENDPOINT:https://api.cognitive.microsofttranslator.com}
+        region: ${AZURE_TRANSLATOR_REGION:}
+        timeout: ${AZURE_TRANSLATOR_TIMEOUT:15s}
+        max-input-characters: ${AZURE_TRANSLATOR_MAX_INPUT_CHARACTERS:8000}
   cache:
     article-feed:
       enabled: true

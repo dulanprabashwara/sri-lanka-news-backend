@@ -34,4 +34,12 @@ public record CreateArticleCommand(
             String summary) {
         this(sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors, publishedAt, discoveredAt, category, extractedContent, summary, null);
     }
+
+    public CreateArticleCommand(
+            String sourceId, String title, String originalUrl, String canonicalUrl,
+            Language originalLanguage, List<String> authors, Instant publishedAt,
+            Instant discoveredAt, ArticleCategory category, String extractedContent) {
+        this(sourceId, title, originalUrl, canonicalUrl, originalLanguage, authors,
+                publishedAt, discoveredAt, category, extractedContent, null, null);
+    }
 }

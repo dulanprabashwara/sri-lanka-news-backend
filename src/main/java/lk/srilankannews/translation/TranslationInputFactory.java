@@ -12,11 +12,10 @@ import org.springframework.stereotype.Component;
 public class TranslationInputFactory {
 
     public PreparedTranslationInput prepare(Article article, TranslationProperties properties) {
-        if (article.aiEnrichment() == null) {
-            throw new IllegalArgumentException("Article enrichment is required for translation.");
-        }
         String title = normalize(article.title());
-        String summary = normalize(article.aiEnrichment().summary());
+        String summary = normalize(article.summary() != null
+                ? article.summary()
+                : article.aiEnrichment() == null ? null : article.aiEnrichment().summary());
         String material = "translation-input|" + properties.promptVersion()
                 + "|" + article.originalLanguage().code() + "|" + title + "|" + summary;
         return new PreparedTranslationInput(title, summary, sha256(material));

@@ -172,6 +172,19 @@ The `lk.srilankannews.ai` package encapsulates all generative AI operations via 
 - `GroundedAnswerProvider`: Evaluates user questions against retrieved Story article context (`Ask This Story`).
 - `GeminiFailureMapper`: Intercepts API rate limits, quota limits, and timeouts to ensure fallback safety without breaking core reading workflows.
 
+### Translation pipeline
+
+Article translation remains asynchronous and server-side. A newly persisted article emits an
+`ARTICLE_DISCOVERED` event; the processing worker enriches it, then requests only the missing
+English, Sinhala, and Tamil variants. The original publisher title, summary, language, URL, and
+internal extracted content are never overwritten.
+
+Gemini is the primary translation provider. Transient failures are retried with bounded backoff,
+then routed to Azure Translator when Azure is configured. Local validation, authentication, and
+permission failures do not trigger fallback. Stored variants include provider/model provenance,
+and a successful write invalidates the affected article/feed caches. If a requested variant is
+missing, the public API continues returning the original text with explicit fallback metadata.
+
 ---
 
 ## Search & Trending Engine
@@ -285,6 +298,12 @@ Configure `.env` or application environment using variables from `.env.example`:
 | `GEMINI_API_KEY` | Google Gemini API key for AI summarization & embeddings |
 | `GEMINI_MODEL` | Gemini model ID (e.g., `gemini-2.5-flash`) |
 | `MULTILINGUAL_MODEL` | Gemini model ID for translation tasks |
+| `TRANSLATION_GEMINI_MAX_ATTEMPTS` | Bounded Gemini translation attempts before eligible Azure fallback |
+| `TRANSLATION_RETRY_INITIAL_BACKOFF` | Initial translation retry delay (for example `250ms`) |
+| `AZURE_TRANSLATOR_KEY` | Azure Translator subscription key |
+| `AZURE_TRANSLATOR_ENDPOINT` | Azure Translator endpoint |
+| `AZURE_TRANSLATOR_REGION` | Azure resource region when required |
+| `AZURE_TRANSLATOR_TIMEOUT` | Azure request timeout (for example `15s`) |
 
 > **Security Alert**: Never commit secret keys, MongoDB credentials, or actual admin user IDs.
 
@@ -311,6 +330,35 @@ mvn clean compile
 mvn spring-boot:run
 ```
 The backend server will start on port `8080`.
+
+Spring Boot does not load `.env.local` automatically. In PowerShell, import a local ignored file
+into the current process without printing its values before running Maven:
+
+```powershell
+Get-Content .env.local | ForEach-Object {
+  if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
+    [Environment]::SetEnvironmentVariable($matches[1].Trim(), $matches[2].Trim().Trim('"'), 'Process')
+  }
+}
+```
+
+### Safe historical translation backfill
+
+Historical translation is never started during normal application startup. Enable it explicitly;
+an enabled run is still read-only unless `--apply` is supplied.
+
+```powershell
+# Read-only recent/source-target audit (no provider calls and no writes)
+mvn spring-boot:run '-Dspring-boot.run.arguments=--translation-backfill --dry-run --source=newsfirst --from-date=2026-09-01 --target-language=SI --batch-size=20 --max-articles=100'
+
+# Controlled write after reviewing the dry-run counts
+mvn spring-boot:run '-Dspring-boot.run.arguments=--translation-backfill --apply --source=newsfirst --from-date=2026-09-01 --target-language=SI --batch-size=20 --max-articles=20'
+```
+
+Supported controls are `--dry-run`, `--apply`, `--batch-size`, `--max-articles`, `--source`,
+`--from-date`, `--to-date`, and `--target-language`. Dates are UTC ISO dates or instants. Runs are
+idempotent: valid existing translations and original-language content are skipped and preserved.
+Use small recent batches first to stay within provider quotas.
 
 ---
 
