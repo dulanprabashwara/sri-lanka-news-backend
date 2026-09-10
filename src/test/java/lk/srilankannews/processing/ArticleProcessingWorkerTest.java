@@ -113,7 +113,10 @@ class ArticleProcessingWorkerTest {
         assertThat(enrichment.getValue().processedAt()).isEqualTo(NOW);
         verify(feedCache).invalidate();
         org.mockito.InOrder processingOrder = org.mockito.Mockito.inOrder(
-                articleService, translationService, embeddingService, clusteringService);
+                translationService, aiProvider, articleService,
+                embeddingService, clusteringService);
+        processingOrder.verify(translationService).ensureTranslations("article-1");
+        processingOrder.verify(aiProvider).enrich(any());
         processingOrder.verify(articleService).completeEnrichment(
                 org.mockito.ArgumentMatchers.eq("article-1"), any(), any());
         processingOrder.verify(translationService).ensureTranslations("article-1");
@@ -183,6 +186,7 @@ class ArticleProcessingWorkerTest {
                 .isEqualTo(AiProviderException.Kind.INVALID_RESPONSE);
         verify(articleService, never()).completeEnrichment(any(), any(), any());
         verify(feedCache, never()).invalidate();
+        verify(translationService).ensureTranslations("article-1");
     }
 
     @Test
@@ -209,7 +213,9 @@ class ArticleProcessingWorkerTest {
                 "gemini-test", "v1", NOW);
         Article completed = article(Language.EN, ProcessingStatus.RETRYING, existing);
         when(articleService.findById("article-1"))
-                .thenReturn(Optional.of(pending), Optional.of(completed));
+                .thenReturn(
+                        Optional.of(pending), Optional.of(pending),
+                        Optional.of(completed), Optional.of(completed));
         when(articleService.updateProcessingStatus("article-1", ProcessingStatus.PROCESSING))
                 .thenReturn(Optional.of(pending));
         when(aiProvider.enrich(any())).thenReturn(new AiResult(
@@ -239,7 +245,9 @@ class ArticleProcessingWorkerTest {
                 "gemini-test", "v1", NOW);
         Article completed = article(Language.EN, ProcessingStatus.COMPLETED, enrichment);
         when(articleService.findById("article-1"))
-                .thenReturn(Optional.of(pending), Optional.of(completed));
+                .thenReturn(
+                        Optional.of(pending), Optional.of(pending),
+                        Optional.of(completed), Optional.of(completed));
         when(articleService.updateProcessingStatus("article-1", ProcessingStatus.PROCESSING))
                 .thenReturn(Optional.of(pending));
         when(aiProvider.enrich(any())).thenReturn(new AiResult(

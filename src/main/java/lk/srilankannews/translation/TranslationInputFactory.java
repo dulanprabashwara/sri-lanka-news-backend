@@ -6,16 +6,21 @@ import java.security.NoSuchAlgorithmException;
 import java.text.Normalizer;
 import java.util.HexFormat;
 import lk.srilankannews.article.Article;
+import lk.srilankannews.article.ArticleSummaryResolver;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TranslationInputFactory {
+    private final ArticleSummaryResolver summaryResolver;
+
+    public TranslationInputFactory(ArticleSummaryResolver summaryResolver) {
+        this.summaryResolver = summaryResolver;
+    }
 
     public PreparedTranslationInput prepare(Article article, TranslationProperties properties) {
         String title = normalize(article.title());
-        String summary = normalize(article.summary() != null
-                ? article.summary()
-                : article.aiEnrichment() == null ? null : article.aiEnrichment().summary());
+        ArticleSummaryResolver.ResolvedSummary resolvedSummary = summaryResolver.resolve(article);
+        String summary = normalize(resolvedSummary == null ? null : resolvedSummary.text());
         String material = "translation-input|" + properties.promptVersion()
                 + "|" + article.originalLanguage().code() + "|" + title + "|" + summary;
         return new PreparedTranslationInput(title, summary, sha256(material));

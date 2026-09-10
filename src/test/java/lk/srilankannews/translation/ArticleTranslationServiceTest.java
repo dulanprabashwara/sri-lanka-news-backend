@@ -19,6 +19,7 @@ import lk.srilankannews.article.ArticleAiEnrichment;
 import lk.srilankannews.article.ArticleCategory;
 import lk.srilankannews.article.ArticleTranslation;
 import lk.srilankannews.article.ArticleService;
+import lk.srilankannews.article.ArticleSummaryResolver;
 import lk.srilankannews.article.ProcessingStatus;
 import lk.srilankannews.article.cache.ArticleFeedCache;
 import lk.srilankannews.common.domain.Language;
@@ -42,7 +43,7 @@ class ArticleTranslationServiceTest {
     @BeforeEach
     void setUp() {
         properties = new TranslationProperties("gemini-test", "translation-v1", 8000, 10);
-        inputFactory = new TranslationInputFactory();
+        inputFactory = new TranslationInputFactory(new ArticleSummaryResolver());
         service = new ArticleTranslationService(
                 articleService, provider, inputFactory, new TranslationOutputValidator(),
                 properties, feedCache, Clock.fixed(NOW, ZoneOffset.UTC));
@@ -99,7 +100,7 @@ class ArticleTranslationServiceTest {
                 "article-title-only", "source", "English title",
                 "https://example.com/title-only", "https://example.com/title-only",
                 Language.EN, List.of(), NOW, NOW, ArticleCategory.LOCAL,
-                "Private body", "hash-title-only", ProcessingStatus.PENDING, NOW, NOW);
+                "Continue Reading", "hash-title-only", ProcessingStatus.PENDING, NOW, NOW);
         when(articleService.findById(article.id())).thenReturn(Optional.of(article));
         when(provider.translate(any())).thenReturn(List.of(
                 new TranslatedContent(Language.SI, "සිංහල ශීර්ෂය", null),
@@ -132,6 +133,37 @@ class ArticleTranslationServiceTest {
         verify(feedCache, never()).invalidate();
         assertThat(changed.aiEnrichment()).isNotNull();
         assertThat(changed.storyId()).isEqualTo("story-1");
+    }
+
+    @Test
+    void extractiveFallbackIsTranslatedAndPersistedWhenOtherSummariesAreMissing() {
+        Article article = new Article(
+                "article-extractive", "source", "Source title",
+                "https://example.com/extractive", "https://example.com/extractive",
+                Language.SI, List.of(), NOW, NOW, ArticleCategory.LOCAL,
+                "Officials confirmed the decision after a detailed public meeting.",
+                "hash-extractive", ProcessingStatus.PENDING, NOW, NOW);
+        when(articleService.findById(article.id())).thenReturn(Optional.of(article));
+        when(provider.translate(any())).thenReturn(List.of(
+                new TranslatedContent(
+                        Language.EN, "English title", "English fallback summary"),
+                new TranslatedContent(
+                        Language.TA, "Tamil title", "Tamil fallback summary")));
+        when(articleService.saveTranslations(any(), any())).thenReturn(Optional.of(article));
+
+        assertThat(service.ensureTranslations(article.id())).isTrue();
+
+        ArgumentCaptor<TranslationInput> input = ArgumentCaptor.forClass(TranslationInput.class);
+        verify(provider).translate(input.capture());
+        assertThat(input.getValue().summary()).contains("Officials confirmed the decision");
+        ArgumentCaptor<Map<Language, ArticleTranslation>> stored =
+                ArgumentCaptor.forClass(Map.class);
+        verify(articleService).saveTranslations(
+                org.mockito.ArgumentMatchers.eq(article.id()), stored.capture());
+        assertThat(stored.getValue().get(Language.EN).summary())
+                .isEqualTo("English fallback summary");
+        assertThat(stored.getValue().get(Language.TA).summary())
+                .isEqualTo("Tamil fallback summary");
     }
 
     private void assertTargets(Language original, Language first, Language second) {

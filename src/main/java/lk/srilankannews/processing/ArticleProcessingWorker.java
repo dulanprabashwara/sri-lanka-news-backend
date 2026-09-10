@@ -81,21 +81,26 @@ public class ArticleProcessingWorker {
     }
 
     public void process(ArticleDiscoveredEvent event) {
+        translate(event);
+        processAfterTranslation(event);
+    }
+
+    public void translate(ArticleDiscoveredEvent event) {
         Article article = articleService.findById(event.articleId())
                 .orElseThrow(() -> new IllegalStateException("Article does not exist"));
         validateEvent(event, article);
-        try {
-            if (article.aiEnrichment() == null
-                    || !article.aiEnrichment().matches(
-                            properties.model(), properties.promptVersion())) {
-                article = enrich(article);
-            }
-        } catch (RuntimeException enrichmentFailure) {
-            ensureTranslationsAfterEnrichmentFailure(article.id());
-            throw enrichmentFailure;
-        }
-        if (translationService != null) {
-            translationService.ensureTranslations(article.id());
+        ensureTranslations(article.id());
+    }
+
+    public void processAfterTranslation(ArticleDiscoveredEvent event) {
+        Article article = articleService.findById(event.articleId())
+                .orElseThrow(() -> new IllegalStateException("Article does not exist"));
+        validateEvent(event, article);
+        if (article.aiEnrichment() == null
+                || !article.aiEnrichment().matches(
+                        properties.model(), properties.promptVersion())) {
+            article = enrich(article);
+            ensureTranslations(article.id());
         }
         embeddingService.ensureEmbedding(article.id());
         clusteringService.cluster(article.id());
@@ -105,16 +110,11 @@ public class ArticleProcessingWorker {
         }
     }
 
-    private void ensureTranslationsAfterEnrichmentFailure(String articleId) {
+    private void ensureTranslations(String articleId) {
         if (translationService == null) {
             return;
         }
-        try {
-            translationService.ensureTranslations(articleId);
-        } catch (RuntimeException translationFailure) {
-            LOGGER.warn("translation_after_enrichment_failure_failed articleId={} reason={}",
-                    articleId, translationFailure.getClass().getSimpleName());
-        }
+        translationService.ensureTranslations(articleId);
     }
 
     private Article enrich(Article article) {

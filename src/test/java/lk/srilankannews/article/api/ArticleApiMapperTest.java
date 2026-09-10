@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import lk.srilankannews.article.Article;
 import lk.srilankannews.article.ArticleAiEnrichment;
 import lk.srilankannews.article.ArticleCategory;
@@ -65,5 +66,50 @@ class ArticleApiMapperTest {
                         "extractedContent", "contentHash", "processingStatus",
                         "aiEnrichment", "keywords", "entities", "model",
                         "promptVersion", "processedAt");
+    }
+
+    @Test
+    void publisherSummaryWinsOverAiAndExtractiveSummaries() {
+        Instant now = Instant.parse("2026-09-10T00:00:00Z");
+        ArticleAiEnrichment enrichment = new ArticleAiEnrichment(
+                "AI summary", List.of(), List.of(), List.of(), "model", "v1", now);
+        Article article = new Article(
+                "507f1f77bcf86cd799439012", "source-1", "Headline",
+                "https://example.com/2", "https://example.com/2", Language.EN,
+                List.of(), now, now, ArticleCategory.LOCAL,
+                "Body sentence that could otherwise become an extractive fallback.",
+                "Publisher summary", "content-hash-2", enrichment, null, Map.of(),
+                null, ProcessingStatus.COMPLETED, null, now, now);
+
+        ArticleResponse response = mapper.toResponse(article, source(now));
+
+        assertThat(response.summary()).isEqualTo("Publisher summary");
+        assertThat(article.summary()).isEqualTo("Publisher summary");
+    }
+
+    @Test
+    void extractiveSummaryIsReturnedWithoutExposingArticleBody() {
+        Instant now = Instant.parse("2026-09-10T00:00:00Z");
+        Article article = new Article(
+                "507f1f77bcf86cd799439013", "source-1", "Headline",
+                "https://example.com/3", "https://example.com/3", Language.EN,
+                List.of(), now, now, ArticleCategory.LOCAL,
+                "Officials confirmed the decision after a detailed public meeting. "
+                        + "Further information will be published later.",
+                "content-hash-3", ProcessingStatus.PENDING, now, now);
+
+        ArticleResponse response = mapper.toResponse(article, source(now));
+
+        assertThat(response.summary()).contains("Officials confirmed the decision");
+        assertThat(ArticleResponse.class.getRecordComponents())
+                .extracting(component -> component.getName())
+                .doesNotContain("extractedContent");
+    }
+
+    private Source source(Instant now) {
+        return new Source(
+                "source-1", "Daily Mirror", "daily-mirror",
+                "https://www.dailymirror.lk", Language.EN, IngestionType.RSS,
+                true, now, now);
     }
 }

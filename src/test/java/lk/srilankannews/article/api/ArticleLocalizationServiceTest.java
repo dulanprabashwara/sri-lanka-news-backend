@@ -10,6 +10,7 @@ import lk.srilankannews.article.Article;
 import lk.srilankannews.article.ArticleAiEnrichment;
 import lk.srilankannews.article.ArticleCategory;
 import lk.srilankannews.article.ArticleTranslation;
+import lk.srilankannews.article.ArticleSummaryResolver;
 import lk.srilankannews.article.ProcessingStatus;
 import lk.srilankannews.common.domain.Language;
 import lk.srilankannews.translation.ArticleTranslationService;
@@ -25,7 +26,8 @@ class ArticleLocalizationServiceTest {
     @Test
     void returnsOriginalForOriginalLanguageTranslationForValidTargetAndFallbackOtherwise() {
         Article article = article();
-        ArticleLocalizationService service = new ArticleLocalizationService(translationService);
+        ArticleLocalizationService service = new ArticleLocalizationService(
+                translationService, new ArticleSummaryResolver());
         when(translationService.valid(article, Language.SI)).thenReturn(true);
 
         LocalizedContentResponse original = service.localize(article, Language.EN);

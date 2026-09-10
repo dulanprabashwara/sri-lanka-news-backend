@@ -39,6 +39,7 @@ public class TranslationProviderException extends RuntimeException {
         return kind == Kind.RATE_LIMIT
                 || kind == Kind.TIMEOUT_NETWORK
                 || kind == Kind.PROVIDER_5XX
-                || kind == Kind.PROVIDER_FAILURE;
+                || kind == Kind.PROVIDER_FAILURE
+                || kind == Kind.INVALID_RESPONSE;
     }
 }

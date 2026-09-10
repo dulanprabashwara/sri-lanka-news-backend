@@ -36,7 +36,8 @@ class ArticleEventConsumerTest {
     void acknowledgesSuccessfullyProcessedEvent() {
         consumer.consume("1-0", event(1));
 
-        verify(worker).process(event(1));
+        verify(worker).translate(event(1));
+        verify(worker).processAfterTranslation(event(1));
         verify(stream).acknowledge("1-0");
         verify(stream, never()).publish(any());
     }
@@ -44,7 +45,7 @@ class ArticleEventConsumerTest {
     @Test
     void republishesBoundedRetryBeforeAcknowledgingOriginal() {
         org.mockito.Mockito.doThrow(new IllegalStateException("failed"))
-                .when(worker).process(event(1));
+                .when(worker).processAfterTranslation(event(1));
         when(stream.publish(event(2))).thenReturn(true);
 
         consumer.consume("1-0", event(1));
@@ -66,7 +67,7 @@ class ArticleEventConsumerTest {
                 "Invalid request https://example.test/generate?key=" + secret,
                 "gemini-2.5-flash",
                 new RuntimeException(articleContent));
-        org.mockito.Mockito.doThrow(failure).when(worker).process(event(1));
+        org.mockito.Mockito.doThrow(failure).when(worker).processAfterTranslation(event(1));
         when(stream.publish(event(2))).thenReturn(true);
 
         Logger logger = (Logger) LoggerFactory.getLogger(ArticleEventConsumer.class);
@@ -98,7 +99,7 @@ class ArticleEventConsumerTest {
     @Test
     void deadLettersAndMarksFailedAfterMaximumAttempts() {
         org.mockito.Mockito.doThrow(new IllegalStateException("failed"))
-                .when(worker).process(event(3));
+                .when(worker).processAfterTranslation(event(3));
         when(stream.publishDeadLetter(event(3), "IllegalStateException")).thenReturn(true);
 
         consumer.consume("3-0", event(3));
@@ -111,7 +112,7 @@ class ArticleEventConsumerTest {
     @Test
     void leavesOriginalPendingWhenRetryCannotBePublished() {
         org.mockito.Mockito.doThrow(new IllegalStateException("failed"))
-                .when(worker).process(event(1));
+                .when(worker).processAfterTranslation(event(1));
         when(stream.publish(event(2))).thenReturn(false);
 
         consumer.consume("1-0", event(1));

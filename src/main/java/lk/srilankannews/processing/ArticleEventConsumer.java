@@ -1,6 +1,9 @@
 package lk.srilankannews.processing;
 
+import java.util.concurrent.Executor;
 import lk.srilankannews.ai.AiProviderException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -14,19 +17,39 @@ public class ArticleEventConsumer {
     private final ArticleProcessingWorker worker;
     private final ArticleEventStream stream;
     private final RedisProcessingProperties properties;
+    private final Executor processingExecutor;
 
+    @Autowired
     public ArticleEventConsumer(
             ArticleProcessingWorker worker,
             ArticleEventStream stream,
-            RedisProcessingProperties properties) {
+            RedisProcessingProperties properties,
+            @Qualifier("articleProcessingExecutor") Executor processingExecutor) {
         this.worker = worker;
         this.stream = stream;
         this.properties = properties;
+        this.processingExecutor = processingExecutor;
+    }
+
+    ArticleEventConsumer(
+            ArticleProcessingWorker worker,
+            ArticleEventStream stream,
+            RedisProcessingProperties properties) {
+        this(worker, stream, properties, Runnable::run);
     }
 
     public void consume(String recordId, ArticleDiscoveredEvent event) {
         try {
-            worker.process(event);
+            worker.translate(event);
+            processingExecutor.execute(() -> completeProcessing(recordId, event));
+        } catch (RuntimeException exception) {
+            handleFailure(recordId, event, exception);
+        }
+    }
+
+    private void completeProcessing(String recordId, ArticleDiscoveredEvent event) {
+        try {
+            worker.processAfterTranslation(event);
             stream.acknowledge(recordId);
             LOGGER.info("article_event_completed eventId={} articleId={} attempt={}",
                     event.eventId(), event.articleId(), event.attempt());

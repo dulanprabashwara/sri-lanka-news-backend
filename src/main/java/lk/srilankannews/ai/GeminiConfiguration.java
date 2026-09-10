@@ -12,6 +12,7 @@ import lk.srilankannews.translation.ResilientTranslationProvider;
 import lk.srilankannews.translation.TranslationProperties;
 import lk.srilankannews.translation.TranslationProvider;
 import lk.srilankannews.translation.TranslationReliabilityProperties;
+import lk.srilankannews.translation.TranslationOutputValidator;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -66,7 +67,9 @@ public class GeminiConfiguration {
     TranslationProvider translationProvider(
             GeminiTranslationProvider primary,
             AzureTranslationProvider fallback,
-            TranslationReliabilityProperties properties) {
-        return new ResilientTranslationProvider(primary, fallback, properties);
+            TranslationReliabilityProperties properties,
+            TranslationOutputValidator outputValidator) {
+        return new ResilientTranslationProvider(
+                primary, fallback, properties, outputValidator);
     }
 }

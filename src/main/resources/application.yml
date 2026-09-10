@@ -13,15 +13,19 @@ news:
     semantic-search-per-minute: ${SEMANTIC_SEARCH_RATE_LIMIT_PER_MINUTE:20}
     ask-story-per-minute: ${ASK_STORY_RATE_LIMIT_PER_MINUTE:10}
     max-clients: ${PUBLIC_AI_RATE_LIMIT_MAX_CLIENTS:10000}
+
   admin:
     user-ids: ${ADMIN_USER_IDS:}
+
   search:
     semantic:
       vector-index: ${SEMANTIC_SEARCH_VECTOR_INDEX:idx_articles_semantic_vector}
       min-score: ${SEMANTIC_SEARCH_MIN_SCORE:0.65}
       max-window: ${SEMANTIC_SEARCH_MAX_WINDOW:200}
+
   for-you:
     candidate-limit: ${FOR_YOU_CANDIDATE_LIMIT:500}
+
   ai:
     gemini:
       api-key: ${GEMINI_API_KEY}
@@ -29,24 +33,29 @@ news:
       prompt-version: v1
       timeout: 30s
       max-input-characters: ${GEMINI_MAX_INPUT_CHARACTERS:30000}
+
     multilingual:
       model: ${MULTILINGUAL_MODEL:${GEMINI_MODEL}}
       prompt-version: ${MULTILINGUAL_PROMPT_VERSION:translation-v1}
       max-input-characters: ${MULTILINGUAL_MAX_INPUT_CHARACTERS:8000}
       backfill-limit: ${MULTILINGUAL_BACKFILL_LIMIT:0}
+
       reliability:
-        gemini-max-attempts: ${TRANSLATION_GEMINI_MAX_ATTEMPTS:3}
+        gemini-max-attempts: ${TRANSLATION_GEMINI_MAX_ATTEMPTS:1}
         initial-backoff: ${TRANSLATION_RETRY_INITIAL_BACKOFF:250ms}
+
       azure:
         key: ${AZURE_TRANSLATOR_KEY:}
         endpoint: ${AZURE_TRANSLATOR_ENDPOINT:https://api.cognitive.microsofttranslator.com}
         region: ${AZURE_TRANSLATOR_REGION:}
         timeout: ${AZURE_TRANSLATOR_TIMEOUT:15s}
         max-input-characters: ${AZURE_TRANSLATOR_MAX_INPUT_CHARACTERS:8000}
+
   cache:
     article-feed:
       enabled: true
       ttl: ${ARTICLE_FEED_CACHE_TTL_SECONDS:60}s
+
   story:
     trending:
       window-hours: ${TRENDING_WINDOW_HOURS:72}
@@ -54,6 +63,7 @@ news:
       source-normalization: ${TRENDING_SOURCE_NORMALIZATION:3}
       report-normalization: ${TRENDING_REPORT_NORMALIZATION:5}
       max-candidates: ${TRENDING_MAX_CANDIDATES:500}
+
     ask:
       prompt-version: ${ASK_STORY_PROMPT_VERSION:ask-story-v1}
       max-question-characters: ${ASK_STORY_MAX_QUESTION_CHARACTERS:500}
@@ -61,11 +71,13 @@ news:
       max-article-context-characters: ${ASK_STORY_MAX_ARTICLE_CONTEXT_CHARACTERS:6000}
       max-total-context-characters: ${ASK_STORY_MAX_TOTAL_CONTEXT_CHARACTERS:24000}
       max-answer-characters: ${ASK_STORY_MAX_ANSWER_CHARACTERS:3000}
+
     clustering:
       window: ${STORY_CLUSTER_WINDOW_HOURS:48}h
       threshold: ${STORY_CLUSTER_THRESHOLD:0.72}
       candidate-limit: ${STORY_CLUSTER_CANDIDATE_LIMIT:200}
       backfill-limit: ${STORY_CLUSTER_BACKFILL_LIMIT:100}
+
     embedding:
       model: ${STORY_EMBEDDING_MODEL:gemini-embedding-2}
       dimensions: ${STORY_EMBEDDING_DIMENSIONS:768}
@@ -74,6 +86,7 @@ news:
       semantic-threshold: ${STORY_SEMANTIC_THRESHOLD:0.82}
       cross-language-semantic-threshold: ${STORY_CROSS_LANGUAGE_SEMANTIC_THRESHOLD:0.90}
       backfill-limit: ${STORY_EMBEDDING_BACKFILL_LIMIT:50}
+
   processing:
     redis:
       enabled: ${REDIS_PROCESSING_ENABLED:true}
@@ -105,6 +118,7 @@ management:
     web:
       exposure:
         include: health
+
   endpoint:
     health:
       show-details: never
@@ -113,5 +127,6 @@ logging:
   level:
     root: INFO
     lk.srilankannews: INFO
+
   pattern:
     level: "%5p [requestId:%X{requestId:-}]"

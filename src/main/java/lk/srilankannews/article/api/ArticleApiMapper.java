@@ -2,6 +2,7 @@ package lk.srilankannews.article.api;
 
 import java.util.List;
 import lk.srilankannews.article.Article;
+import lk.srilankannews.article.ArticleSummaryResolver;
 import lk.srilankannews.source.Source;
 import lk.srilankannews.source.api.SourceApiMapper;
 import org.springframework.stereotype.Component;
@@ -12,17 +13,20 @@ public class ArticleApiMapper {
 
     private final SourceApiMapper sourceApiMapper;
     private final ArticleLocalizationService localizationService;
+    private final ArticleSummaryResolver summaryResolver;
 
     @Autowired
     public ArticleApiMapper(
             SourceApiMapper sourceApiMapper,
-            ArticleLocalizationService localizationService) {
+            ArticleLocalizationService localizationService,
+            ArticleSummaryResolver summaryResolver) {
         this.sourceApiMapper = sourceApiMapper;
         this.localizationService = localizationService;
+        this.summaryResolver = summaryResolver;
     }
 
     public ArticleApiMapper(SourceApiMapper sourceApiMapper) {
-        this(sourceApiMapper, null);
+        this(sourceApiMapper, null, new ArticleSummaryResolver());
     }
 
     public ArticleResponse toResponse(Article article, Source source) {
@@ -31,8 +35,8 @@ public class ArticleApiMapper {
 
     public ArticleResponse toResponse(
             Article article, Source source, lk.srilankannews.common.domain.Language displayLanguage) {
-        String aiSummary = article.aiEnrichment() == null ? null : article.aiEnrichment().summary();
-        String summary = article.summary() != null ? article.summary() : aiSummary;
+        ArticleSummaryResolver.ResolvedSummary resolvedSummary = summaryResolver.resolve(article);
+        String summary = resolvedSummary == null ? null : resolvedSummary.text();
         List<String> topics = article.aiEnrichment() == null
                 ? List.of()
                 : article.aiEnrichment().topics();

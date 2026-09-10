@@ -29,6 +29,7 @@ class ResilientTranslationProviderTest {
         when(fallback.translate(input)).thenReturn(expected);
         var provider = new ResilientTranslationProvider(
                 primary, fallback, new TranslationReliabilityProperties(3, Duration.ZERO),
+                new TranslationOutputValidator(),
                 ignored -> { });
 
         assertThat(provider.translate(input)).isEqualTo(expected);
@@ -44,6 +45,7 @@ class ResilientTranslationProviderTest {
                 TranslationProviderException.Kind.VALIDATION, "Invalid input"));
         var provider = new ResilientTranslationProvider(
                 primary, fallback, new TranslationReliabilityProperties(3, Duration.ZERO),
+                new TranslationOutputValidator(),
                 ignored -> { });
 
         assertThatThrownBy(() -> provider.translate(input))
@@ -51,5 +53,37 @@ class ResilientTranslationProviderTest {
                 .hasMessage("Invalid input");
         verify(primary).translate(input);
         verify(fallback, never()).translate(input);
+    }
+
+    @Test
+    void invalidGeminiOutputIsValidatedInsideRetryBoundaryThenUsesAzureFallback() {
+        TranslationInput automaticInput = new TranslationInput(
+                Language.SI, "Sinhala source title", "Sinhala source summary",
+                Set.of(Language.EN, Language.TA));
+        TranslationProvider primary = mock(TranslationProvider.class);
+        TranslationProvider fallback = mock(TranslationProvider.class);
+        when(primary.translate(automaticInput)).thenReturn(List.of(
+                new TranslatedContent(
+                        Language.EN, "English title", "English summary",
+                        "GEMINI", "gemini-test"),
+                new TranslatedContent(
+                        Language.TA, automaticInput.title(), "Tamil summary",
+                        "GEMINI", "gemini-test")));
+        var expected = List.of(
+                new TranslatedContent(
+                        Language.EN, "English title", "English summary",
+                        "AZURE_TRANSLATOR", "text-translation-v3"),
+                new TranslatedContent(
+                        Language.TA, "Tamil title", "Tamil summary",
+                        "AZURE_TRANSLATOR", "text-translation-v3"));
+        when(fallback.translate(automaticInput)).thenReturn(expected);
+        var provider = new ResilientTranslationProvider(
+                primary, fallback, new TranslationReliabilityProperties(3, Duration.ZERO),
+                new TranslationOutputValidator(),
+                ignored -> { });
+
+        assertThat(provider.translate(automaticInput)).isEqualTo(expected);
+        verify(primary, times(3)).translate(automaticInput);
+        verify(fallback).translate(automaticInput);
     }
 }

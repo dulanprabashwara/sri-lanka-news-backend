@@ -7,12 +7,14 @@ import java.util.List;
 import lk.srilankannews.article.Article;
 import lk.srilankannews.article.ArticleAiEnrichment;
 import lk.srilankannews.article.ArticleCategory;
+import lk.srilankannews.article.ArticleSummaryResolver;
 import lk.srilankannews.article.ProcessingStatus;
 import lk.srilankannews.common.domain.Language;
 import org.junit.jupiter.api.Test;
 
 class TranslationInputFactoryTest {
-    private final TranslationInputFactory factory = new TranslationInputFactory();
+    private final TranslationInputFactory factory =
+            new TranslationInputFactory(new ArticleSummaryResolver());
 
     @Test
     void hashIsDeterministicUnicodeNormalizedAndVersioned() {
