@@ -53,6 +53,10 @@ public record Story(
                 updatedAt, matchingVersion, null);
     }
 
+    public boolean isPubliclyVisible() {
+        return articleCount >= 2 && sourceIds.size() >= 2;
+    }
+
     static Story pending(Article article, Instant now, String matchingVersion) {
         return new Story(
                 null,

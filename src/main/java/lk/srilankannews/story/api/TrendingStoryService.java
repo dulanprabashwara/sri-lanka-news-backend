@@ -55,6 +55,7 @@ public class TrendingStoryService {
         List<Story> candidates = storyRepository.findTrendingCandidates(
                 publishedSince, category, properties.maxCandidates());
         List<RankedStory> ranked = candidates.stream()
+                .filter(Story::isPubliclyVisible)
                 .map(story -> new RankedStory(story, score(story, now)))
                 .sorted(ranking())
                 .limit(limit)

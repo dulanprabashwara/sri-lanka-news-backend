@@ -30,7 +30,7 @@ public class StoryQueryRepositoryImpl implements StoryQueryRepository {
     @Override
     public List<Story> findTrendingCandidates(
             Instant publishedSince, ArticleCategory category, int limit) {
-        Query query = Query.query(Criteria.where("articleCount").gt(0))
+        Query query = Query.query(publicStoryCriteria())
                 .addCriteria(Criteria.where("lastPublishedAt").gte(publishedSince));
         if (category != null) {
             query.addCriteria(Criteria.where("category").is(category));
@@ -43,7 +43,7 @@ public class StoryQueryRepositoryImpl implements StoryQueryRepository {
     }
 
     private Query queryFor(StoryFilter filter) {
-        Query query = Query.query(Criteria.where("articleCount").gt(0));
+        Query query = Query.query(publicStoryCriteria());
         if (filter.category() != null) {
             query.addCriteria(Criteria.where("category").is(filter.category()));
         }
@@ -58,5 +58,10 @@ public class StoryQueryRepositoryImpl implements StoryQueryRepository {
             query.addCriteria(published);
         }
         return query;
+    }
+
+    private Criteria publicStoryCriteria() {
+        return Criteria.where("articleCount").gte(2)
+                .and("sourceIds.1").exists(true);
     }
 }

@@ -111,28 +111,17 @@ class CoverageComparisonServiceTest {
     }
 
     @Test
-    void sameTopicRepeatedWithinOneSourceIsNotShared() {
+    void twoReportsFromOnePublisherAreNotPublicCoverage() {
         Story story = story(2, Set.of("source-a"));
-        Source source = source("source-a", "alpha-news");
         when(storyRepository.findById(story.id())).thenReturn(Optional.of(story));
-        when(articleRepository.findByStoryId(eq(story.id()), org.mockito.ArgumentMatchers.any()))
-                .thenReturn(List.of(
-                        article("one", source.id(), Language.EN, "2026-08-30T08:00:00Z",
-                                List.of("Economy"), List.of()),
-                        article("two", source.id(), Language.EN, "2026-08-30T09:00:00Z",
-                                List.of("ECONOMY"), List.of())));
-        when(sourceService.findAllByIds(anyCollection())).thenReturn(List.of(source));
 
-        CoverageComparisonResponse response = service.compare(story.id());
-
-        assertThat(response.comparisonAvailable()).isFalse();
-        assertThat(response.sourceCount()).isEqualTo(1);
-        assertThat(response.sharedTopics()).isEmpty();
-        assertThat(response.sources().get(0).uniqueTopics()).containsExactly("Economy");
+        assertThatThrownBy(() -> service.compare(story.id()))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verify(articleRepository, never()).findByStoryId(eq(story.id()), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
-    void rejectsUnknownOrPendingStory() {
+    void rejectsUnknownPendingOrHistoricalSingletonStory() {
         when(storyRepository.findById("missing")).thenReturn(Optional.empty());
         Story pending = story(0, Set.of());
         when(storyRepository.findById("pending")).thenReturn(Optional.of(new Story(
@@ -144,6 +133,10 @@ class CoverageComparisonServiceTest {
         assertThatThrownBy(() -> service.compare("missing"))
                 .isInstanceOf(ResourceNotFoundException.class);
         assertThatThrownBy(() -> service.compare("pending"))
+                .isInstanceOf(ResourceNotFoundException.class);
+        Story singleton = story(1, Set.of("source-a"));
+        when(storyRepository.findById("story-1")).thenReturn(Optional.of(singleton));
+        assertThatThrownBy(() -> service.compare("story-1"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 

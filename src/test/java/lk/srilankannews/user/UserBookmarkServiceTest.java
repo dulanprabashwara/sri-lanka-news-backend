@@ -89,7 +89,7 @@ class UserBookmarkServiceTest {
 
     @Test
     void createsOnlyPublicStoryBookmarks() {
-        Story publicStory = story("story-1", 1);
+        Story publicStory = story("story-1", 2);
         when(storyRepository.findById("story-1")).thenReturn(Optional.of(publicStory));
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         assertThat(service.create("user-a", BookmarkTargetType.STORY, "story-1").bookmarked())
@@ -140,6 +140,8 @@ class UserBookmarkServiceTest {
 
     private Story story(String id, long articleCount) {
         return new Story(id, "Story", "representative", ArticleCategory.LOCAL, now, now,
-                articleCount, Set.of("source-1"), Set.of(), now, now, "hybrid-v1");
+                articleCount,
+                articleCount >= 2 ? Set.of("source-1", "source-2") : Set.of("source-1"),
+                Set.of(), now, now, "hybrid-v1");
     }
 }

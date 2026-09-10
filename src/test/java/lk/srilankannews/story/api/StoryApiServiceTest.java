@@ -56,7 +56,7 @@ class StoryApiServiceTest {
 
     @Test
     void listsLegacyAndHybridStoriesWithFiltersAndDeterministicSorting() {
-        Story lexical = story("story-1", "lexical-v1", 1);
+        Story lexical = story("story-1", "lexical-v1", 2);
         Story hybrid = story("story-2", "hybrid-v1", 2);
         when(storyRepository.findAll(any(StoryFilter.class), any(Pageable.class)))
                 .thenAnswer(invocation -> new PageImpl<>(
@@ -112,7 +112,7 @@ class StoryApiServiceTest {
     void resolvesArticleStoryAndDistinguishesMissingArticleOrAssignment() {
         Article assigned = article("article-1", "source-1", Language.EN, "story-1");
         Article unassigned = article("article-2", "source-1", Language.EN, null);
-        Story story = story("story-1", "hybrid-v1", 1);
+        Story story = story("story-1", "hybrid-v1", 2);
         when(articleRepository.findById(assigned.id())).thenReturn(Optional.of(assigned));
         when(storyRepository.findById(story.id())).thenReturn(Optional.of(story));
         when(articleRepository.findById(unassigned.id())).thenReturn(Optional.of(unassigned));
@@ -135,11 +135,31 @@ class StoryApiServiceTest {
                 .hasMessage("Story was not found.");
     }
 
+    @Test
+    void rejectsSingletonAndSinglePublisherStoryDetails() {
+        Story singleton = story("singleton", "hybrid-v1", 1);
+        Story onePublisher = story(
+                "one-publisher", "hybrid-v1", 2, Set.of("source-1"));
+        when(storyRepository.findById(singleton.id())).thenReturn(Optional.of(singleton));
+        when(storyRepository.findById(onePublisher.id())).thenReturn(Optional.of(onePublisher));
+
+        assertThatThrownBy(() -> service.detail(singleton.id()))
+                .isInstanceOf(ResourceNotFoundException.class);
+        assertThatThrownBy(() -> service.detail(onePublisher.id()))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verify(articleRepository, never()).findByStoryId(any(), any());
+    }
+
     private Story story(String id, String matchingVersion, long count) {
+        return story(id, matchingVersion, count, Set.of("source-1", "source-2"));
+    }
+
+    private Story story(
+            String id, String matchingVersion, long count, Set<String> sourceIds) {
         Instant first = Instant.parse("2026-08-30T08:00:00Z");
         return new Story(
                 id, "Sri Lanka story", "representative-1", ArticleCategory.LOCAL,
-                first, first.plusSeconds(7200), count, Set.of("source-1", "source-2"),
+                first, first.plusSeconds(7200), count, sourceIds,
                 Set.of("internal-article-id"), first, first.plusSeconds(7200), matchingVersion);
     }
 

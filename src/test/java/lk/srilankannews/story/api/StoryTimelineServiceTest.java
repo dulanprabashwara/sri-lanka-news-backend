@@ -88,28 +88,20 @@ class StoryTimelineServiceTest {
     }
 
     @Test
-    void returnsValidSingleReportTimeline() {
+    void rejectsSingleReportTimelineAsNonPublic() {
         Story story = story(1);
-        Source source = source("source-a", "daily-mirror");
-        Article article = article(
-                "article-one", source.id(), Language.EN, "2026-08-30T08:00:00Z");
         when(storyRepository.findById(story.id())).thenReturn(Optional.of(story));
-        when(articleRepository.findByStoryId(eq(story.id()), any())).thenReturn(List.of(article));
-        when(sourceService.findAllByIds(anyCollection())).thenReturn(List.of(source));
 
-        StoryTimelineResponse response = service.timeline(story.id());
-
-        assertThat(response.eventCount()).isEqualTo(1);
-        assertThat(response.sourceCount()).isEqualTo(1);
-        assertThat(response.events().get(0).minutesFromFirstReport()).isZero();
-        assertThat(response.firstPublishedAt()).isEqualTo(response.lastPublishedAt());
+        assertThatThrownBy(() -> service.timeline(story.id()))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verify(articleRepository, never()).findByStoryId(eq(story.id()), any());
     }
 
     @Test
     void rejectsUnknownPendingOrInconsistentTimelineData() {
         when(storyRepository.findById("missing")).thenReturn(Optional.empty());
         when(storyRepository.findById("pending")).thenReturn(Optional.of(storyWithId("pending", 0)));
-        Story story = story(1);
+        Story story = story(2);
         when(storyRepository.findById(story.id())).thenReturn(Optional.of(story));
         when(articleRepository.findByStoryId(eq(story.id()), any())).thenReturn(List.of(
                 articleWithPublishedAt("article-null", null)));
@@ -131,7 +123,9 @@ class StoryTimelineServiceTest {
         Instant first = Instant.parse("2026-08-30T08:00:00Z");
         return new Story(
                 id, "Sri Lanka story", "article-a1", ArticleCategory.LOCAL,
-                first, first.plusSeconds(3600), count, Set.of("source-a"), Set.of("private"),
+                first, first.plusSeconds(3600), count,
+                count >= 2 ? Set.of("source-a", "source-b") : Set.of("source-a"),
+                Set.of("private"),
                 first, first.plusSeconds(3600), "hybrid-v1");
     }
 

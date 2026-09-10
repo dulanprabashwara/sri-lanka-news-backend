@@ -92,6 +92,28 @@ class StoryClusteringSelectionTest {
     }
 
     @Test
+    void secondPublisherCanJoinAnInternalSingletonCandidate() {
+        Article article = StoryClusteringServiceTest.article("article-2", null, NOW);
+        Article representative = StoryClusteringServiceTest.article(
+                "rep-singleton", "story-singleton", NOW.minusSeconds(60));
+        Story singleton = StoryClusteringServiceTest.story(
+                "story-singleton", "rep-singleton", NOW.minusSeconds(60), 1);
+        assertThat(singleton.isPubliclyVisible()).isFalse();
+        assertThat(article.sourceId()).isNotIn(singleton.sourceIds());
+        when(articles.findById(article.id())).thenReturn(Optional.of(article));
+        when(stories.findCandidates(any(), any(), any(Pageable.class)))
+                .thenReturn(List.of(singleton));
+        when(articles.findAllById(List.of(representative.id())))
+                .thenReturn(List.of(representative));
+        when(matcher.score(article, representative)).thenReturn(0.80);
+        when(assignment.assignIfAbsent(article.id(), singleton.id(), NOW))
+                .thenReturn(singleton.id());
+
+        assertThat(service.cluster(article.id())).isEqualTo(singleton.id());
+        verify(persistence).addArticleIfAbsent(singleton.id(), article, NOW);
+    }
+
+    @Test
     void concurrentArticleAssignmentWinnerRemainsAuthoritative() {
         Article article = StoryClusteringServiceTest.article("article-1", null, NOW);
         Story created = StoryClusteringServiceTest.story("story-new", "article-1", NOW, 0);

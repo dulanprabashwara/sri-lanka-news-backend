@@ -114,7 +114,7 @@ public class UserBookmarkService {
         }
         Story story = storyRepository.findById(targetId)
                 .orElseThrow(() -> new ResourceNotFoundException("Story"));
-        if (story.articleCount() < 1) throw new ResourceNotFoundException("Story");
+        if (!story.isPubliclyVisible()) throw new ResourceNotFoundException("Story");
     }
 
     private Hydration hydrate(List<UserBookmark> bookmarks, Language displayLanguage) {
@@ -167,7 +167,7 @@ public class UserBookmarkService {
             Story story = stories.get(bookmark.targetId());
             LocalizedStoryContentResponse localized = localizeStory(story, displayLanguage);
             return new BookmarkResponse(bookmark.id(), bookmark.targetType(), bookmark.targetId(),
-                    bookmark.createdAt(), null, story == null || story.articleCount() < 1 ? null
+                    bookmark.createdAt(), null, story == null || !story.isPubliclyVisible() ? null
                             : storyApiMapper.toSummary(story, localized));
         }
 

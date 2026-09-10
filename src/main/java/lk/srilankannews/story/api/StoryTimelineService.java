@@ -59,7 +59,7 @@ public class StoryTimelineService {
 
     public StoryTimelineResponse timeline(String storyId, Language displayLanguage) {
         Story story = storyRepository.findById(storyId)
-                .filter(candidate -> candidate.articleCount() > 0)
+                .filter(Story::isPubliclyVisible)
                 .orElseThrow(() -> new ResourceNotFoundException("Story"));
         Sort requestedOrder = Sort.by(
                 Sort.Order.asc("publishedAt"),

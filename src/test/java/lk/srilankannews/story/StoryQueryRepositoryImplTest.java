@@ -43,7 +43,8 @@ class StoryQueryRepositoryImplTest {
         ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
         verify(mongoTemplate).find(queryCaptor.capture(), eq(Story.class));
         Document query = queryCaptor.getValue().getQueryObject();
-        assertThat((Document) query.get("articleCount")).containsEntry("$gt", 0);
+        assertThat((Document) query.get("articleCount")).containsEntry("$gte", 2);
+        assertThat((Document) query.get("sourceIds.1")).containsEntry("$exists", true);
         assertThat(query).containsEntry("category", ArticleCategory.LOCAL);
         assertThat((Document) query.get("lastPublishedAt"))
                 .containsEntry("$gte", from)
@@ -68,7 +69,9 @@ class StoryQueryRepositoryImplTest {
         verify(mongoTemplate).find(queryCaptor.capture(), eq(Story.class));
         Query query = queryCaptor.getValue();
         assertThat((Document) query.getQueryObject().get("articleCount"))
-                .containsEntry("$gt", 0);
+                .containsEntry("$gte", 2);
+        assertThat((Document) query.getQueryObject().get("sourceIds.1"))
+                .containsEntry("$exists", true);
         assertThat((Document) query.getQueryObject().get("lastPublishedAt"))
                 .containsEntry("$gte", since);
         assertThat(query.getQueryObject()).containsEntry("category", ArticleCategory.LOCAL);

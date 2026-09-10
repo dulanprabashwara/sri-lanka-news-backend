@@ -74,7 +74,7 @@ public class AskStoryService {
         String question = normalizer.normalize(request.question());
         Language displayLanguage = request.displayLanguage() == null ? Language.EN : request.displayLanguage();
         Story story = storyRepository.findById(storyId)
-                .filter(candidate -> candidate.articleCount() > 0)
+                .filter(Story::isPubliclyVisible)
                 .orElseThrow(() -> new ResourceNotFoundException("Story"));
         List<Article> members = articleRepository.findByStoryId(
                 storyId, Sort.by(Sort.Order.asc("publishedAt"), Sort.Order.asc("id")));

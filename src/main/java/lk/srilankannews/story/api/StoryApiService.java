@@ -174,7 +174,7 @@ public class StoryApiService {
     }
 
     private void requirePublicStory(Story story) {
-        if (story.articleCount() < 1) {
+        if (!story.isPubliclyVisible()) {
             throw new ResourceNotFoundException("Story");
         }
     }

@@ -49,8 +49,8 @@ class TrendingStoryServiceTest {
 
     @Test
     void usesExactWeightsFixedClockBoundedWindowAndRecencyDominates() {
-        Story recent = story("000000000000000000000001", NOW.minusSeconds(60), 1,
-                Set.of("source-1"));
+        Story recent = story("000000000000000000000001", NOW.minusSeconds(60), 2,
+                Set.of("source-1", "source-2"));
         Story oldBroad = story("000000000000000000000002", NOW.minusSeconds(24 * 3600), 5,
                 Set.of("source-1", "source-2", "source-3"));
         when(storyRepository.findTrendingCandidates(
@@ -83,7 +83,7 @@ class TrendingStoryServiceTest {
         List<TrendingStoryResponse> result = service.trending(10, null, null);
 
         assertThat(result).extracting(TrendingStoryResponse::id)
-                .containsExactly(diverse.id(), oneSource.id(), oneReport.id());
+                .containsExactly(diverse.id());
         assertThat(result.get(0).sourceCount()).isEqualTo(2);
     }
 
@@ -126,8 +126,8 @@ class TrendingStoryServiceTest {
 
     @Test
     void localizationChangesPresentationButNotRankingAndUsesOneBatchLookup() {
-        Story first = story("000000000000000000000002", NOW.minusSeconds(60), 1, Set.of("a"));
-        Story second = story("000000000000000000000001", NOW.minusSeconds(120), 1, Set.of("b"));
+        Story first = story("000000000000000000000002", NOW.minusSeconds(60), 2, Set.of("a", "b"));
+        Story second = story("000000000000000000000001", NOW.minusSeconds(120), 2, Set.of("c", "d"));
         Article firstArticle = mock(Article.class);
         Article secondArticle = mock(Article.class);
         when(firstArticle.id()).thenReturn(first.representativeArticleId());
