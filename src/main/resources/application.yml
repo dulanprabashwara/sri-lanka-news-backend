@@ -27,12 +27,32 @@ news:
     candidate-limit: ${FOR_YOU_CANDIDATE_LIMIT:500}
 
   ai:
+    enrichment:
+      retry:
+        enabled: ${ENRICHMENT_RETRY_ENABLED:true}
+        batch-size: ${ENRICHMENT_RETRY_BATCH_SIZE:5}
+        max-attempts: ${ENRICHMENT_RETRY_MAX_ATTEMPTS:5}
+        initial-backoff: ${ENRICHMENT_RETRY_INITIAL_BACKOFF:5m}
+        max-backoff: ${ENRICHMENT_RETRY_MAX_BACKOFF:6h}
+        lease-duration: ${ENRICHMENT_RETRY_LEASE_DURATION:2m}
+        poll-interval: ${ENRICHMENT_RETRY_POLL_INTERVAL:60s}
+
     gemini:
       api-key: ${GEMINI_API_KEY}
       model: ${GEMINI_MODEL}
       prompt-version: v1
       timeout: 30s
       max-input-characters: ${GEMINI_MAX_INPUT_CHARACTERS:30000}
+      background:
+        max-concurrency: ${GEMINI_BACKGROUND_MAX_CONCURRENCY:1}
+        minimum-spacing: ${GEMINI_BACKGROUND_MINIMUM_SPACING:2s}
+        rate-limit-cooldown: ${GEMINI_RATE_LIMIT_COOLDOWN:60s}
+
+    openrouter:
+      api-key: ${OPENROUTER_API_KEY:}
+      model: ${OPENROUTER_MODEL:openrouter/free}
+      base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}
+      timeout: ${OPENROUTER_TIMEOUT:30s}
 
     multilingual:
       model: ${MULTILINGUAL_MODEL:${GEMINI_MODEL}}

@@ -10,9 +10,15 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import lk.srilankannews.processing.enrichment.EnrichmentRetryProperties;
+import lk.srilankannews.processing.enrichment.GeminiBackgroundProperties;
 
 @Configuration
-@EnableConfigurationProperties(RedisProcessingProperties.class)
+@EnableConfigurationProperties({
+        RedisProcessingProperties.class,
+        EnrichmentRetryProperties.class,
+        GeminiBackgroundProperties.class
+})
 public class ProcessingConfiguration {
 
     @Bean

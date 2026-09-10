@@ -28,6 +28,7 @@ import lk.srilankannews.source.SourceService;
 import lk.srilankannews.story.Story;
 import lk.srilankannews.story.StoryEmbeddingProperties;
 import lk.srilankannews.story.StoryRepository;
+import lk.srilankannews.processing.enrichment.GeminiRequestController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +49,7 @@ class AskStoryServiceTest {
     @Mock GroundedAnswerProvider answerProvider;
     @Mock ArticleLocalizationService localizationService;
     @Mock lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
+    @Mock GeminiRequestController geminiRequestController;
 
     AskStoryService service;
 
@@ -57,7 +59,8 @@ class AskStoryServiceTest {
         service = new AskStoryService(
                 storyRepository, articleRepository, sourceService, embeddingProvider,
                 answerProvider, localizationService, new AskStoryQuestionNormalizer(ask),
-                new StoryGroundingContextBuilder(ask), embeddingProperties(), ask, analyticsRecorder);
+                new StoryGroundingContextBuilder(ask), embeddingProperties(), ask,
+                analyticsRecorder, geminiRequestController);
         when(storyRepository.findById(STORY_ID)).thenReturn(java.util.Optional.of(story()));
     }
 
@@ -146,6 +149,22 @@ class AskStoryServiceTest {
     }
 
     @Test
+    void knownGeminiCooldownFailsFastBeforeInteractiveEmbedding() {
+        Article article = article("a1", "source-1", List.of(1.0, 0.0, 0.0),
+                "https://trusted/one");
+        stubMembers(article);
+        org.mockito.Mockito.doThrow(new lk.srilankannews.ai.AiProviderException(
+                        lk.srilankannews.ai.AiProviderException.Kind.RATE_LIMIT, "cooldown"))
+                .when(geminiRequestController).requireInteractiveAvailability();
+
+        assertThatThrownBy(() -> service.ask(
+                STORY_ID, new AskStoryRequest("What happened?", Language.EN)))
+                .isInstanceOf(AskStoryUnavailableException.class);
+        verify(embeddingProvider, never()).embed(any());
+        verify(answerProvider, never()).answer(any());
+    }
+
+    @Test
     void displayLanguageDoesNotChangeRetrievedArticleIds() {
         Article first = article("a1", "source-1", List.of(1.0, 0.0, 0.0), "https://trusted/one");
         Article second = article("a2", "source-2", List.of(0.0, 1.0, 0.0), "https://trusted/two");
@@ -190,7 +209,8 @@ class AskStoryServiceTest {
         service = new AskStoryService(
                 storyRepository, articleRepository, sourceService, embeddingProvider,
                 answerProvider, localizationService, new AskStoryQuestionNormalizer(ask),
-                new StoryGroundingContextBuilder(ask), embeddingProperties(), ask, analyticsRecorder);
+                new StoryGroundingContextBuilder(ask), embeddingProperties(), ask,
+                analyticsRecorder, geminiRequestController);
         List<Article> articles = List.of(
                 article("a1", "source-1", List.of(1.0, 0.0, 0.0), "https://trusted/1"),
                 article("a2", "source-1", List.of(0.99, 0.01, 0.0), "https://trusted/2"),

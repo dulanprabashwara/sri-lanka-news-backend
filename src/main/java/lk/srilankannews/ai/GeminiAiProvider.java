@@ -65,7 +65,7 @@ public class GeminiAiProvider implements AiProvider {
             GeminiPayload payload = objectMapper.readValue(text, GeminiPayload.class);
             return new AiResult(
                     payload.summary(), payload.category(), payload.topics(),
-                    payload.keywords(), payload.entities());
+                    payload.keywords(), payload.entities(), "GEMINI", properties.model());
         } catch (AiProviderException exception) {
             throw exception;
         } catch (JsonProcessingException exception) {

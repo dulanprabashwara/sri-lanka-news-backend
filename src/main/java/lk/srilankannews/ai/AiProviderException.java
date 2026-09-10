@@ -26,18 +26,20 @@ public class AiProviderException extends RuntimeException {
         UNUSABLE_INPUT
     }
 
+    private final String provider;
     private final Kind kind;
     private final Integer httpStatus;
     private final String providerCode;
     private final String providerMessage;
     private final String model;
+    private final java.time.Duration retryAfter;
 
     public AiProviderException(Kind kind, String message) {
-        this(kind, message, null, null, null, null, null);
+        this("GEMINI", kind, message, null, null, null, null, null, null);
     }
 
     public AiProviderException(Kind kind, String message, Throwable cause) {
-        this(kind, message, null, null, null, null, cause);
+        this("GEMINI", kind, message, null, null, null, null, null, cause);
     }
 
     public AiProviderException(
@@ -48,12 +50,59 @@ public class AiProviderException extends RuntimeException {
             String providerMessage,
             String model,
             Throwable cause) {
+        this("GEMINI", kind, message, httpStatus, providerCode, providerMessage, model, null, cause);
+    }
+
+    public AiProviderException(
+            Kind kind,
+            String message,
+            Integer httpStatus,
+            String providerCode,
+            String providerMessage,
+            String model,
+            java.time.Duration retryAfter,
+            Throwable cause) {
+        this("GEMINI", kind, message, httpStatus, providerCode, providerMessage, model, retryAfter, cause);
+    }
+
+    public AiProviderException(
+            String provider,
+            Kind kind,
+            String message,
+            Integer httpStatus,
+            String providerCode,
+            String providerMessage,
+            String model,
+            Throwable cause) {
+        this(provider, kind, message, httpStatus, providerCode, providerMessage, model, null, cause);
+    }
+
+    public AiProviderException(
+            String provider,
+            Kind kind,
+            String message,
+            Integer httpStatus,
+            String providerCode,
+            String providerMessage,
+            String model,
+            java.time.Duration retryAfter,
+            Throwable cause) {
         super(message, cause);
+        this.provider = sanitize(provider);
         this.kind = kind;
         this.httpStatus = httpStatus;
         this.providerCode = sanitize(providerCode);
         this.providerMessage = sanitize(providerMessage);
         this.model = sanitize(model);
+        this.retryAfter = retryAfter;
+    }
+
+    public String provider() {
+        return provider != null && !provider.isBlank() ? provider : "GEMINI";
+    }
+
+    public java.time.Duration retryAfter() {
+        return retryAfter;
     }
 
     public Kind kind() {
@@ -76,7 +125,7 @@ public class AiProviderException extends RuntimeException {
         return model;
     }
 
-    private static String sanitize(String value) {
+    public static String sanitize(String value) {
         if (value == null || value.isBlank()) {
             return null;
         }

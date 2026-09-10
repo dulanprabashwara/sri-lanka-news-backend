@@ -49,6 +49,25 @@ class SemanticEmbeddingInputFactoryTest {
                 .doesNotContain("SECRET BODY");
     }
 
+    @Test
+    void buildsFallbackInputWhenAiEnrichmentIsDeferred() {
+        Article article = new Article(
+                "article-2", "source-1", "Fallback headline",
+                "https://example.com/2", "https://example.com/2",
+                Language.EN, List.of(), NOW, NOW, ArticleCategory.LOCAL,
+                "The first meaningful sentence explains the event clearly. "
+                        + "A second sentence supplies additional verified context.",
+                "hash-2", ProcessingStatus.PENDING, NOW, NOW);
+
+        SemanticEmbeddingInputFactory.Input input = factory.create(article);
+
+        assertThat(input.text())
+                .contains("Fallback headline")
+                .contains("first meaningful sentence")
+                .contains("topics: ")
+                .doesNotContain("null");
+    }
+
     private String sha256(String text) throws Exception {
         return HexFormat.of().formatHex(
                 MessageDigest.getInstance("SHA-256")

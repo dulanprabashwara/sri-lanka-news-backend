@@ -20,6 +20,7 @@ class GeminiFailureMapperTest {
         AiProviderException mapped =
                 GeminiFailureMapper.map(providerFailure, "gemini-2.5-flash");
 
+        assertThat(mapped.provider()).isEqualTo("GEMINI");
         assertThat(mapped.kind()).isEqualTo(AiProviderException.Kind.AUTHENTICATION);
         assertThat(mapped.httpStatus()).isEqualTo(401);
         assertThat(mapped.providerCode()).isEqualTo("UNAUTHENTICATED");
@@ -55,5 +56,19 @@ class GeminiFailureMapperTest {
         assertThat(mapped.kind()).isEqualTo(AiProviderException.Kind.TIMEOUT_NETWORK);
         assertThat(mapped.providerMessage()).isEqualTo("Gemini network request failed");
         assertThat(mapped.getCause()).isSameAs(providerFailure);
+    }
+
+    @Test
+    void parsesRetryAfterFromRateLimitMessage() {
+        ClientException providerFailure = new ClientException(
+                429,
+                "RESOURCE_EXHAUSTED",
+                "Resource exhausted. Please retry after 45s.");
+
+        AiProviderException mapped =
+                GeminiFailureMapper.map(providerFailure, "gemini-2.5-flash");
+
+        assertThat(mapped.kind()).isEqualTo(AiProviderException.Kind.RATE_LIMIT);
+        assertThat(mapped.retryAfter()).isEqualTo(java.time.Duration.ofSeconds(45));
     }
 }

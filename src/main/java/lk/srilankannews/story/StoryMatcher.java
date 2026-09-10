@@ -32,14 +32,18 @@ class StoryMatcher {
             return 0;
         }
 
-        double topics = jaccard(
-                normalizer.values(article.aiEnrichment().topics()),
-                normalizer.values(representative.aiEnrichment().topics()));
-        double entities = jaccard(
-                normalizer.values(article.aiEnrichment().entities().stream()
-                        .map(ArticleEntity::name).toList()),
-                normalizer.values(representative.aiEnrichment().entities().stream()
-                        .map(ArticleEntity::name).toList()));
+        double topics = (article.aiEnrichment() != null && representative.aiEnrichment() != null)
+                ? jaccard(
+                        normalizer.values(article.aiEnrichment().topics()),
+                        normalizer.values(representative.aiEnrichment().topics()))
+                : 0;
+        double entities = (article.aiEnrichment() != null && representative.aiEnrichment() != null)
+                ? jaccard(
+                        normalizer.values(article.aiEnrichment().entities().stream()
+                                .map(ArticleEntity::name).toList()),
+                        normalizer.values(representative.aiEnrichment().entities().stream()
+                                .map(ArticleEntity::name).toList()))
+                : 0;
         double category = article.category() != null
                 && article.category() == representative.category() ? 1 : 0;
 

@@ -43,6 +43,7 @@ public class GeminiConfiguration {
     }
 
     @Bean
+    @Primary
     AiProvider aiProvider(Client client, GeminiProperties properties, ObjectMapper objectMapper) {
         return new GeminiAiProvider(client, properties, objectMapper);
     }

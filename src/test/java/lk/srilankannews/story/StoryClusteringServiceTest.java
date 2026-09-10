@@ -77,6 +77,28 @@ class StoryClusteringServiceTest {
         verify(assignment, never()).assignIfAbsent(any(), any(), any());
     }
 
+    @Test
+    void clustersArticleWithDeferredEnrichmentWithoutThrowingIllegalStateException() {
+        Article article = articleWithoutEnrichment("article-1", null, NOW);
+        Story created = story("story-new", "article-1", NOW, 0);
+        when(articles.findById("article-1")).thenReturn(Optional.of(article));
+        when(stories.findCandidates(any(), any(), any(Pageable.class))).thenReturn(List.of());
+        when(persistence.createPending(article, NOW))
+                .thenReturn(new StoryPersistence.Creation(created, true));
+        when(assignment.assignIfAbsent("article-1", "story-new", NOW)).thenReturn("story-new");
+
+        assertThat(service.cluster("article-1")).isEqualTo("story-new");
+        verify(persistence).addArticleIfAbsent("story-new", article, NOW);
+    }
+
+    static Article articleWithoutEnrichment(String id, String storyId, Instant publishedAt) {
+        return new Article(
+                id, "source-" + id, "Election result announced", "https://example.com/" + id,
+                "https://example.com/" + id, Language.EN, List.of(), publishedAt, NOW,
+                ArticleCategory.POLITICS, "content", "hash-" + id, null,
+                ProcessingStatus.COMPLETED, storyId, NOW, NOW);
+    }
+
     static Article article(String id, String storyId, Instant publishedAt) {
         ArticleAiEnrichment enrichment = new ArticleAiEnrichment(
                 "Summary", List.of("Election"), List.of(), List.of(), "model", "v1", NOW);

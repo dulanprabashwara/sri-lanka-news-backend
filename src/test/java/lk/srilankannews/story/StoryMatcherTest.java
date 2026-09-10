@@ -64,6 +64,20 @@ class StoryMatcherTest {
         assertThat(matcher.score(left, right)).isZero();
     }
 
+    @Test
+    void matchesSafelyWhenEnrichmentIsNull() {
+        Article left = new Article(
+                "a", "source-a", "Sri Lanka Budget 2026", "https://example.com/a",
+                "https://example.com/a", Language.EN, List.of(), NOW, NOW,
+                ArticleCategory.POLITICS, "Internal content", "hash-a", null,
+                ProcessingStatus.COMPLETED, null, NOW, NOW);
+        Article right = article(
+                "b", "Sri Lanka Budget 2026", Language.EN, ArticleCategory.POLITICS,
+                List.of("Budget"), List.of());
+
+        assertThat(matcher.score(left, right)).isGreaterThan(0.5);
+    }
+
     private Article article(
             String id,
             String title,

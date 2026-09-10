@@ -27,6 +27,8 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import org.springframework.security.access.AccessDeniedException;
 import lk.srilankannews.config.InvalidIngestionApiKeyException;
+import lk.srilankannews.config.RequestCorrelationFilter;
+import lk.srilankannews.ai.AiProviderException;
 import lk.srilankannews.article.search.InvalidSearchQueryException;
 import lk.srilankannews.article.search.SemanticSearchUnavailableException;
 import lk.srilankannews.article.search.SemanticSearchWindowException;
@@ -197,12 +199,77 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             AskStoryUnavailableException exception,
             HttpServletRequest request
     ) {
-        log.warn("Ask This Story unavailable cause={}",
-                exception.getCause() == null
-                        ? exception.getClass().getSimpleName()
-                        : exception.getCause().getClass().getSimpleName());
+        logAskStoryUnavailable(exception, request);
         return response(HttpStatus.SERVICE_UNAVAILABLE, ErrorCode.ASK_STORY_UNAVAILABLE,
                 "Ask This Story is temporarily unavailable.", request, List.of());
+    }
+
+    private void logAskStoryUnavailable(
+            AskStoryUnavailableException exception,
+            HttpServletRequest request
+    ) {
+        String requestId = resolveRequestId(request);
+        Throwable cause = exception.getCause();
+
+        StringBuilder message = new StringBuilder("Ask This Story unavailable");
+        if (cause instanceof AiProviderException aiException) {
+            message.append(" cause=").append(aiException.getClass().getSimpleName());
+            if (aiException.provider() != null && !aiException.provider().isBlank()) {
+                message.append(" provider=").append(aiException.provider());
+            }
+            if (aiException.kind() != null) {
+                message.append(" category=").append(aiException.kind().name());
+            }
+            if (aiException.httpStatus() != null) {
+                message.append(" status=").append(aiException.httpStatus());
+            }
+            String safeError = resolveSafeErrorMessage(aiException);
+            if (safeError != null && !safeError.isBlank()) {
+                message.append(" error=\"").append(safeError.replace('"', '\'')).append("\"");
+            }
+        } else {
+            String causeName = cause == null
+                    ? exception.getClass().getSimpleName()
+                    : cause.getClass().getSimpleName();
+            message.append(" cause=").append(causeName);
+            String rawError = cause != null && cause.getMessage() != null
+                    ? cause.getMessage()
+                    : exception.getMessage();
+            String safeError = AiProviderException.sanitize(rawError);
+            if (safeError != null && !safeError.isBlank()) {
+                message.append(" error=\"").append(safeError.replace('"', '\'')).append("\"");
+            }
+        }
+
+        if (requestId != null && !requestId.isBlank()) {
+            message.append(" requestId=").append(requestId);
+        }
+
+        log.warn("{}", message);
+    }
+
+    private String resolveSafeErrorMessage(AiProviderException exception) {
+        if (exception.providerMessage() != null && !exception.providerMessage().isBlank()) {
+            return exception.providerMessage();
+        }
+        if (exception.getMessage() != null && !exception.getMessage().isBlank()) {
+            return AiProviderException.sanitize(exception.getMessage());
+        }
+        return null;
+    }
+
+    private String resolveRequestId(HttpServletRequest request) {
+        String mdcId = MDC.get("requestId");
+        if (mdcId != null && !mdcId.isBlank()) {
+            return mdcId;
+        }
+        if (request != null) {
+            String headerId = request.getHeader(RequestCorrelationFilter.REQUEST_ID_HEADER);
+            if (headerId != null && !headerId.isBlank()) {
+                return headerId;
+            }
+        }
+        return null;
     }
 
     @ExceptionHandler(AdminRetryNotAllowedException.class)

@@ -34,12 +34,16 @@ public final class GeminiFailureMapper {
                 exception);
     }
 
+    private static final java.util.regex.Pattern RETRY_AFTER_PATTERN = java.util.regex.Pattern.compile(
+            "(?i)retry\\s*(?:after|in)\\s*[:=]?\\s*(\\d+)\\s*(s(?:ec(?:ond)?s?)?|m(?:in(?:ute)?s?)?|h(?:our?s?)?)?");
+
     private static AiProviderException mapApi(ApiException exception, String model) {
         int statusCode = exception.code();
         String providerCode = exception.status();
         String providerMessage = exception.message();
         AiProviderException.Kind kind =
                 classify(statusCode, providerCode, providerMessage);
+        java.time.Duration retryAfter = parseRetryAfter(providerMessage);
         return new AiProviderException(
                 kind,
                 "Gemini request failed",
@@ -47,7 +51,32 @@ public final class GeminiFailureMapper {
                 providerCode,
                 providerMessage,
                 model,
+                retryAfter,
                 exception);
+    }
+
+    static java.time.Duration parseRetryAfter(String message) {
+        if (message == null || message.isBlank()) {
+            return null;
+        }
+        java.util.regex.Matcher matcher = RETRY_AFTER_PATTERN.matcher(message);
+        if (matcher.find()) {
+            try {
+                long amount = Long.parseLong(matcher.group(1));
+                String unit = matcher.group(2);
+                if (unit != null) {
+                    unit = unit.toLowerCase(Locale.ROOT);
+                    if (unit.startsWith("m")) {
+                        return java.time.Duration.ofMinutes(amount);
+                    } else if (unit.startsWith("h")) {
+                        return java.time.Duration.ofHours(amount);
+                    }
+                }
+                return java.time.Duration.ofSeconds(amount);
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
     }
 
     static AiProviderException.Kind classify(

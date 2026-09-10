@@ -43,6 +43,30 @@ class ArticleEventConsumerTest {
     }
 
     @Test
+    void deferredEnrichmentDoesNotCauseArticleEventConsumerRetry() {
+        // Worker completes without exception even when enrichment is deferred
+        consumer.consume("record-42", event(1));
+
+        verify(worker).processAfterTranslation(event(1));
+        verify(worker, never()).markRetrying(any());
+        verify(stream).acknowledge("record-42");
+        verify(stream, never()).publish(any());
+        verify(stream, never()).publishDeadLetter(any(), any());
+    }
+
+    @Test
+    void rateLimitDeferLeadsToEventCompletionAndAck() {
+        // Simulate end-to-end consumer behavior when worker successfully completes with DEFERRED enrichment
+        ArticleDiscoveredEvent event = event(1);
+        consumer.consume("record-rate-limit", event);
+
+        verify(worker).translate(event);
+        verify(worker).processAfterTranslation(event);
+        verify(stream).acknowledge("record-rate-limit");
+        verify(stream, never()).publish(any());
+    }
+
+    @Test
     void republishesBoundedRetryBeforeAcknowledgingOriginal() {
         org.mockito.Mockito.doThrow(new IllegalStateException("failed"))
                 .when(worker).processAfterTranslation(event(1));

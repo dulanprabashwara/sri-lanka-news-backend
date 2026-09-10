@@ -22,7 +22,7 @@ public class AiOutputValidator {
         List<String> topics = terms(result.topics(), MAX_TOPICS, "topics");
         List<String> keywords = terms(result.keywords(), MAX_KEYWORDS, "keywords");
         List<AiEntity> entities = entities(result.entities());
-        return new AiResult(summary, result.category(), topics, keywords, entities);
+        return new AiResult(summary, result.category(), topics, keywords, entities, result.provider(), result.model());
     }
 
     private List<String> terms(List<String> values, int maximum, String field) {

@@ -1,5 +1,6 @@
 package lk.srilankannews.common.api.error;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.blankOrNullString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
@@ -9,12 +10,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import lk.srilankannews.ai.AiProviderException;
 import lk.srilankannews.config.RequestCorrelationFilter;
 import lk.srilankannews.auth.SecurityConfiguration;
+import lk.srilankannews.story.ask.AskStoryUnavailableException;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -111,6 +118,72 @@ class GlobalExceptionHandlerWebTest {
                         not("unsafe request id")));
     }
 
+    @Test
+    void logsAiProviderRateLimitDiagnosticsAndReturnsUnavailable() throws Exception {
+        Logger logger = (Logger) LoggerFactory.getLogger(GlobalExceptionHandler.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            mockMvc.perform(get("/test/ask-story-rate-limit")
+                            .header(RequestCorrelationFilter.REQUEST_ID_HEADER, "req-rate-limit-123"))
+                    .andExpect(status().isServiceUnavailable())
+                    .andExpect(jsonPath("$.code").value("ASK_STORY_UNAVAILABLE"))
+                    .andExpect(jsonPath("$.message").value("Ask This Story is temporarily unavailable."))
+                    .andExpect(jsonPath("$.requestId").value("req-rate-limit-123"))
+                    .andExpect(jsonPath("$.details", empty()));
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
+
+        String logged = appender.list.stream()
+                .map(ILoggingEvent::getFormattedMessage)
+                .reduce("", (left, right) -> left + " " + right);
+
+        assertThat(logged).contains("Ask This Story unavailable");
+        assertThat(logged).contains("cause=AiProviderException");
+        assertThat(logged).contains("provider=GEMINI");
+        assertThat(logged).contains("category=RATE_LIMIT");
+        assertThat(logged).contains("status=429");
+        assertThat(logged).contains("error=\"Resource has been exhausted (e.g. check quota).\"");
+        assertThat(logged).contains("requestId=req-rate-limit-123");
+    }
+
+    @Test
+    void logsAiProviderTimeoutDiagnosticsWithoutStatusAndReturnsUnavailable() throws Exception {
+        Logger logger = (Logger) LoggerFactory.getLogger(GlobalExceptionHandler.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            mockMvc.perform(get("/test/ask-story-timeout")
+                            .header(RequestCorrelationFilter.REQUEST_ID_HEADER, "req-timeout-456"))
+                    .andExpect(status().isServiceUnavailable())
+                    .andExpect(jsonPath("$.code").value("ASK_STORY_UNAVAILABLE"))
+                    .andExpect(jsonPath("$.message").value("Ask This Story is temporarily unavailable."))
+                    .andExpect(jsonPath("$.requestId").value("req-timeout-456"))
+                    .andExpect(jsonPath("$.details", empty()));
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
+
+        String logged = appender.list.stream()
+                .map(ILoggingEvent::getFormattedMessage)
+                .reduce("", (left, right) -> left + " " + right);
+
+        assertThat(logged).contains("Ask This Story unavailable");
+        assertThat(logged).contains("cause=AiProviderException");
+        assertThat(logged).contains("provider=GEMINI");
+        assertThat(logged).contains("category=TIMEOUT_NETWORK");
+        assertThat(logged).doesNotContain("status=");
+        assertThat(logged).contains("error=\"Gemini network request failed\"");
+        assertThat(logged).contains("requestId=req-timeout-456");
+    }
+
     @RestController
     @Validated
     public static class TestController {
@@ -126,6 +199,32 @@ class GlobalExceptionHandlerWebTest {
         @GetMapping("/test/unexpected")
         void throwUnexpectedException() {
             throw new IllegalStateException("sensitive implementation detail");
+        }
+
+        @GetMapping("/test/ask-story-rate-limit")
+        void throwAskStoryRateLimit() {
+            throw new AskStoryUnavailableException(
+                    new AiProviderException(
+                            AiProviderException.Kind.RATE_LIMIT,
+                            "Gemini request failed",
+                            429,
+                            "RESOURCE_EXHAUSTED",
+                            "Resource has been exhausted (e.g. check quota).",
+                            "gemini-2.5-flash",
+                            null));
+        }
+
+        @GetMapping("/test/ask-story-timeout")
+        void throwAskStoryTimeout() {
+            throw new AskStoryUnavailableException(
+                    new AiProviderException(
+                            AiProviderException.Kind.TIMEOUT_NETWORK,
+                            "Gemini request failed",
+                            null,
+                            "NETWORK_OR_TIMEOUT",
+                            "Gemini network request failed",
+                            "gemini-2.5-flash",
+                            null));
         }
 
         @GetMapping("/test/ok")

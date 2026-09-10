@@ -27,6 +27,7 @@ import lk.srilankannews.story.StoryEmbeddingProperties;
 import lk.srilankannews.story.StoryRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import lk.srilankannews.processing.enrichment.GeminiRequestController;
 
 @Service
 public class AskStoryService {
@@ -46,17 +47,20 @@ public class AskStoryService {
     private final StoryEmbeddingProperties embeddingProperties;
     private final AskStoryProperties askProperties;
     private final lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
+    private final GeminiRequestController geminiRequestController;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public AskStoryService(
             StoryRepository storyRepository, ArticleRepository articleRepository,
             SourceService sourceService, EmbeddingProvider embeddingProvider,
-            GroundedAnswerProvider answerProvider,
+            @org.springframework.beans.factory.annotation.Qualifier("groundedAnswerProvider") GroundedAnswerProvider answerProvider,
             ArticleLocalizationService localizationService,
             AskStoryQuestionNormalizer normalizer,
             StoryGroundingContextBuilder contextBuilder,
             StoryEmbeddingProperties embeddingProperties,
             AskStoryProperties askProperties,
-            lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder) {
+            lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder,
+            GeminiRequestController geminiRequestController) {
         this.storyRepository = storyRepository;
         this.articleRepository = articleRepository;
         this.sourceService = sourceService;
@@ -68,6 +72,22 @@ public class AskStoryService {
         this.embeddingProperties = embeddingProperties;
         this.askProperties = askProperties;
         this.analyticsRecorder = analyticsRecorder;
+        this.geminiRequestController = geminiRequestController;
+    }
+
+    public AskStoryService(
+            StoryRepository storyRepository, ArticleRepository articleRepository,
+            SourceService sourceService, EmbeddingProvider embeddingProvider,
+            GroundedAnswerProvider answerProvider,
+            ArticleLocalizationService localizationService,
+            AskStoryQuestionNormalizer normalizer,
+            StoryGroundingContextBuilder contextBuilder,
+            StoryEmbeddingProperties embeddingProperties,
+            AskStoryProperties askProperties,
+            lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder) {
+        this(storyRepository, articleRepository, sourceService, embeddingProvider,
+                answerProvider, localizationService, normalizer, contextBuilder,
+                embeddingProperties, askProperties, analyticsRecorder, null);
     }
 
     public AskStoryResponse ask(String storyId, AskStoryRequest request) {
@@ -87,6 +107,9 @@ public class AskStoryService {
 
         List<Double> queryVector;
         try {
+            if (geminiRequestController != null && !answerProvider.hasFallback()) {
+                geminiRequestController.requireInteractiveAvailability();
+            }
             queryVector = List.copyOf(embeddingProvider.embed(
                     SemanticSimilarityEmbeddingInput.format(question)));
             validateQueryVector(queryVector);

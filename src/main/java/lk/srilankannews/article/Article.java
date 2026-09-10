@@ -197,7 +197,8 @@ public record Article(
             ArticleAiEnrichment enrichment, ArticleCategory enrichedCategory, Instant now) {
         return new Article(id, sourceId, title, originalUrl, canonicalUrl, originalLanguage,
                 authors, publishedAt, discoveredAt, enrichedCategory, extractedContent, summary, contentHash,
-                enrichment, null, translations, leadMedia, ProcessingStatus.COMPLETED, storyId, createdAt, now);
+                enrichment, semanticEmbedding, translations, leadMedia,
+                ProcessingStatus.COMPLETED, storyId, createdAt, now);
     }
 
     Article withSemanticEmbedding(ArticleSemanticEmbedding embedding, Instant now) {

@@ -8,27 +8,35 @@ import java.util.Comparator;
 import java.util.List;
 import lk.srilankannews.article.Article;
 import lk.srilankannews.article.ArticleEntity;
+import lk.srilankannews.article.ArticleSummaryResolver;
 import lk.srilankannews.ai.SemanticSimilarityEmbeddingInput;
 import org.springframework.stereotype.Component;
 
 @Component
 class SemanticEmbeddingInputFactory {
     private final StoryEmbeddingProperties properties;
+    private final ArticleSummaryResolver summaryResolver;
 
     SemanticEmbeddingInputFactory(StoryEmbeddingProperties properties) {
+        this(properties, new ArticleSummaryResolver());
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    SemanticEmbeddingInputFactory(
+            StoryEmbeddingProperties properties, ArticleSummaryResolver summaryResolver) {
         this.properties = properties;
+        this.summaryResolver = summaryResolver;
     }
 
     Input create(Article article) {
-        if (article.aiEnrichment() == null) {
-            throw new IllegalStateException("Article must be enriched before embedding");
-        }
-        String topics = sorted(article.aiEnrichment().topics());
-        String entities = article.aiEnrichment().entities().stream()
+        String topics = article.aiEnrichment() == null
+                ? "" : sorted(article.aiEnrichment().topics());
+        String entities = article.aiEnrichment() == null ? "" : article.aiEnrichment().entities().stream()
                 .map(this::entity)
                 .sorted()
                 .reduce((left, right) -> left + " | " + right)
                 .orElse("");
+        ArticleSummaryResolver.ResolvedSummary resolved = summaryResolver.resolve(article);
         String semanticContent = """
                 inputVersion: %s
                 title: %s
@@ -39,7 +47,7 @@ class SemanticEmbeddingInputFactory {
                 """.formatted(
                 properties.inputVersion(),
                 normalize(article.title()),
-                normalize(article.aiEnrichment().summary()),
+                resolved == null ? "" : normalize(resolved.text()),
                 topics,
                 entities,
                 article.category() == null ? "" : article.category().name()).trim();

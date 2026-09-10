@@ -105,13 +105,9 @@ public class StoryClusteringService {
     }
 
     private Article loadEnrichedArticle(String articleId) {
-        Article article = articleRepository.findById(articleId)
+        return articleRepository.findById(articleId)
                 .orElseThrow(() -> new IllegalStateException(
                         "Article does not exist for clustering"));
-        if (article.aiEnrichment() == null) {
-            throw new IllegalStateException("Article must be enriched before clustering");
-        }
-        return article;
     }
 
     private Story selectCandidate(Article article) {
@@ -146,7 +142,7 @@ public class StoryClusteringService {
     }
 
     private Match match(Article article, Story story, Article representative) {
-        if (representative == null || representative.aiEnrichment() == null) {
+        if (representative == null) {
             return new Match(story, 0);
         }
         double lexical = lexicalMatcher.score(article, representative);
