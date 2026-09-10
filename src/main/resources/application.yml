@@ -26,6 +26,17 @@ news:
   for-you:
     candidate-limit: ${FOR_YOU_CANDIDATE_LIMIT:500}
 
+  article:
+    trending:
+      lookback-window: ${TRENDING_ARTICLES_LOOKBACK:48h}
+      half-life: ${TRENDING_ARTICLES_HALF_LIFE:8h}
+      candidate-limit: ${TRENDING_ARTICLES_CANDIDATE_LIMIT:200}
+      default-limit: ${TRENDING_ARTICLES_DEFAULT_LIMIT:20}
+      max-limit: ${TRENDING_ARTICLES_MAX_LIMIT:50}
+      max-per-story: ${TRENDING_ARTICLES_MAX_PER_STORY:2}
+      max-per-source: ${TRENDING_ARTICLES_MAX_PER_SOURCE:3}
+      cache-ttl: ${TRENDING_ARTICLES_CACHE_TTL:90s}
+
   ai:
     enrichment:
       retry:
