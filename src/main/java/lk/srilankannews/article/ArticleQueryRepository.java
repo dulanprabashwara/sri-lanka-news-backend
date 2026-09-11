@@ -13,4 +13,6 @@ public interface ArticleQueryRepository {
     List<Article> findTrendingCandidates(Instant publishedSince, ArticleCategory category, int limit);
 
     List<Article> findRecentStoryArticles(Set<String> storyIds, Instant publishedSince);
+
+    java.util.Map<String, Long> countNewArticlesBySource(java.util.Map<String, Instant> sourceBaselines);
 }

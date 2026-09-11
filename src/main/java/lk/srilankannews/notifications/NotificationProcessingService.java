@@ -98,10 +98,6 @@ public class NotificationProcessingService {
 
             Map<String, Set<Notification.NotificationReason>> userReasons = new HashMap<>();
 
-            // Find source followers
-            followRepository.findUserIdsByTargetTypeAndTargetKey(FollowTargetType.SOURCE, article.sourceId())
-                    .forEach(f -> userReasons.computeIfAbsent(f.userId(), k -> new HashSet<>()).add(Notification.NotificationReason.FOLLOWED_SOURCE));
-
             // Find topic followers
             if (article.aiEnrichment() != null && article.aiEnrichment().topics() != null) {
                 followRepository.findUserIdsByTargetTypeAndTargetKeyIn(FollowTargetType.TOPIC, article.aiEnrichment().topics())
@@ -129,16 +125,11 @@ public class NotificationProcessingService {
         }
 
         // Check if reasons align with preferences
-        boolean reasonMatches = false;
-        if (prefs.sourceFollowNotificationsEnabled() && reasons.contains(Notification.NotificationReason.FOLLOWED_SOURCE)) {
-            reasonMatches = true;
-        }
-        if (prefs.topicFollowNotificationsEnabled() && reasons.contains(Notification.NotificationReason.FOLLOWED_TOPIC)) {
-            reasonMatches = true;
-        }
+        boolean reasonMatches = prefs.topicFollowNotificationsEnabled()
+                && reasons.contains(Notification.NotificationReason.FOLLOWED_TOPIC);
 
         if (!reasonMatches) {
-            return; // Neither matched active preference
+            return; // Not matched active preference
         }
 
         String dedupeKey = "dedupe_v1:" + userId + ":" + story.id() + ":" + Notification.NotificationType.STORY_ACTIVITY.name() + ":" + eventVersion;

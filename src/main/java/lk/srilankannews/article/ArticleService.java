@@ -124,4 +124,8 @@ public class ArticleService {
         return articleRepository.findAllByOrderByPublishedAtDescIdDesc(
                 org.springframework.data.domain.PageRequest.of(0, limit));
     }
+
+    public Map<String, Long> countNewArticlesBySource(Map<String, Instant> sourceBaselines) {
+        return articleRepository.countNewArticlesBySource(sourceBaselines);
+    }
 }

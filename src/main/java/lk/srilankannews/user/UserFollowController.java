@@ -57,6 +57,14 @@ public class UserFollowController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/sources/{slug}/seen")
+    public ResponseEntity<Void> markSourceSeen(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable @Size(min = 1, max = 100) String slug) {
+        service.markSourceSeen(jwt.getSubject(), slug);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/topics")
     public FollowStatusResponse followTopic(@AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody TopicFollowRequest request) {

@@ -78,4 +78,87 @@ public class ArticleQueryRepositoryImpl implements ArticleQueryRepository {
         query.addCriteria(Criteria.where("title").ne(null).ne(""));
         return mongoTemplate.find(query, Article.class);
     }
+
+    @Override
+    public java.util.Map<String, Long> countNewArticlesBySource(java.util.Map<String, Instant> sourceBaselines) {
+        if (sourceBaselines == null || sourceBaselines.isEmpty()) {
+            return java.util.Map.of();
+        }
+
+        Instant maxAllowedFuture = Instant.now().plus(java.time.Duration.ofMinutes(15));
+        java.util.List<Criteria> sourceCriteriaList = new java.util.ArrayList<>();
+        for (java.util.Map.Entry<String, Instant> entry : sourceBaselines.entrySet()) {
+            String sourceId = entry.getKey();
+            Instant baseline = entry.getValue();
+            if (sourceId == null || baseline == null) {
+                continue;
+            }
+
+            Criteria validPublished = new Criteria().andOperator(
+                    Criteria.where("publishedAt").gt(baseline),
+                    Criteria.where("publishedAt").lte(maxAllowedFuture)
+            );
+            Criteria fallbackDiscovered = new Criteria().andOperator(
+                    new Criteria().orOperator(
+                            Criteria.where("publishedAt").is(null),
+                            Criteria.where("publishedAt").gt(maxAllowedFuture)
+                    ),
+                    Criteria.where("discoveredAt").gt(baseline),
+                    Criteria.where("discoveredAt").lte(maxAllowedFuture)
+            );
+            Criteria fallbackCreated = new Criteria().andOperator(
+                    new Criteria().orOperator(
+                            Criteria.where("publishedAt").is(null),
+                            Criteria.where("publishedAt").gt(maxAllowedFuture)
+                    ),
+                    new Criteria().orOperator(
+                            Criteria.where("discoveredAt").is(null),
+                            Criteria.where("discoveredAt").gt(maxAllowedFuture)
+                    ),
+                    Criteria.where("createdAt").gt(baseline)
+            );
+
+            Criteria timeCriteria = new Criteria().orOperator(
+                    validPublished,
+                    fallbackDiscovered,
+                    fallbackCreated
+            );
+
+            sourceCriteriaList.add(new Criteria().andOperator(
+                    Criteria.where("sourceId").is(sourceId),
+                    timeCriteria
+            ));
+        }
+
+        java.util.Map<String, Long> counts = new java.util.HashMap<>();
+        sourceBaselines.keySet().forEach(s -> counts.put(s, 0L));
+
+        if (sourceCriteriaList.isEmpty()) {
+            return counts;
+        }
+
+        Criteria matchCriteria = new Criteria().andOperator(
+                Criteria.where("title").ne(null).ne(""),
+                new Criteria().orOperator(sourceCriteriaList.toArray(new Criteria[0]))
+        );
+
+        org.springframework.data.mongodb.core.aggregation.MatchOperation match =
+                org.springframework.data.mongodb.core.aggregation.Aggregation.match(matchCriteria);
+        org.springframework.data.mongodb.core.aggregation.GroupOperation group =
+                org.springframework.data.mongodb.core.aggregation.Aggregation.group("sourceId").count().as("count");
+        org.springframework.data.mongodb.core.aggregation.Aggregation aggregation =
+                org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation(match, group);
+
+        org.springframework.data.mongodb.core.aggregation.AggregationResults<SourceArticleCountResult> results =
+                mongoTemplate.aggregate(aggregation, Article.class, SourceArticleCountResult.class);
+
+        for (SourceArticleCountResult result : results.getMappedResults()) {
+            if (result.id() != null) {
+                counts.put(result.id(), result.count());
+            }
+        }
+        return counts;
+    }
+
+    private record SourceArticleCountResult(String id, long count) {}
 }

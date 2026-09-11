@@ -41,6 +41,15 @@ class UserApiSecurityTest {
         mockMvc.perform(get("/api/v1/me/bookmarks")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/v1/me/follows")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/v1/me/for-you")).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/v1/me/follows/sources/daily-mirror/seen")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void markSourceSeenRequiresAuthenticationAndExtractsSubject() throws Exception {
+        mockMvc.perform(post("/api/v1/me/follows/sources/daily-mirror/seen")
+                        .with(jwt().jwt(token -> token.subject("user-a"))))
+                .andExpect(status().isNoContent());
+        verify(followService).markSourceSeen("user-a", "daily-mirror");
     }
 
     @Test

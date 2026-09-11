@@ -19,10 +19,20 @@ public record UserFollow(
         FollowTargetType targetType,
         String targetKey,
         String displayLabel,
-        Instant createdAt
+        Instant createdAt,
+        Instant lastSeenAt
 ) {
+    public UserFollow(String id, String userId, FollowTargetType targetType, String targetKey,
+            String displayLabel, Instant createdAt) {
+        this(id, userId, targetType, targetKey, displayLabel, createdAt, createdAt);
+    }
+
     static UserFollow create(String userId, FollowTargetType targetType, String targetKey,
             String displayLabel, Instant createdAt) {
-        return new UserFollow(null, userId, targetType, targetKey, displayLabel, createdAt);
+        return new UserFollow(null, userId, targetType, targetKey, displayLabel, createdAt, createdAt);
+    }
+
+    public UserFollow withLastSeenAt(Instant newLastSeenAt) {
+        return new UserFollow(id, userId, targetType, targetKey, displayLabel, createdAt, newLastSeenAt);
     }
 }

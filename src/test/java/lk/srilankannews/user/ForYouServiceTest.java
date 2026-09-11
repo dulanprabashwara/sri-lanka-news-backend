@@ -170,6 +170,114 @@ class ForYouServiceTest {
     }
 
     @Test
+    void followedPublisherIncludesItsRecentArticleWithPersonalizedReasonAndUnfollowedRanksAsFallback() {
+        when(followRepository.findAllByUserId("user-a")).thenReturn(List.of(
+                follow(FollowTargetType.SOURCE, sourceOne.id(), sourceOne.name())));
+        Article followedArticle = article("art-p", sourceOne.id(), "Publisher Match",
+                ArticleCategory.LOCAL, List.of(), "2026-09-02T10:00:00Z");
+        Article otherArticle = article("art-other", sourceTwo.id(), "Other Publisher",
+                ArticleCategory.LOCAL, List.of(), "2026-09-02T12:00:00Z");
+        when(articleService.findRecent(500)).thenReturn(List.of(otherArticle, followedArticle));
+
+        ForYouFeedResponse result = service.feed("user-a", 0, 20, null);
+
+        assertThat(result.content()).extracting(item -> item.article().id())
+                .containsExactly("art-p", "art-other");
+        assertThat(result.content().get(0).personalized()).isTrue();
+        assertThat(result.content().get(0).reasons()).singleElement().satisfies(reason -> {
+            assertThat(reason.type()).isEqualTo(RecommendationReasonType.FOLLOWED_SOURCE);
+            assertThat(reason.label()).isEqualTo(sourceOne.name());
+        });
+        assertThat(result.content().get(1).personalized()).isFalse();
+        assertThat(result.content().get(1).reasons()).isEmpty();
+    }
+
+    @Test
+    void followedCategoryIncludesMatchingArticleAndUnrelatedCategoryRanksAsFallback() {
+        when(preferencesService.get("user-a")).thenReturn(preferences(
+                DisplayLanguagePreference.ORIGINAL, List.of(ArticleCategory.BUSINESS)));
+        Article businessArticle = article("art-biz", sourceTwo.id(), "Business Report",
+                ArticleCategory.BUSINESS, List.of(), "2026-09-02T09:00:00Z");
+        Article sportsArticle = article("art-spt", sourceTwo.id(), "Sports Report",
+                ArticleCategory.SPORTS, List.of(), "2026-09-02T11:00:00Z");
+        when(articleService.findRecent(500)).thenReturn(List.of(sportsArticle, businessArticle));
+
+        ForYouFeedResponse result = service.feed("user-a", 0, 20, null);
+
+        assertThat(result.content()).extracting(item -> item.article().id())
+                .containsExactly("art-biz", "art-spt");
+        assertThat(result.content().get(0).personalized()).isTrue();
+        assertThat(result.content().get(0).reasons()).singleElement().satisfies(reason -> {
+            assertThat(reason.type()).isEqualTo(RecommendationReasonType.PREFERRED_CATEGORY);
+            assertThat(reason.label()).isEqualTo("BUSINESS");
+        });
+        assertThat(result.content().get(1).personalized()).isFalse();
+        assertThat(result.content().get(1).reasons()).isEmpty();
+    }
+
+    @Test
+    void publisherAndCategoryCombinedBehaviorRanksAboveSingleSignalArticlesWithNoDuplicates() {
+        when(preferencesService.get("user-a")).thenReturn(preferences(
+                DisplayLanguagePreference.ORIGINAL, List.of(ArticleCategory.BUSINESS)));
+        when(followRepository.findAllByUserId("user-a")).thenReturn(List.of(
+                follow(FollowTargetType.SOURCE, sourceOne.id(), sourceOne.name())));
+
+        Article crossMatch = article("art-cross", sourceOne.id(), "Publisher & Biz",
+                ArticleCategory.BUSINESS, List.of(), "2026-09-02T08:00:00Z");
+        Article publisherOnly = article("art-pub", sourceOne.id(), "Publisher Only",
+                ArticleCategory.LOCAL, List.of(), "2026-09-02T12:00:00Z");
+        Article categoryOnly = article("art-cat", sourceTwo.id(), "Category Only",
+                ArticleCategory.BUSINESS, List.of(), "2026-09-02T12:00:00Z");
+        Article neither = article("art-none", sourceTwo.id(), "Neither Match",
+                ArticleCategory.LOCAL, List.of(), "2026-09-02T12:00:00Z");
+
+        when(articleService.findRecent(500)).thenReturn(List.of(neither, categoryOnly, publisherOnly, crossMatch));
+
+        ForYouFeedResponse result = service.feed("user-a", 0, 20, null);
+
+        // Cross match (score 60: 40 + 20) ranks #1, publisher only (score 40) ranks #2,
+        // category only (score 20) ranks #3, neither (score 0) ranks #4
+        assertThat(result.content()).extracting(item -> item.article().id())
+                .containsExactly("art-cross", "art-pub", "art-cat", "art-none");
+
+        // Cross match appears exactly once with both reasons
+        assertThat(result.content().get(0).reasons())
+                .extracting(RecommendationReasonResponse::type)
+                .containsExactly(RecommendationReasonType.FOLLOWED_SOURCE, RecommendationReasonType.PREFERRED_CATEGORY);
+        assertThat(result.totalElements()).isEqualTo(4);
+    }
+
+    @Test
+    void displayLanguagePreservesExactMembershipAndRankingAcrossTranslations() {
+        when(preferencesService.get("user-a")).thenReturn(preferences(
+                DisplayLanguagePreference.ORIGINAL, List.of(ArticleCategory.LOCAL)));
+        Article local = article("art-1", sourceOne.id(), "Local", ArticleCategory.LOCAL, List.of(), "2026-09-02T10:00:00Z");
+        when(articleService.findRecent(500)).thenReturn(List.of(local));
+
+        ForYouFeedResponse enResponse = service.feed("user-a", 0, 20, Language.EN);
+        ForYouFeedResponse siResponse = service.feed("user-a", 0, 20, Language.SI);
+        ForYouFeedResponse taResponse = service.feed("user-a", 0, 20, Language.TA);
+
+        assertThat(enResponse.content()).extracting(item -> item.article().id()).containsExactly("art-1");
+        assertThat(siResponse.content()).extracting(item -> item.article().id()).containsExactly("art-1");
+        assertThat(taResponse.content()).extracting(item -> item.article().id()).containsExactly("art-1");
+    }
+
+    @Test
+    void articleWithUnknownOrNullSourceIsSafelyExcludedFromRankedPool() {
+        Article missingSource = article("art-missing", "source-unknown", "Missing Source",
+                ArticleCategory.LOCAL, List.of(), "2026-09-02T10:00:00Z");
+        Article validSource = article("art-valid", sourceOne.id(), "Valid Source",
+                ArticleCategory.LOCAL, List.of(), "2026-09-02T09:00:00Z");
+        when(articleService.findRecent(500)).thenReturn(List.of(missingSource, validSource));
+
+        ForYouFeedResponse result = service.feed("user-a", 0, 20, null);
+
+        assertThat(result.content()).extracting(item -> item.article().id())
+                .containsExactly("art-valid");
+    }
+
+    @Test
     void userSignalsAreLoadedOnlyForAuthenticatedOwnerAndNoExternalProvidersAreUsed() {
         when(articleService.findRecent(anyInt())).thenReturn(List.of());
 

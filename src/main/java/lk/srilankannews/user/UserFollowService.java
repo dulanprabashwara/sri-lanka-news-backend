@@ -1,7 +1,10 @@
 package lk.srilankannews.user;
 
 import java.time.Clock;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +12,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import lk.srilankannews.article.ArticleService;
 import lk.srilankannews.common.api.PagedResponse;
 import lk.srilankannews.common.api.error.ResourceNotFoundException;
 import lk.srilankannews.source.Source;
@@ -27,15 +31,18 @@ import lk.srilankannews.analytics.AnalyticsEventType;
 public class UserFollowService {
     private final UserFollowRepository repository;
     private final SourceService sourceService;
+    private final ArticleService articleService;
     private final SourceApiMapper sourceApiMapper;
     private final TopicNormalizer topicNormalizer;
     private final Clock clock;
     private final AnalyticsRecorder analyticsRecorder;
 
     public UserFollowService(UserFollowRepository repository, SourceService sourceService,
-            SourceApiMapper sourceApiMapper, TopicNormalizer topicNormalizer, Clock clock, AnalyticsRecorder analyticsRecorder) {
+            ArticleService articleService, SourceApiMapper sourceApiMapper, TopicNormalizer topicNormalizer,
+            Clock clock, AnalyticsRecorder analyticsRecorder) {
         this.repository = repository;
         this.sourceService = sourceService;
+        this.articleService = articleService;
         this.sourceApiMapper = sourceApiMapper;
         this.topicNormalizer = topicNormalizer;
         this.clock = clock;
@@ -59,6 +66,13 @@ public class UserFollowService {
         repository.deleteByUserIdAndTargetTypeAndTargetKey(
                 userId, FollowTargetType.SOURCE, source.id());
         analyticsRecorder.recordBestEffort(AnalyticsEventType.FOLLOW_REMOVED, null, null, null, source.id(), null, null, null);
+    }
+
+    public void markSourceSeen(String userId, String slug) {
+        Source source = requireSource(slug);
+        UserFollow follow = repository.findByUserIdAndTargetTypeAndTargetKey(userId, FollowTargetType.SOURCE, source.id())
+                .orElseThrow(() -> new ResourceNotFoundException("Follow"));
+        repository.save(follow.withLastSeenAt(clock.instant()));
     }
 
     public FollowStatusResponse followTopic(String userId, String topic) {
@@ -122,14 +136,38 @@ public class UserFollowService {
                 .map(UserFollow::targetKey).collect(Collectors.toSet());
         Map<String, Source> sources = sourceService.findAllByIds(sourceIds).stream()
                 .collect(Collectors.toMap(Source::id, Function.identity()));
+
+        Instant now = clock.instant();
+        Map<String, Instant> sourceBaselines = new HashMap<>();
+        List<UserFollow> uninitialized = new ArrayList<>();
+        for (UserFollow follow : follows) {
+            if (follow.targetType() == FollowTargetType.SOURCE) {
+                if (follow.lastSeenAt() == null) {
+                    // Initialize and persist baseline once so legacy follows do not continually advance baseline
+                    UserFollow initialized = follow.withLastSeenAt(now);
+                    uninitialized.add(initialized);
+                    sourceBaselines.put(follow.targetKey(), now);
+                } else {
+                    sourceBaselines.put(follow.targetKey(), follow.lastSeenAt());
+                }
+            }
+        }
+        if (!uninitialized.isEmpty()) {
+            repository.saveAll(uninitialized);
+        }
+        Map<String, Long> sourceCounts = (articleService != null && !sourceBaselines.isEmpty())
+                ? articleService.countNewArticlesBySource(sourceBaselines)
+                : Map.of();
+
         List<FollowResponse> responses = follows.stream().map(follow -> {
             if (follow.targetType() == FollowTargetType.SOURCE) {
                 Source source = sources.get(follow.targetKey());
+                Long count = sourceCounts.getOrDefault(follow.targetKey(), 0L);
                 return new FollowResponse(follow.id(), follow.targetType(), follow.createdAt(),
-                        source == null ? null : sourceApiMapper.toSummary(source), null);
+                        source == null ? null : sourceApiMapper.toSummary(source), null, count);
             }
             return new FollowResponse(follow.id(), follow.targetType(), follow.createdAt(), null,
-                    new FollowTopicResponse(follow.displayLabel()));
+                    new FollowTopicResponse(follow.displayLabel()), null);
         }).toList();
         return PagedResponse.from(new PageImpl<>(responses, pageable, follows.getTotalElements()));
     }

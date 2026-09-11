@@ -8,6 +8,15 @@ public record FollowResponse(
         FollowTargetType targetType,
         Instant createdAt,
         SourceSummaryResponse source,
-        FollowTopicResponse topic
+        FollowTopicResponse topic,
+        Long newArticleCount
 ) {
+    public FollowResponse(
+            String followId,
+            FollowTargetType targetType,
+            Instant createdAt,
+            SourceSummaryResponse source,
+            FollowTopicResponse topic) {
+        this(followId, targetType, createdAt, source, topic, null);
+    }
 }
