@@ -20,7 +20,6 @@ public class RedisStreamConfiguration {
     StreamMessageListenerContainer<String, MapRecord<String, String, String>>
             articleStreamListenerContainer(
                     RedisConnectionFactory connectionFactory,
-                    RedisProcessingProperties properties) {
                     RedisProcessingProperties properties,
                     ErrorHandler streamErrorHandler) {
         var options = StreamMessageListenerContainer

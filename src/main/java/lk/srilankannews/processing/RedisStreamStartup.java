@@ -51,14 +51,11 @@ public class RedisStreamStartup implements ApplicationRunner {
         startConsumer();
     }
 
-    private synchronized void startConsumer() {
-        if (started.get()) {
     @Scheduled(fixedDelayString = "${news.processing.redis.supervise-interval:30s}")
     public synchronized void superviseSubscription() {
         if (isSubscribed()) {
             return;
         }
-        Subscription subscription = null;
         LOGGER.warn("article_stream_subscription_inactive_restarting stream={} group={} consumer={}",
                 properties.streamKey(), properties.consumerGroup(), properties.consumerName());
         startConsumer();
@@ -75,12 +72,10 @@ public class RedisStreamStartup implements ApplicationRunner {
         cleanupSubscription();
         try {
             groupManager.ensureConsumerGroup();
-            subscription = container.receive(
             this.subscription = container.receive(
                     Consumer.from(properties.consumerGroup(), properties.consumerName()),
                     StreamOffset.create(properties.streamKey(), ReadOffset.lastConsumed()),
                     listener);
-            container.start();
             if (!container.isRunning()) {
                 container.start();
             }

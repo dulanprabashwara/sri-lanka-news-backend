@@ -17,7 +17,6 @@ import lk.srilankannews.processing.enrichment.GeminiBackgroundProperties;
 @EnableConfigurationProperties({
         RedisProcessingProperties.class,
         EnrichmentRetryProperties.class,
-        GeminiBackgroundProperties.class
         GeminiBackgroundProperties.class,
         PendingArticleRecoveryProperties.class
 })
