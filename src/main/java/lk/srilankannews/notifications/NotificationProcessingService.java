@@ -19,11 +19,13 @@ import lk.srilankannews.source.SourceService;
 import lk.srilankannews.story.Story;
 import lk.srilankannews.story.StoryRepository;
 import lk.srilankannews.user.FollowTargetType;
+import lk.srilankannews.user.TopicNormalizer;
 import lk.srilankannews.user.UserFollowRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import java.util.stream.Collectors;
 
 @Service
 public class NotificationProcessingService {
@@ -39,6 +41,7 @@ public class NotificationProcessingService {
     private final NotificationEventRepository eventRepository;
     private final lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
     private final RetentionPolicyService retentionPolicyService;
+    private final TopicNormalizer topicNormalizer;
     private final Clock clock;
 
     public NotificationProcessingService(ArticleService articleService,
@@ -50,6 +53,7 @@ public class NotificationProcessingService {
                                          NotificationEventRepository eventRepository,
                                          lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder,
                                          RetentionPolicyService retentionPolicyService,
+                                         TopicNormalizer topicNormalizer,
                                          Clock clock) {
         this.articleService = articleService;
         this.storyRepository = storyRepository;
@@ -60,6 +64,7 @@ public class NotificationProcessingService {
         this.eventRepository = eventRepository;
         this.analyticsRecorder = analyticsRecorder;
         this.retentionPolicyService = retentionPolicyService;
+        this.topicNormalizer = topicNormalizer;
         this.clock = clock;
     }
 
@@ -77,10 +82,6 @@ public class NotificationProcessingService {
         }
 
         NotificationEvent event = optionalEvent.get();
-        if (event.status() == NotificationEvent.EventStatus.PROCESSED) {
-            LOGGER.debug("Event {} already processed", eventId);
-            return;
-        }
 
         try {
             Article article = articleService.findById(articleId).orElse(null);
@@ -98,17 +99,29 @@ public class NotificationProcessingService {
 
             Map<String, Set<Notification.NotificationReason>> userReasons = new HashMap<>();
 
-            // Find topic followers
+            // Find topic followers using normalized topic keys
             if (article.aiEnrichment() != null && article.aiEnrichment().topics() != null) {
-                followRepository.findUserIdsByTargetTypeAndTargetKeyIn(FollowTargetType.TOPIC, article.aiEnrichment().topics())
-                        .forEach(f -> userReasons.computeIfAbsent(f.userId(), k -> new HashSet<>()).add(Notification.NotificationReason.FOLLOWED_TOPIC));
+                Set<String> normalizedTopicKeys = article.aiEnrichment().topics().stream()
+                        .filter(t -> t != null && !t.isBlank())
+                        .map(topicNormalizer::normalize)
+                        .map(TopicNormalizer.NormalizedTopic::key)
+                        .filter(k -> !k.isBlank())
+                        .collect(Collectors.toSet());
+
+                if (!normalizedTopicKeys.isEmpty()) {
+                    LOGGER.debug("notification_topic_match articleId={} topics={}", articleId, normalizedTopicKeys);
+                    followRepository.findUserIdsByTargetTypeAndTargetKeyIn(FollowTargetType.TOPIC, normalizedTopicKeys)
+                            .forEach(f -> userReasons.computeIfAbsent(f.userId(), k -> new HashSet<>()).add(Notification.NotificationReason.FOLLOWED_TOPIC));
+                }
             }
 
             for (Map.Entry<String, Set<Notification.NotificationReason>> entry : userReasons.entrySet()) {
                 processUserNotification(entry.getKey(), entry.getValue(), article, story, sourceSlug, sourceName, eventVersion);
             }
 
-            markEvent(event, NotificationEvent.EventStatus.PROCESSED, null);
+            if (event.status() != NotificationEvent.EventStatus.PROCESSED) {
+                markEvent(event, NotificationEvent.EventStatus.PROCESSED, null);
+            }
         } catch (Exception e) {
             LOGGER.error("Error processing event {}", eventId, e);
             markEvent(event, attempt > 3 ? NotificationEvent.EventStatus.FAILED : NotificationEvent.EventStatus.RETRYING, e.getMessage());

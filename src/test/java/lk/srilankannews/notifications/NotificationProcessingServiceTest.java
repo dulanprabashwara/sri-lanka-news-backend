@@ -7,6 +7,8 @@ import lk.srilankannews.retention.RetentionProperties;
 import lk.srilankannews.source.SourceService;
 import lk.srilankannews.story.Story;
 import lk.srilankannews.story.StoryRepository;
+import lk.srilankannews.user.FollowTargetType;
+import lk.srilankannews.user.TopicNormalizer;
 import lk.srilankannews.user.UserFollow;
 import lk.srilankannews.user.UserFollowRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,9 +22,12 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 public class NotificationProcessingServiceTest {
@@ -35,6 +40,7 @@ public class NotificationProcessingServiceTest {
     private ArticleService articleService;
     private SourceService sourceService;
     private RetentionPolicyService retentionPolicyService;
+    private TopicNormalizer topicNormalizer;
     private Clock clock;
     private lk.srilankannews.analytics.AnalyticsRecorder analyticsRecorder;
     private NotificationProcessingService service;
@@ -52,6 +58,7 @@ public class NotificationProcessingServiceTest {
         sourceService = mock(SourceService.class);
         analyticsRecorder = mock(lk.srilankannews.analytics.AnalyticsRecorder.class);
         retentionPolicyService = new RetentionPolicyService(RetentionProperties.defaults());
+        topicNormalizer = new TopicNormalizer();
         clock = Clock.fixed(NOW, ZoneId.of("UTC"));
         
         service = new NotificationProcessingService(
@@ -64,6 +71,7 @@ public class NotificationProcessingServiceTest {
                 eventRepository,
                 analyticsRecorder,
                 retentionPolicyService,
+                topicNormalizer,
                 clock
         );
     }
@@ -98,7 +106,8 @@ public class NotificationProcessingServiceTest {
         when(articleService.findById("article-100")).thenReturn(Optional.of(article));
         
         UserFollow ufTopic = new UserFollow(null, userId, lk.srilankannews.user.FollowTargetType.TOPIC, topicId, null, null);
-        when(followRepository.findUserIdsByTargetTypeAndTargetKeyIn(lk.srilankannews.user.FollowTargetType.TOPIC, List.of(topicId))).thenReturn(List.of(ufTopic));
+        when(followRepository.findUserIdsByTargetTypeAndTargetKeyIn(eq(FollowTargetType.TOPIC), argThat(c -> c != null && c.contains(topicId))))
+                .thenReturn(List.of(ufTopic));
         
         NotificationPreference prefs = new NotificationPreference(
                 userId, true, "user@example.com", true, true, true, false, 
@@ -190,7 +199,7 @@ public class NotificationProcessingServiceTest {
         when(storyRepository.findById("st1")).thenReturn(Optional.of(story));
         
         UserFollow ufTopic = new UserFollow(null, userId, lk.srilankannews.user.FollowTargetType.TOPIC, topicId, null, null);
-        when(followRepository.findUserIdsByTargetTypeAndTargetKeyIn(lk.srilankannews.user.FollowTargetType.TOPIC, List.of(topicId))).thenReturn(List.of(ufTopic));
+        when(followRepository.findUserIdsByTargetTypeAndTargetKeyIn(eq(FollowTargetType.TOPIC), argThat(c -> c != null && c.contains(topicId)))).thenReturn(List.of(ufTopic));
         
         NotificationPreference prefs = new NotificationPreference(
                 userId, true, "test@test.com", true, 
@@ -224,6 +233,7 @@ public class NotificationProcessingServiceTest {
                 eventRepository,
                 analyticsRecorder,
                 retentionPolicyService,
+                topicNormalizer,
                 qhClock
         );
 
@@ -246,7 +256,7 @@ public class NotificationProcessingServiceTest {
         when(storyRepository.findById("st1")).thenReturn(Optional.of(story));
 
         UserFollow ufTopic = new UserFollow(null, userId, lk.srilankannews.user.FollowTargetType.TOPIC, topicId, null, null);
-        when(followRepository.findUserIdsByTargetTypeAndTargetKeyIn(lk.srilankannews.user.FollowTargetType.TOPIC, List.of(topicId))).thenReturn(List.of(ufTopic));
+        when(followRepository.findUserIdsByTargetTypeAndTargetKeyIn(eq(FollowTargetType.TOPIC), argThat(c -> c != null && c.contains(topicId)))).thenReturn(List.of(ufTopic));
 
         // 22:00 -> 07:00 Asia/Colombo
         NotificationPreference prefs = new NotificationPreference(
@@ -294,7 +304,7 @@ public class NotificationProcessingServiceTest {
         when(storyRepository.findById("st1")).thenReturn(Optional.of(story));
 
         UserFollow ufTopic = new UserFollow(null, userId, lk.srilankannews.user.FollowTargetType.TOPIC, topicId, null, null);
-        when(followRepository.findUserIdsByTargetTypeAndTargetKeyIn(lk.srilankannews.user.FollowTargetType.TOPIC, List.of(topicId))).thenReturn(List.of(ufTopic));
+        when(followRepository.findUserIdsByTargetTypeAndTargetKeyIn(eq(FollowTargetType.TOPIC), argThat(c -> c != null && c.contains(topicId)))).thenReturn(List.of(ufTopic));
 
         // emailEnabled = false
         NotificationPreference prefs = new NotificationPreference(
@@ -310,5 +320,239 @@ public class NotificationProcessingServiceTest {
 
         Notification captured = notificationCaptor.getValue();
         assertThat(captured.emailDelivery().status()).isEqualTo(Notification.EmailDelivery.DeliveryStatus.NOT_REQUESTED);
+    }
+
+    @Test
+    void shouldMatchUserFollowWhenAiTopicsHaveMixedCase() {
+        String userId = "user-cricket";
+        String sourceId = "ada-derana";
+        String followedTopicKey = "sri lanka cricket";
+
+        NotificationEvent event = new NotificationEvent(
+                "event-cricket", "article-cricket", "story-cricket", sourceId, NOW, "v1",
+                NotificationEvent.EventStatus.PENDING, 0, NOW, NOW, null, null, null
+        );
+        when(eventRepository.findById("event-cricket")).thenReturn(Optional.of(event));
+
+        Article article = mock(Article.class);
+        when(article.id()).thenReturn("article-cricket");
+        when(article.sourceId()).thenReturn(sourceId);
+        when(article.title()).thenReturn("Sri Lanka Cricket Victory");
+        lk.srilankannews.article.ArticleAiEnrichment enrichment = mock(lk.srilankannews.article.ArticleAiEnrichment.class);
+        // AI model outputs mixed case with capital 'S' and 'L'
+        when(enrichment.topics()).thenReturn(List.of("Cricket", "Sri Lanka cricket"));
+        when(enrichment.summary()).thenReturn("Cricket summary");
+        when(article.aiEnrichment()).thenReturn(enrichment);
+        when(articleService.findById("article-cricket")).thenReturn(Optional.of(article));
+
+        Story story = mock(Story.class);
+        when(story.id()).thenReturn("story-cricket");
+        when(storyRepository.findById("story-cricket")).thenReturn(Optional.of(story));
+
+        // User follow is stored with normalized lowercase key
+        UserFollow uf = new UserFollow(null, userId, FollowTargetType.TOPIC, followedTopicKey, "Sri Lanka Cricket", NOW);
+        when(followRepository.findUserIdsByTargetTypeAndTargetKeyIn(eq(FollowTargetType.TOPIC), argThat(c -> c != null && c.contains(followedTopicKey))))
+                .thenReturn(List.of(uf));
+
+        NotificationPreference prefs = new NotificationPreference(
+                userId, true, "cricket@example.com", true, false, true, false,
+                false, null, null, "UTC", NOW, NOW
+        );
+        when(preferenceRepository.findById(userId)).thenReturn(Optional.of(prefs));
+
+        service.processEvent(Map.of("eventId", "event-cricket", "articleId", "article-cricket", "storyId", "story-cricket", "eventVersion", "v1"));
+
+        ArgumentCaptor<Notification> notificationCaptor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository, times(1)).save(notificationCaptor.capture());
+
+        Notification captured = notificationCaptor.getValue();
+        assertThat(captured.userId()).isEqualTo(userId);
+        assertThat(captured.reasons()).contains(Notification.NotificationReason.FOLLOWED_TOPIC);
+    }
+
+    @Test
+    void shouldMatchUserFollowWhenAiTopicsAlreadyLowercase() {
+        String userId = "user-lower";
+        String sourceId = "src-1";
+        String topicKey = "politics";
+
+        NotificationEvent event = new NotificationEvent(
+                "event-lower", "art-lower", "st-lower", sourceId, NOW, "v1",
+                NotificationEvent.EventStatus.PENDING, 0, NOW, NOW, null, null, null
+        );
+        when(eventRepository.findById("event-lower")).thenReturn(Optional.of(event));
+
+        Article article = mock(Article.class);
+        when(article.id()).thenReturn("art-lower");
+        when(article.sourceId()).thenReturn(sourceId);
+        lk.srilankannews.article.ArticleAiEnrichment enrichment = mock(lk.srilankannews.article.ArticleAiEnrichment.class);
+        when(enrichment.topics()).thenReturn(List.of("politics"));
+        when(article.aiEnrichment()).thenReturn(enrichment);
+        when(articleService.findById("art-lower")).thenReturn(Optional.of(article));
+
+        Story story = mock(Story.class);
+        when(story.id()).thenReturn("st-lower");
+        when(storyRepository.findById("st-lower")).thenReturn(Optional.of(story));
+
+        UserFollow uf = new UserFollow(null, userId, FollowTargetType.TOPIC, topicKey, "Politics", NOW);
+        when(followRepository.findUserIdsByTargetTypeAndTargetKeyIn(eq(FollowTargetType.TOPIC), argThat(c -> c != null && c.contains(topicKey))))
+                .thenReturn(List.of(uf));
+
+        NotificationPreference prefs = new NotificationPreference(
+                userId, true, "lower@example.com", true, false, true, false,
+                false, null, null, "UTC", NOW, NOW
+        );
+        when(preferenceRepository.findById(userId)).thenReturn(Optional.of(prefs));
+
+        service.processEvent(Map.of("eventId", "event-lower", "articleId", "art-lower", "storyId", "st-lower", "eventVersion", "v1"));
+
+        verify(notificationRepository, times(1)).save(any());
+    }
+
+    @Test
+    void shouldDeduplicateAiTopicsWithDifferentCasing() {
+        String userId = "user-dedupe";
+        String sourceId = "src-1";
+
+        NotificationEvent event = new NotificationEvent(
+                "event-case", "art-case", "st-case", sourceId, NOW, "v1",
+                NotificationEvent.EventStatus.PENDING, 0, NOW, NOW, null, null, null
+        );
+        when(eventRepository.findById("event-case")).thenReturn(Optional.of(event));
+
+        Article article = mock(Article.class);
+        when(article.id()).thenReturn("art-case");
+        when(article.sourceId()).thenReturn(sourceId);
+        lk.srilankannews.article.ArticleAiEnrichment enrichment = mock(lk.srilankannews.article.ArticleAiEnrichment.class);
+        // Duplicate topics with different casing
+        when(enrichment.topics()).thenReturn(List.of("Cricket", "cricket", "CRICKET"));
+        when(article.aiEnrichment()).thenReturn(enrichment);
+        when(articleService.findById("art-case")).thenReturn(Optional.of(article));
+
+        Story story = mock(Story.class);
+        when(story.id()).thenReturn("st-case");
+        when(storyRepository.findById("st-case")).thenReturn(Optional.of(story));
+
+        UserFollow uf = new UserFollow(null, userId, FollowTargetType.TOPIC, "cricket", "Cricket", NOW);
+        when(followRepository.findUserIdsByTargetTypeAndTargetKeyIn(eq(FollowTargetType.TOPIC), argThat(c -> c != null && c.size() == 1 && c.contains("cricket"))))
+                .thenReturn(List.of(uf));
+
+        NotificationPreference prefs = new NotificationPreference(
+                userId, true, "dedupe@example.com", true, false, true, false,
+                false, null, null, "UTC", NOW, NOW
+        );
+        when(preferenceRepository.findById(userId)).thenReturn(Optional.of(prefs));
+
+        service.processEvent(Map.of("eventId", "event-case", "articleId", "art-case", "storyId", "st-case", "eventVersion", "v1"));
+
+        // Only queried with the distinct set size 1, and created exactly 1 notification
+        verify(notificationRepository, times(1)).save(any());
+    }
+
+    @Test
+    void shouldSafelyHandleNullAndBlankAiTopics() {
+        String sourceId = "src-1";
+
+        NotificationEvent event = new NotificationEvent(
+                "event-nulls", "art-nulls", "st-nulls", sourceId, NOW, "v1",
+                NotificationEvent.EventStatus.PENDING, 0, NOW, NOW, null, null, null
+        );
+        when(eventRepository.findById("event-nulls")).thenReturn(Optional.of(event));
+
+        Article article = mock(Article.class);
+        when(article.id()).thenReturn("art-nulls");
+        when(article.sourceId()).thenReturn(sourceId);
+        lk.srilankannews.article.ArticleAiEnrichment enrichment = mock(lk.srilankannews.article.ArticleAiEnrichment.class);
+        java.util.ArrayList<String> nullAndBlankList = new java.util.ArrayList<>();
+        nullAndBlankList.add(null);
+        nullAndBlankList.add("");
+        nullAndBlankList.add("   ");
+        when(enrichment.topics()).thenReturn(nullAndBlankList);
+        when(article.aiEnrichment()).thenReturn(enrichment);
+        when(articleService.findById("art-nulls")).thenReturn(Optional.of(article));
+
+        Story story = mock(Story.class);
+        when(story.id()).thenReturn("st-nulls");
+        when(storyRepository.findById("st-nulls")).thenReturn(Optional.of(story));
+
+        service.processEvent(Map.of("eventId", "event-nulls", "articleId", "art-nulls", "storyId", "st-nulls", "eventVersion", "v1"));
+
+        // Repository should not be queried with empty topics
+        verify(followRepository, never()).findUserIdsByTargetTypeAndTargetKeyIn(any(), any());
+        verify(notificationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldNotCreateNotificationWhenNoTopicsMatch() {
+        String sourceId = "src-1";
+
+        NotificationEvent event = new NotificationEvent(
+                "event-nomatch", "art-nomatch", "st-nomatch", sourceId, NOW, "v1",
+                NotificationEvent.EventStatus.PENDING, 0, NOW, NOW, null, null, null
+        );
+        when(eventRepository.findById("event-nomatch")).thenReturn(Optional.of(event));
+
+        Article article = mock(Article.class);
+        when(article.id()).thenReturn("art-nomatch");
+        when(article.sourceId()).thenReturn(sourceId);
+        lk.srilankannews.article.ArticleAiEnrichment enrichment = mock(lk.srilankannews.article.ArticleAiEnrichment.class);
+        when(enrichment.topics()).thenReturn(List.of("Swimming"));
+        when(article.aiEnrichment()).thenReturn(enrichment);
+        when(articleService.findById("art-nomatch")).thenReturn(Optional.of(article));
+
+        Story story = mock(Story.class);
+        when(story.id()).thenReturn("st-nomatch");
+        when(storyRepository.findById("st-nomatch")).thenReturn(Optional.of(story));
+
+        when(followRepository.findUserIdsByTargetTypeAndTargetKeyIn(eq(FollowTargetType.TOPIC), any()))
+                .thenReturn(List.of());
+
+        service.processEvent(Map.of("eventId", "event-nomatch", "articleId", "art-nomatch", "storyId", "st-nomatch", "eventVersion", "v1"));
+
+        verify(notificationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldNotCreateDuplicateNotificationWhenEventIsReplayed() {
+        String userId = "user-dup";
+        String sourceId = "src-1";
+        String topicKey = "cricket";
+
+        NotificationEvent event = new NotificationEvent(
+                "event-dup", "art-dup", "st-dup", sourceId, NOW, "v1",
+                NotificationEvent.EventStatus.PROCESSED, 0, NOW, NOW, null, null, null
+        );
+        when(eventRepository.findById("event-dup")).thenReturn(Optional.of(event));
+
+        Article article = mock(Article.class);
+        when(article.id()).thenReturn("art-dup");
+        when(article.sourceId()).thenReturn(sourceId);
+        lk.srilankannews.article.ArticleAiEnrichment enrichment = mock(lk.srilankannews.article.ArticleAiEnrichment.class);
+        when(enrichment.topics()).thenReturn(List.of("Cricket"));
+        when(article.aiEnrichment()).thenReturn(enrichment);
+        when(articleService.findById("art-dup")).thenReturn(Optional.of(article));
+
+        Story story = mock(Story.class);
+        when(story.id()).thenReturn("st-dup");
+        when(storyRepository.findById("st-dup")).thenReturn(Optional.of(story));
+
+        UserFollow uf = new UserFollow(null, userId, FollowTargetType.TOPIC, topicKey, "Cricket", NOW);
+        when(followRepository.findUserIdsByTargetTypeAndTargetKeyIn(eq(FollowTargetType.TOPIC), argThat(c -> c != null && c.contains(topicKey))))
+                .thenReturn(List.of(uf));
+
+        NotificationPreference prefs = new NotificationPreference(
+                userId, true, "dup@example.com", true, false, true, false,
+                false, null, null, "UTC", NOW, NOW
+        );
+        when(preferenceRepository.findById(userId)).thenReturn(Optional.of(prefs));
+
+        // Simulate duplicate key on save
+        doThrow(new org.springframework.dao.DuplicateKeyException("Duplicate dedupeKey"))
+                .when(notificationRepository).save(any(Notification.class));
+
+        // Replaying does not throw exception
+        service.processEvent(Map.of("eventId", "event-dup", "articleId", "art-dup", "storyId", "st-dup", "eventVersion", "v1"));
+
+        verify(notificationRepository, times(1)).save(any());
     }
 }
