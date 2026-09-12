@@ -37,4 +37,32 @@ class UserPreferencesBackfillRunnerTest {
         verify(preferencesService).get("user-1");
         verify(preferencesService).get("user-2");
     }
+
+    @Test
+    void handlesNullAndBlankUserIdsSafely() {
+        when(mongoOperations.findDistinct(any(Query.class), eq("userId"), eq("user_bookmarks"), eq(String.class)))
+                .thenReturn(java.util.Arrays.asList("user-valid", null, "", "   "));
+        when(mongoOperations.findDistinct(any(Query.class), eq("userId"), eq("user_follows"), eq(String.class)))
+                .thenReturn(List.of());
+        when(mongoOperations.findDistinct(any(Query.class), eq("_id"), eq("user_notification_preferences"), eq(String.class)))
+                .thenReturn(List.of());
+
+        UserPreferencesBackfillRunner runner = new UserPreferencesBackfillRunner(mongoOperations, preferencesService);
+        runner.run(null);
+
+        verify(preferencesService).get("user-valid");
+        org.mockito.Mockito.verifyNoMoreInteractions(preferencesService);
+    }
+
+    @Test
+    void survivesExceptionGracefullyWithoutFailingApplicationStartup() {
+        when(mongoOperations.findDistinct(any(Query.class), eq("userId"), eq("user_bookmarks"), eq(String.class)))
+                .thenThrow(new RuntimeException("Mongo connection timeout"));
+
+        UserPreferencesBackfillRunner runner = new UserPreferencesBackfillRunner(mongoOperations, preferencesService);
+        // Must not throw
+        runner.run(null);
+
+        org.mockito.Mockito.verifyNoInteractions(preferencesService);
+    }
 }

@@ -106,6 +106,23 @@ class UserPreferencesServiceTest {
     }
 
     @Test
+    void concurrentFirstGetResolvesToOneOwnerDocument() {
+        when(repository.findByUserId("user-a")).thenReturn(Optional.empty());
+        UserPreferences saved = new UserPreferences("id", "user-a", DisplayLanguagePreference.ORIGINAL,
+                Set.of(), true, now, now);
+        when(mongoOperations.findAndModify(any(Query.class), any(Update.class),
+                any(FindAndModifyOptions.class), eq(UserPreferences.class)))
+                .thenThrow(new DuplicateKeyException("concurrent preference create"))
+                .thenReturn(saved);
+
+        UserPreferencesResponse response = service.get("user-a");
+        assertThat(response.preferredDisplayLanguage()).isEqualTo(DisplayLanguagePreference.ORIGINAL);
+        assertThat(response.preferredCategories()).isEmpty();
+        verify(mongoOperations, org.mockito.Mockito.times(2)).findAndModify(any(Query.class),
+                any(Update.class), any(FindAndModifyOptions.class), eq(UserPreferences.class));
+    }
+
+    @Test
     void concurrentFirstCreatesResolveToOneOwnerDocument() {
         UserPreferences saved = new UserPreferences("id", "user-a", DisplayLanguagePreference.EN,
                 Set.of(), true, now, now);
