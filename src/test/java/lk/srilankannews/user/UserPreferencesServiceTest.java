@@ -38,12 +38,40 @@ class UserPreferencesServiceTest {
     }
 
     @Test
-    void returnsDefaultsWithoutCreatingARecord() {
+    void initializesAndPersistsDefaultsWhenPreferencesDoNotExist() {
         when(repository.findByUserId("user-a")).thenReturn(Optional.empty());
+        UserPreferences saved = new UserPreferences("id", "user-a", DisplayLanguagePreference.ORIGINAL,
+                Set.of(), true, now, now);
+        when(mongoOperations.findAndModify(any(Query.class), any(Update.class),
+                any(FindAndModifyOptions.class), eq(UserPreferences.class))).thenReturn(saved);
+
         UserPreferencesResponse response = service.get("user-a");
         assertThat(response.preferredDisplayLanguage()).isEqualTo(DisplayLanguagePreference.ORIGINAL);
         assertThat(response.preferredCategories()).isEmpty();
-        assertThat(response.createdAt()).isNull();
+        assertThat(response.createdAt()).isEqualTo(now);
+
+        ArgumentCaptor<Query> query = ArgumentCaptor.forClass(Query.class);
+        ArgumentCaptor<Update> update = ArgumentCaptor.forClass(Update.class);
+        verify(mongoOperations).findAndModify(query.capture(), update.capture(),
+                any(FindAndModifyOptions.class), eq(UserPreferences.class));
+        assertThat(query.getValue().getQueryObject().getString("userId")).isEqualTo("user-a");
+        assertThat(update.getValue().getUpdateObject().get("$setOnInsert").toString())
+                .contains("userId=user-a")
+                .contains("preferredDisplayLanguage=ORIGINAL");
+    }
+
+    @Test
+    void returnsExistingPreferencesWithoutReinitializing() {
+        UserPreferences existing = new UserPreferences("id", "user-a", DisplayLanguagePreference.SI,
+                Set.of(ArticleCategory.POLITICS), false, now, now);
+        when(repository.findByUserId("user-a")).thenReturn(Optional.of(existing));
+
+        UserPreferencesResponse response = service.get("user-a");
+        assertThat(response.preferredDisplayLanguage()).isEqualTo(DisplayLanguagePreference.SI);
+        assertThat(response.preferredCategories()).containsExactly(ArticleCategory.POLITICS);
+        assertThat(response.analyticsEnabled()).isFalse();
+
+        org.mockito.Mockito.verifyNoInteractions(mongoOperations);
     }
 
     @Test

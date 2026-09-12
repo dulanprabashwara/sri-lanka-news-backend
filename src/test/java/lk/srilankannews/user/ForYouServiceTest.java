@@ -98,14 +98,17 @@ class ForYouServiceTest {
         ForYouFeedResponse result = service.feed("user-a", 0, 20, null);
 
         assertThat(result.content()).extracting(item -> item.article().id())
-                .containsExactly("a", "b", "c");
-        assertThat(result.content().get(0).reasons()).hasSize(4)
+                .containsExactly("b", "a", "c");
+        assertThat(result.content().get(0).reasons()).singleElement()
+                .extracting(RecommendationReasonResponse::label)
+                .isEqualTo("ELECTIONS");
+        assertThat(result.content().get(1).reasons()).hasSize(4)
                 .extracting(RecommendationReasonResponse::type)
                 .containsExactly(RecommendationReasonType.FOLLOWED_SOURCE,
                         RecommendationReasonType.FOLLOWED_TOPIC,
                         RecommendationReasonType.FOLLOWED_TOPIC,
                         RecommendationReasonType.PREFERRED_CATEGORY);
-        assertThat(result.content().get(0).reasons())
+        assertThat(result.content().get(1).reasons())
                 .extracting(RecommendationReasonResponse::label)
                 .contains("NewsFirst", "Elections", "Parliament", "POLITICS")
                 .doesNotContain("Budget");
@@ -235,16 +238,48 @@ class ForYouServiceTest {
 
         ForYouFeedResponse result = service.feed("user-a", 0, 20, null);
 
-        // Cross match (score 60: 40 + 20) ranks #1, publisher only (score 40) ranks #2,
-        // category only (score 20) ranks #3, neither (score 0) ranks #4
+        // Newer 12:00 personalized articles rank above older 08:00 crossMatch (score 60);
+        // between 12:00 articles, publisher only (score 40) ranks above category only (score 20);
+        // neither (score 0) ranks last (#4)
         assertThat(result.content()).extracting(item -> item.article().id())
-                .containsExactly("art-cross", "art-pub", "art-cat", "art-none");
+                .containsExactly("art-pub", "art-cat", "art-cross", "art-none");
 
         // Cross match appears exactly once with both reasons
-        assertThat(result.content().get(0).reasons())
+        assertThat(result.content().get(2).reasons())
                 .extracting(RecommendationReasonResponse::type)
                 .containsExactly(RecommendationReasonType.FOLLOWED_SOURCE, RecommendationReasonType.PREFERRED_CATEGORY);
         assertThat(result.totalElements()).isEqualTo(4);
+    }
+
+    @Test
+    void latestPersonalizedArticleRanksAboveOlderPersonalizedArticleWithHigherScore() {
+        when(preferencesService.get("user-a")).thenReturn(preferences(
+                DisplayLanguagePreference.ORIGINAL, List.of(ArticleCategory.POLITICS)));
+        when(followRepository.findAllByUserId("user-a")).thenReturn(List.of(
+                follow(FollowTargetType.SOURCE, sourceOne.id(), sourceOne.name()),
+                follow(FollowTargetType.TOPIC, "elections", "Elections")));
+
+        // Older article matching source + topic + category (score 90, published 08:00)
+        Article olderMultiSignal = article("art-old", sourceOne.id(), "Old Multi Signal",
+                ArticleCategory.POLITICS, List.of("Elections"), "2026-09-02T08:00:00Z");
+        // Fresh article matching only followed source (score 40, published 14:00)
+        Article freshSingleSignal = article("art-fresh", sourceOne.id(), "Fresh Source News",
+                ArticleCategory.LOCAL, List.of(), "2026-09-02T14:00:00Z");
+        // Fallback article (score 0, published 15:00)
+        Article fallback = article("art-fallback", sourceTwo.id(), "Unrelated Fallback",
+                ArticleCategory.SPORTS, List.of(), "2026-09-02T15:00:00Z");
+
+        when(articleService.findRecent(500)).thenReturn(List.of(fallback, freshSingleSignal, olderMultiSignal));
+
+        ForYouFeedResponse result = service.feed("user-a", 0, 20, null);
+
+        // Fresh personalized article (14:00) ranks #1, older personalized article (08:00) ranks #2,
+        // and unpersonalized fallback ranks last (#3)
+        assertThat(result.content()).extracting(item -> item.article().id())
+                .containsExactly("art-fresh", "art-old", "art-fallback");
+        assertThat(result.content().get(0).personalized()).isTrue();
+        assertThat(result.content().get(1).personalized()).isTrue();
+        assertThat(result.content().get(2).personalized()).isFalse();
     }
 
     @Test

@@ -23,8 +23,9 @@ import org.springframework.stereotype.Service;
 @EnableConfigurationProperties(ForYouProperties.class)
 public class ForYouService {
     private static final Comparator<ForYouRanking.RankedArticle> ORDER = Comparator
-            .comparingInt(ForYouRanking.RankedArticle::score).reversed()
+            .<ForYouRanking.RankedArticle>comparingInt(item -> item.score() > 0 ? 0 : 1)
             .thenComparing(item -> item.article().publishedAt(), Comparator.reverseOrder())
+            .thenComparing(ForYouRanking.RankedArticle::score, Comparator.reverseOrder())
             .thenComparing(item -> item.article().id(), Comparator.reverseOrder());
 
     private final UserPreferencesService preferencesService;

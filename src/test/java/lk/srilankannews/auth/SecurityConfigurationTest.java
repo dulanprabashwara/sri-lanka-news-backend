@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import lk.srilankannews.user.UserPreferencesService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -24,6 +25,9 @@ class SecurityConfigurationTest {
 
     @MockitoBean
     private JwtDecoder jwtDecoder;
+
+    @MockitoBean
+    private UserPreferencesService userPreferencesService;
 
     @Test
     void meRequiresAuthentication() throws Exception {
@@ -58,6 +62,7 @@ class SecurityConfigurationTest {
                 .andExpect(jsonPath("$.userId").value("supabase-user-1"))
                 .andExpect(jsonPath("$.email").value("reader@example.com"))
                 .andExpect(jsonPath("$.token").doesNotExist());
+        org.mockito.Mockito.verify(userPreferencesService).get("supabase-user-1");
     }
 
     @Test

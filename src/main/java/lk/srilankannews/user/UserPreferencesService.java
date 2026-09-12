@@ -29,8 +29,31 @@ public class UserPreferencesService {
 
     public UserPreferencesResponse get(String userId) {
         return repository.findByUserId(userId).map(this::toResponse)
-                .orElseGet(() -> new UserPreferencesResponse(
-                        DisplayLanguagePreference.ORIGINAL, List.of(), true, null, null));
+                .orElseGet(() -> initializeDefaultPreferences(userId));
+    }
+
+    private UserPreferencesResponse initializeDefaultPreferences(String userId) {
+        Instant now = clock.instant();
+        Query query = Query.query(Criteria.where("userId").is(userId));
+        Update update = new Update()
+                .setOnInsert("userId", userId)
+                .setOnInsert("createdAt", now)
+                .setOnInsert("preferredDisplayLanguage", DisplayLanguagePreference.ORIGINAL)
+                .setOnInsert("preferredCategories", Set.of())
+                .setOnInsert("analyticsEnabled", true)
+                .setOnInsert("updatedAt", now);
+        UserPreferences saved;
+        try {
+            saved = mongoOperations.findAndModify(
+                    query, update, FindAndModifyOptions.options().upsert(true).returnNew(true),
+                    UserPreferences.class);
+        } catch (DuplicateKeyException concurrentCreate) {
+            saved = mongoOperations.findAndModify(
+                    query, update, FindAndModifyOptions.options().returnNew(true),
+                    UserPreferences.class);
+        }
+        return saved != null ? toResponse(saved)
+                : new UserPreferencesResponse(DisplayLanguagePreference.ORIGINAL, List.of(), true, now, now);
     }
 
     public UserPreferencesResponse update(String userId, UserPreferencesRequest request) {
