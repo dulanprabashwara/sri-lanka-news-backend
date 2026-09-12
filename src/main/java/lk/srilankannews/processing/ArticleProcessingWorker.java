@@ -60,6 +60,7 @@ public class ArticleProcessingWorker {
         if (outboxService != null && storyId != null) {
             outboxService.dispatch(article.id(), storyId, article.sourceId(), article.id());
         }
+        articleService.updateProcessingStatus(article.id(), ProcessingStatus.COMPLETED);
     }
 
     private void ensureTranslations(String articleId) {

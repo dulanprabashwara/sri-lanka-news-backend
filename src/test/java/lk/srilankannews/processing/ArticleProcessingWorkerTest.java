@@ -50,12 +50,13 @@ class ArticleProcessingWorkerTest {
         worker.process(event());
 
         var order = inOrder(
-                translationService, enrichmentService, embeddingService, clusteringService);
+                translationService, enrichmentService, embeddingService, clusteringService, articleService);
         order.verify(translationService).ensureTranslations("article-1");
         order.verify(enrichmentService).attempt("article-1");
         order.verify(translationService).ensureTranslations("article-1");
         order.verify(embeddingService).ensureEmbedding("article-1");
         order.verify(clusteringService).cluster("article-1");
+        order.verify(articleService).updateProcessingStatus("article-1", ProcessingStatus.COMPLETED);
     }
 
     @Test
@@ -69,6 +70,7 @@ class ArticleProcessingWorkerTest {
         verify(translationService).ensureTranslations("article-1");
         verify(embeddingService).ensureEmbedding("article-1");
         verify(clusteringService).cluster("article-1");
+        verify(articleService).updateProcessingStatus("article-1", ProcessingStatus.COMPLETED);
     }
 
     @Test
@@ -81,6 +83,38 @@ class ArticleProcessingWorkerTest {
 
         verify(embeddingService).ensureEmbedding("article-1");
         verify(clusteringService).cluster("article-1");
+        verify(articleService).updateProcessingStatus("article-1", ProcessingStatus.COMPLETED);
+    }
+
+    @Test
+    void unusableInputEnrichmentFailureCompletesDownstreamStagesAndMarksCompleted() {
+        when(articleService.findById("article-1")).thenReturn(Optional.of(article()));
+        when(enrichmentService.attempt("article-1"))
+                .thenReturn(ArticleEnrichmentService.Outcome.FAILED);
+
+        worker.process(event());
+
+        var order = inOrder(
+                translationService, enrichmentService, embeddingService, clusteringService, articleService);
+        order.verify(translationService).ensureTranslations("article-1");
+        order.verify(enrichmentService).attempt("article-1");
+        order.verify(embeddingService).ensureEmbedding("article-1");
+        order.verify(clusteringService).cluster("article-1");
+        order.verify(articleService).updateProcessingStatus("article-1", ProcessingStatus.COMPLETED);
+    }
+
+    @Test
+    void downstreamFailurePreventsPrematureCompletedTransition() {
+        when(articleService.findById("article-1")).thenReturn(Optional.of(article()));
+        when(enrichmentService.attempt("article-1"))
+                .thenReturn(ArticleEnrichmentService.Outcome.FAILED);
+        org.mockito.Mockito.doThrow(new IllegalStateException("embedding failed"))
+                .when(embeddingService).ensureEmbedding("article-1");
+
+        assertThatThrownBy(() -> worker.process(event()))
+                .isInstanceOf(IllegalStateException.class);
+        verify(articleService, org.mockito.Mockito.never())
+                .updateProcessingStatus("article-1", ProcessingStatus.COMPLETED);
     }
 
     @Test
@@ -94,6 +128,7 @@ class ArticleProcessingWorkerTest {
 
         verify(embeddingService).ensureEmbedding("article-1");
         verify(clusteringService).cluster("article-1");
+        verify(articleService).updateProcessingStatus("article-1", ProcessingStatus.COMPLETED);
     }
 
     @Test
@@ -107,6 +142,8 @@ class ArticleProcessingWorkerTest {
         assertThatThrownBy(() -> worker.process(event()))
                 .isInstanceOf(IllegalStateException.class);
         verify(clusteringService, org.mockito.Mockito.never()).cluster("article-1");
+        verify(articleService, org.mockito.Mockito.never())
+                .updateProcessingStatus("article-1", ProcessingStatus.COMPLETED);
     }
 
     private ArticleDiscoveredEvent event() {

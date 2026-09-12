@@ -139,6 +139,24 @@ class ArticleEnrichmentServiceTest {
     }
 
     @Test
+    void unusableInputMarksJobFailedAndDoesNotRetry() {
+        arrangeClaim();
+        Article shortArticle = new Article(
+                "article-1", "source-1", "Short Title", "https://example.com/short",
+                "https://example.com/short", Language.EN, List.of("Author"),
+                NOW, NOW, ArticleCategory.LOCAL, "Too short", "Short Title",
+                "hash", ProcessingStatus.PENDING, NOW, NOW);
+        when(articleService.findById("article-1")).thenReturn(Optional.of(shortArticle));
+        when(articleService.updateProcessingStatus("article-1", ProcessingStatus.PROCESSING))
+                .thenReturn(Optional.of(shortArticle));
+
+        assertThat(service.attempt("article-1"))
+                .isEqualTo(ArticleEnrichmentService.Outcome.FAILED);
+        verify(jobs).markFailed("article-1", "claim-1", "UNUSABLE_INPUT", NOW);
+        verify(provider, never()).enrich(any());
+    }
+
+    @Test
     void missingClaimPreventsConcurrentProviderCall() {
         when(articleService.findById("article-1")).thenReturn(Optional.of(article()));
         when(jobs.claim(any(), any(), any(), org.mockito.ArgumentMatchers.anyInt()))
