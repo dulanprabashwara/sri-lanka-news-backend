@@ -16,6 +16,7 @@ import org.springframework.data.redis.connection.stream.StreamOffset;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 import org.springframework.data.redis.stream.Subscription;
 import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -30,6 +31,7 @@ public class RedisStreamStartup implements ApplicationRunner {
     private final StreamMessageListenerContainer<String, MapRecord<String, String, String>> container;
     private final TaskScheduler retryScheduler;
     private final AtomicBoolean started = new AtomicBoolean();
+    private Subscription subscription;
 
     public RedisStreamStartup(
             RedisStreamGroupManager groupManager,
@@ -51,16 +53,37 @@ public class RedisStreamStartup implements ApplicationRunner {
 
     private synchronized void startConsumer() {
         if (started.get()) {
+    @Scheduled(fixedDelayString = "${news.processing.redis.supervise-interval:30s}")
+    public synchronized void superviseSubscription() {
+        if (isSubscribed()) {
             return;
         }
         Subscription subscription = null;
+        LOGGER.warn("article_stream_subscription_inactive_restarting stream={} group={} consumer={}",
+                properties.streamKey(), properties.consumerGroup(), properties.consumerName());
+        startConsumer();
+    }
+
+    public synchronized boolean isSubscribed() {
+        return subscription != null && subscription.isActive() && container.isRunning();
+    }
+
+    public synchronized void startConsumer() {
+        if (isSubscribed()) {
+            return;
+        }
+        cleanupSubscription();
         try {
             groupManager.ensureConsumerGroup();
             subscription = container.receive(
+            this.subscription = container.receive(
                     Consumer.from(properties.consumerGroup(), properties.consumerName()),
                     StreamOffset.create(properties.streamKey(), ReadOffset.lastConsumed()),
                     listener);
             container.start();
+            if (!container.isRunning()) {
+                container.start();
+            }
             started.set(true);
             LOGGER.info("article_stream_consumer_started stream={} group={} consumer={}",
                     properties.streamKey(), properties.consumerGroup(), properties.consumerName());
@@ -68,6 +91,8 @@ public class RedisStreamStartup implements ApplicationRunner {
             if (subscription != null) {
                 subscription.cancel();
             }
+            cleanupSubscription();
+            started.set(false);
             RedisFailureDescription.Details details = RedisFailureDescription.from(exception);
             LOGGER.error(
                     "article_stream_consumer_unavailable reason={} rootCause={} detail={}",
@@ -76,6 +101,26 @@ public class RedisStreamStartup implements ApplicationRunner {
                     details.message());
             scheduleRetry();
         }
+    }
+
+    private void cleanupSubscription() {
+        if (subscription != null) {
+            try {
+                subscription.cancel();
+            } catch (Exception exception) {
+                LOGGER.warn("article_stream_subscription_cancel_failed reason={}", exception.getMessage());
+            }
+            try {
+                container.remove(subscription);
+            } catch (Exception exception) {
+                LOGGER.debug("article_stream_subscription_remove_failed reason={}", exception.getMessage());
+            }
+            subscription = null;
+        }
+    }
+
+    Subscription getSubscription() {
+        return subscription;
     }
 
     private void scheduleRetry() {

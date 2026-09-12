@@ -116,6 +116,11 @@ public class ArticleService {
         return articleRepository.findAwaitingProcessing();
     }
 
+    public java.util.List<Article> findStalePendingArticles(
+            java.time.Instant threshold, Pageable pageable) {
+        return articleRepository.findStalePendingArticles(threshold, pageable);
+    }
+
     public Page<Article> findAll(ArticleFilter filter, Pageable pageable) {
         return articleRepository.findAll(filter, pageable);
     }

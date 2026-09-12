@@ -18,6 +18,8 @@ import lk.srilankannews.processing.enrichment.GeminiBackgroundProperties;
         RedisProcessingProperties.class,
         EnrichmentRetryProperties.class,
         GeminiBackgroundProperties.class
+        GeminiBackgroundProperties.class,
+        PendingArticleRecoveryProperties.class
 })
 public class ProcessingConfiguration {
 

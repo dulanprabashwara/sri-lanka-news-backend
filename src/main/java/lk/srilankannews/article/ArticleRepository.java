@@ -22,6 +22,12 @@ public interface ArticleRepository extends MongoRepository<Article, String>, Art
             + " {'processingStatus': 'COMPLETED', 'aiEnrichment': null}]}")
     List<Article> findAwaitingProcessing();
 
+    @Query("{'$and': ["
+            + "{'$or': [{'processingStatus': 'PENDING'}, {'processingStatus': null}]},"
+            + "{'$or': [{'updatedAt': {'$lt': ?0}}, {'updatedAt': null, 'createdAt': {'$lt': ?0}}]}"
+            + "]}")
+    List<Article> findStalePendingArticles(java.time.Instant threshold, Pageable pageable);
+
     @Query("{'aiEnrichment': {'$ne': null}, '$or': ["
             + "{'semanticEmbedding': null}, {'semanticEmbedding': {'$exists': false}},"
             + "{'semanticEmbedding.model': {'$ne': ?0}},"

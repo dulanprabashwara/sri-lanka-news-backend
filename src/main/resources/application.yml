@@ -127,6 +127,12 @@ news:
       consumer-name: ${HOSTNAME:sri-lanka-news-backend}
       max-attempts: 3
       poll-timeout: 2s
+      supervise-interval: ${REDIS_SUPERVISE_INTERVAL:30s}
+    pending-recovery:
+      enabled: ${PENDING_RECOVERY_ENABLED:true}
+      fixed-delay: ${PENDING_RECOVERY_INTERVAL:5m}
+      stale-after: ${PENDING_RECOVERY_STALE_AFTER:5m}
+      batch-size: ${PENDING_RECOVERY_BATCH_SIZE:50}
 
 ingestion:
   api-key: ${INGESTION_API_KEY}
