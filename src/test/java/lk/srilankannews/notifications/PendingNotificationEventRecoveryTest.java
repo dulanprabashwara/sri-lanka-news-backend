@@ -189,3 +189,4 @@ class PendingNotificationEventRecoveryTest {
         verify(redisTemplate, never()).hasKey(any());
     }
 }
+

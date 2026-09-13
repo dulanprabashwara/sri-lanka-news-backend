@@ -15,6 +15,12 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
+import lk.srilankannews.common.domain.Language;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -102,5 +108,35 @@ public class NotificationControllerTest {
 
         // Assert
         verify(preferenceRepository).save(argThat(p -> "trusted@example.com".equals(p.email())));
+    }
+
+    @Test
+    void getNotifications_whenLocalizationServiceProvided_callsLocalizationService() {
+        NotificationLocalizationService localizationService = mock(NotificationLocalizationService.class);
+        NotificationController ctrlWithLocalization = new NotificationController(
+                notificationRepository, preferenceRepository, unsubscribeTokenService,
+                emailProvider, retentionPolicyService, clock, analyticsRecorder, localizationService);
+
+        Authentication auth = mock(Authentication.class);
+        when(auth.getName()).thenReturn("user-123");
+        Pageable pageable = PageRequest.of(0, 20);
+
+        ctrlWithLocalization.getNotifications(auth, Language.EN, null, pageable);
+
+        verify(localizationService).getLocalizedNotifications("user-123", Language.EN, pageable);
+    }
+
+    @Test
+    void getNotifications_whenLegacyConstructor_readsFromRepository() {
+        Authentication auth = mock(Authentication.class);
+        when(auth.getName()).thenReturn("user-123");
+        Pageable pageable = PageRequest.of(0, 20);
+        when(notificationRepository.findByUserIdOrderByCreatedAtDesc("user-123", pageable))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        Page<NotificationResponse> result = controller.getNotifications(auth, null, null, pageable);
+
+        assertThat(result).isEmpty();
+        verify(notificationRepository).findByUserIdOrderByCreatedAtDesc("user-123", pageable);
     }
 }

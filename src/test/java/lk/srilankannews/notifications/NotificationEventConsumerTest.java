@@ -97,3 +97,4 @@ class NotificationEventConsumerTest {
         assertThat(consumer.isSubscribed()).isFalse();
     }
 }
+

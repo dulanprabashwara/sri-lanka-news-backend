@@ -28,3 +28,4 @@ public record PendingNotificationRecoveryProperties(
         this(true, Duration.ofMinutes(1), Duration.ofMinutes(2), 50);
     }
 }
+

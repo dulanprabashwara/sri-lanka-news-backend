@@ -31,3 +31,4 @@ public record NotificationRedisProperties(
         this("notification-events", "notification-processing", "worker-1", Duration.ofMillis(100), Duration.ofSeconds(30));
     }
 }
+

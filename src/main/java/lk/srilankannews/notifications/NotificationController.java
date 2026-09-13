@@ -6,6 +6,8 @@ import java.util.Map;
 import lk.srilankannews.analytics.AnalyticsEventType;
 import lk.srilankannews.analytics.AnalyticsRecorder;
 import lk.srilankannews.retention.RetentionPolicyService;
+import lk.srilankannews.common.domain.Language;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -30,6 +33,27 @@ public class NotificationController {
     private final RetentionPolicyService retentionPolicyService;
     private final Clock clock;
     private final AnalyticsRecorder analyticsRecorder;
+    private final NotificationLocalizationService localizationService;
+
+    @Autowired
+    public NotificationController(NotificationRepository notificationRepository,
+                                  NotificationPreferenceRepository preferenceRepository,
+                                  UnsubscribeTokenService unsubscribeTokenService,
+                                  EmailNotificationProvider emailProvider,
+                                  RetentionPolicyService retentionPolicyService,
+                                  Clock clock,
+                                  AnalyticsRecorder analyticsRecorder) {
+                                  AnalyticsRecorder analyticsRecorder,
+                                  NotificationLocalizationService localizationService) {
+        this.notificationRepository = notificationRepository;
+        this.preferenceRepository = preferenceRepository;
+        this.unsubscribeTokenService = unsubscribeTokenService;
+        this.emailProvider = emailProvider;
+        this.retentionPolicyService = retentionPolicyService;
+        this.clock = clock;
+        this.analyticsRecorder = analyticsRecorder;
+        this.localizationService = localizationService;
+    }
 
     public NotificationController(NotificationRepository notificationRepository,
                                   NotificationPreferenceRepository preferenceRepository,
@@ -38,19 +62,25 @@ public class NotificationController {
                                   RetentionPolicyService retentionPolicyService,
                                   Clock clock,
                                   AnalyticsRecorder analyticsRecorder) {
-        this.notificationRepository = notificationRepository;
-        this.preferenceRepository = preferenceRepository;
-        this.unsubscribeTokenService = unsubscribeTokenService;
-        this.emailProvider = emailProvider;
-        this.retentionPolicyService = retentionPolicyService;
-        this.clock = clock;
-        this.analyticsRecorder = analyticsRecorder;
+        this(notificationRepository, preferenceRepository, unsubscribeTokenService, emailProvider,
+                retentionPolicyService, clock, analyticsRecorder, null);
     }
 
     @GetMapping("/me/notifications")
     @PreAuthorize("isAuthenticated()")
     public Page<Notification> getNotifications(Authentication authentication, Pageable pageable) {
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(authentication.getName(), pageable);
+    public Page<NotificationResponse> getNotifications(
+            Authentication authentication,
+            @RequestParam(required = false) Language displayLanguage,
+            @RequestParam(required = false) Language language,
+            Pageable pageable) {
+        Language requestedLanguage = displayLanguage != null ? displayLanguage : language;
+        if (localizationService != null) {
+            return localizationService.getLocalizedNotifications(authentication.getName(), requestedLanguage, pageable);
+        }
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(authentication.getName(), pageable)
+                .map(NotificationResponse::from);
     }
 
     @GetMapping("/me/notifications/unread-count")
