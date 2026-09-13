@@ -42,7 +42,6 @@ public class NotificationController {
                                   EmailNotificationProvider emailProvider,
                                   RetentionPolicyService retentionPolicyService,
                                   Clock clock,
-                                  AnalyticsRecorder analyticsRecorder) {
                                   AnalyticsRecorder analyticsRecorder,
                                   NotificationLocalizationService localizationService) {
         this.notificationRepository = notificationRepository;
@@ -68,8 +67,6 @@ public class NotificationController {
 
     @GetMapping("/me/notifications")
     @PreAuthorize("isAuthenticated()")
-    public Page<Notification> getNotifications(Authentication authentication, Pageable pageable) {
-        return notificationRepository.findByUserIdOrderByCreatedAtDesc(authentication.getName(), pageable);
     public Page<NotificationResponse> getNotifications(
             Authentication authentication,
             @RequestParam(required = false) Language displayLanguage,
