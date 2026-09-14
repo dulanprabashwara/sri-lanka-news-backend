@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:./application-local.yml
   application:
     name: sri-lanka-news-backend
   data:
@@ -171,7 +173,7 @@ management:
 
   endpoint:
     health:
-      show-details: always
+      show-details: never
   health:
     mail:
       enabled: false

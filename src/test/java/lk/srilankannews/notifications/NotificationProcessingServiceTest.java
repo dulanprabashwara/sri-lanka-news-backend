@@ -128,6 +128,9 @@ public class NotificationProcessingServiceTest {
         
         Notification captured = notificationCaptor.getValue();
         assertThat(captured.userId()).isEqualTo(userId);
+        assertThat(captured.emailDelivery().status())
+                .isEqualTo(Notification.EmailDelivery.DeliveryStatus.PENDING);
+        assertThat(captured.emailDelivery().nextAttemptAt()).isEqualTo(NOW);
         assertThat(captured.expiresAt()).isNotNull(); // Unread notification expires after 365 days
         assertThat(captured.expiresAt()).isEqualTo(NOW.plus(Duration.ofDays(365)));
         

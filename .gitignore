@@ -8,6 +8,7 @@ target/
 .env
 .env.*
 !.env.example
+application-local.yml
 
 ### IntelliJ IDEA ###
 .idea/

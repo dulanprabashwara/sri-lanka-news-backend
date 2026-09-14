@@ -71,6 +71,7 @@ public class EmailNotificationProvider implements NotificationDeliveryProvider {
         text.append("Read more at: ").append(publicBaseUrl).append(notification.linkPath()).append("\n\n");
         text.append("--\n");
         text.append("To unsubscribe from these emails, visit: ").append(unsubscribeUrl).append("\n");
+        message.setText(text.toString());
 
         mailSender.send(message);
     }

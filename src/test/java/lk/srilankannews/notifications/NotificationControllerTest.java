@@ -111,6 +111,60 @@ public class NotificationControllerTest {
     }
 
     @Test
+    void enablingEmailPersistsAndRemainsEnabledWhenReadAgain() {
+        NotificationPreferenceRequest request = new NotificationPreferenceRequest(
+                true, true, false, true, false, false, null, null, null
+        );
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn("user-123");
+
+        Jwt jwt = mock(Jwt.class);
+        when(jwt.getClaimAsString("email")).thenReturn("trusted@example.com");
+        when(authentication.getPrincipal()).thenReturn(jwt);
+
+        java.util.concurrent.atomic.AtomicReference<NotificationPreference> stored =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        when(preferenceRepository.findById("user-123"))
+                .thenAnswer(ignored -> Optional.ofNullable(stored.get()));
+        when(preferenceRepository.save(any(NotificationPreference.class)))
+                .thenAnswer(invocation -> {
+                    NotificationPreference saved = invocation.getArgument(0);
+                    stored.set(saved);
+                    return saved;
+                });
+        when(emailProvider.isAvailable()).thenReturn(true);
+
+        NotificationPreferenceResponse updated = controller.updatePreferences(request, authentication);
+        NotificationPreferenceResponse readAfterUpdate = controller.getPreferences(authentication);
+
+        assertThat(updated.emailEnabled()).isTrue();
+        assertThat(readAfterUpdate.emailEnabled()).isTrue();
+        assertThat(readAfterUpdate.topicFollowNotificationsEnabled()).isTrue();
+        assertThat(stored.get().email()).isEqualTo("trusted@example.com");
+        verify(preferenceRepository, times(1)).save(any(NotificationPreference.class));
+    }
+
+    @Test
+    void readingExistingPreferencesDoesNotOverwriteThemWithDefaults() {
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn("user-123");
+        NotificationPreference existing = new NotificationPreference(
+                "user-123", true, "trusted@example.com", true,
+                false, true, false, false, null, null, null,
+                NOW.minus(Duration.ofDays(1)), NOW
+        );
+        when(preferenceRepository.findById("user-123")).thenReturn(Optional.of(existing));
+        when(emailProvider.isAvailable()).thenReturn(true);
+
+        NotificationPreferenceResponse response = controller.getPreferences(authentication);
+
+        assertThat(response.emailEnabled()).isTrue();
+        assertThat(response.inAppEnabled()).isTrue();
+        assertThat(response.topicFollowNotificationsEnabled()).isTrue();
+        verify(preferenceRepository, never()).save(any());
+    }
+
+    @Test
     void getNotifications_whenLocalizationServiceProvided_callsLocalizationService() {
         NotificationLocalizationService localizationService = mock(NotificationLocalizationService.class);
         NotificationController ctrlWithLocalization = new NotificationController(
