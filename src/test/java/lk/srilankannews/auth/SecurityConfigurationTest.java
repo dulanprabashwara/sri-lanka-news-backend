@@ -2,7 +2,9 @@ package lk.srilankannews.auth;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -16,7 +18,9 @@ import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(CurrentUserController.class)
+@WebMvcTest(
+        controllers = CurrentUserController.class,
+        properties = "app.cors.allowed-origin-patterns=https://frontend.example")
 @Import(SecurityConfiguration.class)
 class SecurityConfigurationTest {
 
@@ -28,6 +32,15 @@ class SecurityConfigurationTest {
 
     @MockitoBean
     private UserPreferencesService userPreferencesService;
+
+    @Test
+    void corsUsesEnvironmentDrivenProductionOrigin() throws Exception {
+        mockMvc.perform(options("/api/v1/articles")
+                        .header("Origin", "https://frontend.example")
+                        .header("Access-Control-Request-Method", "GET"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "https://frontend.example"));
+    }
 
     @Test
     void meRequiresAuthentication() throws Exception {
