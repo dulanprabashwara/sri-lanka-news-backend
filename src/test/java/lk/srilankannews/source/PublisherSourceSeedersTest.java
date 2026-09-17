@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import lk.srilankannews.ingestion.settings.IngestionSourceSettingsService;
 import org.springframework.boot.DefaultApplicationArguments;
 
 @ExtendWith(MockitoExtension.class)
@@ -20,6 +21,41 @@ class PublisherSourceSeedersTest {
 
     @Mock
     private SourceService sourceService;
+    @Mock
+    private IngestionSourceSettingsService ingestionSettingsService;
+
+    @Test
+    void createsLakbimaAndConfiguresPublisherTransition() {
+        when(sourceService.findBySlug(LakbimaNewsSourceSeeder.SOURCE_SLUG))
+                .thenReturn(Optional.empty());
+
+        new LakbimaNewsSourceSeeder(sourceService, ingestionSettingsService)
+                .run(new DefaultApplicationArguments());
+
+        CreateSourceCommand command = capturedCommand();
+        assertThat(command.name()).isEqualTo("Lakbima News");
+        assertThat(command.slug()).isEqualTo("lakbima-news");
+        assertThat(command.baseUrl()).isEqualTo("https://lakbima.news");
+        assertThat(command.defaultLanguage()).isEqualTo(Language.SI);
+        assertThat(command.ingestionType()).isEqualTo(IngestionType.RSS);
+        assertThat(command.enabled()).isTrue();
+        verify(ingestionSettingsService).ensureDefaults("lakbima-news", true, 15, 120);
+        verify(ingestionSettingsService).disableIfPresent("hiru-news-sinhala");
+    }
+
+    @Test
+    void existingLakbimaIsNotDuplicatedAndTransitionStillRuns() {
+        when(sourceService.findBySlug(LakbimaNewsSourceSeeder.SOURCE_SLUG))
+                .thenReturn(Optional.of(existingSource(
+                        "Lakbima News", "lakbima-news", Language.SI, IngestionType.RSS)));
+
+        new LakbimaNewsSourceSeeder(sourceService, ingestionSettingsService)
+                .run(new DefaultApplicationArguments());
+
+        verify(sourceService, never()).create(org.mockito.ArgumentMatchers.any());
+        verify(ingestionSettingsService).ensureDefaults("lakbima-news", true, 15, 120);
+        verify(ingestionSettingsService).disableIfPresent("hiru-news-sinhala");
+    }
 
     @Test
     void createsNewsFirstWhenMissing() {

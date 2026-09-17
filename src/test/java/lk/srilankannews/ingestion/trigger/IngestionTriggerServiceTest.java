@@ -13,6 +13,7 @@ import java.time.ZoneOffset;
 import java.util.Optional;
 import lk.srilankannews.common.domain.Language;
 import lk.srilankannews.retention.RetentionPolicyService;
+import lk.srilankannews.ingestion.settings.IngestionSourceSettingsService;
 import lk.srilankannews.retention.RetentionProperties;
 import lk.srilankannews.source.IngestionType;
 import lk.srilankannews.source.Source;
@@ -34,6 +35,8 @@ class IngestionTriggerServiceTest {
     private IngestionTriggerRequestRepository repository;
     @Mock
     private SourceService sourceService;
+    @Mock
+    private IngestionSourceSettingsService settingsService;
 
     private RetentionPolicyService retentionPolicyService;
     private IngestionTriggerService service;
@@ -41,7 +44,8 @@ class IngestionTriggerServiceTest {
     @BeforeEach
     void setUp() {
         retentionPolicyService = new RetentionPolicyService(RetentionProperties.defaults());
-        service = new IngestionTriggerService(repository, sourceService, retentionPolicyService, FIXED_CLOCK);
+        service = new IngestionTriggerService(
+                repository, sourceService, settingsService, retentionPolicyService, FIXED_CLOCK);
     }
 
     private static Source testSource() {
@@ -54,6 +58,7 @@ class IngestionTriggerServiceTest {
     @Test
     void requestManualTrigger_newRequest_returnsTrue() {
         when(sourceService.findBySlug("daily-mirror")).thenReturn(Optional.of(testSource()));
+        when(settingsService.isEnabled("daily-mirror")).thenReturn(true);
 
         IngestionTriggerRequest enqueued = new IngestionTriggerRequest(
                 "t1", "src1", "daily-mirror", "admin-sub", NOW,
@@ -69,11 +74,25 @@ class IngestionTriggerServiceTest {
     @Test
     void requestManualTrigger_existingPendingOrClaimed_returnsFalse() {
         when(sourceService.findBySlug("daily-mirror")).thenReturn(Optional.of(testSource()));
+        when(settingsService.isEnabled("daily-mirror")).thenReturn(true);
         when(repository.atomicEnqueueTrigger(anyString(), anyString(), anyString(), any()))
                 .thenReturn(Optional.empty());
 
         boolean result = service.requestManualTrigger("daily-mirror", "admin-sub");
         assertThat(result).isFalse();
+    }
+
+    @Test
+    void requestManualTrigger_disabledSourceIsRejected() {
+        when(sourceService.findBySlug("hiru-news-sinhala")).thenReturn(Optional.of(testSource()));
+        when(settingsService.isEnabled("hiru-news-sinhala")).thenReturn(false);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                        () -> service.requestManualTrigger("hiru-news-sinhala", "admin-sub"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("disabled");
+
+        verify(repository, never()).atomicEnqueueTrigger(anyString(), anyString(), anyString(), any());
     }
 
     // === Atomic Claim ===

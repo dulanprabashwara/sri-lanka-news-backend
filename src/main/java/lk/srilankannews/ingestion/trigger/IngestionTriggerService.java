@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import lk.srilankannews.retention.RetentionPolicyService;
+import lk.srilankannews.ingestion.settings.IngestionSourceSettingsService;
 import lk.srilankannews.source.Source;
 import lk.srilankannews.source.SourceService;
 import org.springframework.stereotype.Service;
@@ -15,14 +16,17 @@ public class IngestionTriggerService {
     private final IngestionTriggerRequestRepository repository;
     private final SourceService sourceService;
     private final RetentionPolicyService retentionPolicyService;
+    private final IngestionSourceSettingsService settingsService;
     private final Clock clock;
 
     public IngestionTriggerService(IngestionTriggerRequestRepository repository,
                                    SourceService sourceService,
+                                   IngestionSourceSettingsService settingsService,
                                    RetentionPolicyService retentionPolicyService,
                                    Clock clock) {
         this.repository = repository;
         this.sourceService = sourceService;
+        this.settingsService = settingsService;
         this.retentionPolicyService = retentionPolicyService;
         this.clock = clock;
     }
@@ -30,6 +34,9 @@ public class IngestionTriggerService {
     public boolean requestManualTrigger(String sourceSlug, String adminUserId) {
         Source source = sourceService.findBySlug(sourceSlug)
                 .orElseThrow(() -> new IllegalArgumentException("Source not found"));
+        if (!settingsService.isEnabled(sourceSlug)) {
+            throw new IllegalArgumentException("Ingestion is disabled for source " + sourceSlug);
+        }
 
         Optional<IngestionTriggerRequest> enqueued = repository.atomicEnqueueTrigger(
                 source.id(), sourceSlug, adminUserId, Instant.now(clock)

@@ -26,7 +26,8 @@ public class IngestionSourceSettingsService {
         
         seedSource("daily-mirror", true, 10, 120, now);
         seedSource("newsfirst", true, 10, 120, now);
-        seedSource("hiru-news-sinhala", true, 10, 120, now);
+        seedSource("hiru-news-sinhala", false, 10, 120, now);
+        seedSource("lakbima-news", true, 15, 120, now);
         seedSource("newswire", true, 10, 120, now);
 
         // Phase 31 Sources
@@ -55,6 +56,26 @@ public class IngestionSourceSettingsService {
                 ));
             }
         });
+    }
+
+    public void ensureDefaults(String slug, boolean enabled, int interval, int jitter) {
+        seedSource(slug, enabled, interval, jitter, Instant.now(clock));
+    }
+
+    public void disableIfPresent(String slug) {
+        repository.findBySourceSlug(slug).filter(IngestionSourceSettings::enabled).ifPresent(settings ->
+                repository.save(settings.withUpdates(
+                        false,
+                        settings.intervalMinutes(),
+                        settings.jitterSeconds(),
+                        "SYSTEM",
+                        Instant.now(clock))));
+    }
+
+    public boolean isEnabled(String slug) {
+        return repository.findBySourceSlug(slug)
+                .map(IngestionSourceSettings::enabled)
+                .orElse(false);
     }
 
     public List<IngestionSourceSettings> findAll() {
