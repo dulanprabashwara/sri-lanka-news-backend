@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines the allowed Analytics Event Type values used by the backend.
+ * Area: privacy-conscious analytics.
+ */
 package lk.srilankannews.analytics;
 
 public enum AnalyticsEventType {

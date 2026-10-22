@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Admin Analytics operations.
+ * Area: privacy-conscious analytics.
+ */
 package lk.srilankannews.analytics;
 
 import org.springframework.security.access.prepost.PreAuthorize;

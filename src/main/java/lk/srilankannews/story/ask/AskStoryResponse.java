@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines data returned by Ask Story API operations.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.ask;
 
 import java.util.List;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines the MongoDB document stored for Article Enrichment Job records.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing.enrichment;
 
 import java.time.Instant;

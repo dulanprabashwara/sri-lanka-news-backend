@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Admin Mongo Operations behavior, edge cases, and integration assumptions.
+ * Area: administrative operations and monitoring.
+ */
 package lk.srilankannews.admin;
 
 import static org.assertj.core.api.Assertions.assertThat;

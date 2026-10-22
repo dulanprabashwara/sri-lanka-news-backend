@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Notification operations.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import java.time.Clock;

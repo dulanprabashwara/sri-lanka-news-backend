@@ -1,3 +1,7 @@
+/*
+ * File overview: Represents a Admin Audit event exchanged between components.
+ * Area: administrative operations and monitoring.
+ */
 package lk.srilankannews.admin.audit;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;

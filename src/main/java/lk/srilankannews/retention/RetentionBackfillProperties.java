@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Retention Backfill.
+ * Area: MongoDB and Redis data retention.
+ */
 package lk.srilankannews.retention;
 
 import jakarta.validation.constraints.Max;

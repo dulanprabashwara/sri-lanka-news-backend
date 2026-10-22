@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Article Text Search operations.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.search;
 
 import jakarta.validation.constraints.Max;

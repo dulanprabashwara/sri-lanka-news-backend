@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Internal Ingestion Config Controller behavior, edge cases, and integration assumptions.
+ * Area: ingestion coordination and run tracking.
+ */
 package lk.srilankannews.ingestion.api;
 
 import static org.mockito.ArgumentMatchers.anyString;

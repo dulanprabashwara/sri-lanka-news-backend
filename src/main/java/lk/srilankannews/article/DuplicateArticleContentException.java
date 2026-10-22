@@ -1,3 +1,7 @@
+/*
+ * File overview: Represents a specific Duplicate Article Content failure.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article;
 
 public class DuplicateArticleContentException extends RuntimeException {

@@ -1,3 +1,4 @@
+# Excludes generated output, IDE metadata, logs, and local credentials from version control.
 HELP.md
 target/
 !.mvn/wrapper/maven-wrapper.jar

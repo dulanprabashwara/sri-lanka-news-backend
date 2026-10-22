@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Admin Analytics.
+ * Area: privacy-conscious analytics.
+ */
 package lk.srilankannews.analytics;
 
 import org.springframework.data.domain.Sort;

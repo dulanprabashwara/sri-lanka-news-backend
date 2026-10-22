@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements custom MongoDB queries for Custom Ingestion Trigger Request.
+ * Area: ingestion coordination and run tracking.
+ */
 package lk.srilankannews.ingestion.trigger;
 
 import java.time.Instant;

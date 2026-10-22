@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines the allowed Language values used by the backend.
+ * Area: shared API and domain utilities.
+ */
 package lk.srilankannews.common.domain;
 
 import com.fasterxml.jackson.annotation.JsonValue;

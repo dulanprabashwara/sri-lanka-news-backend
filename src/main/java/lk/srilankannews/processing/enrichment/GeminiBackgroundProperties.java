@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Gemini Background.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing.enrichment;
 
 import java.time.Duration;

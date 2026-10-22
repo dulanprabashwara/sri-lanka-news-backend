@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Never Expire Entities behavior within the backend.
+ * Area: MongoDB and Redis data retention.
+ */
 package lk.srilankannews.retention;
 
 import java.util.Collections;

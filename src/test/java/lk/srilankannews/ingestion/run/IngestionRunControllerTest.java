@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Ingestion Run Controller behavior, edge cases, and integration assumptions.
+ * Area: ingestion coordination and run tracking.
+ */
 package lk.srilankannews.ingestion.run;
 
 import static org.mockito.ArgumentMatchers.any;

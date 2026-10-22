@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines immutable Article Semantic Embedding data passed between backend components.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article;
 
 import java.time.Instant;

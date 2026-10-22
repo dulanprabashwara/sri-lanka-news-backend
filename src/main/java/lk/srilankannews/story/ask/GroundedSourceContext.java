@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines immutable Grounded Source Context data passed between backend components.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.ask;
 
 import java.time.Instant;

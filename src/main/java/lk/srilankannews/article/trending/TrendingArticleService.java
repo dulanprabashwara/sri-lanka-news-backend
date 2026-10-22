@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Trending Article.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.trending;
 
 import com.fasterxml.jackson.core.JsonProcessingException;

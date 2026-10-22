@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines data returned by Notification API operations.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import com.fasterxml.jackson.annotation.JsonInclude;

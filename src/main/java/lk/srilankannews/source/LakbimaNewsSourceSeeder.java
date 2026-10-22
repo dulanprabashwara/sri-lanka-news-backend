@@ -1,3 +1,7 @@
+/*
+ * File overview: Registers or updates the Lakbima News publisher source during startup.
+ * Area: publisher source registration and APIs.
+ */
 package lk.srilankannews.source;
 
 import java.util.Set;

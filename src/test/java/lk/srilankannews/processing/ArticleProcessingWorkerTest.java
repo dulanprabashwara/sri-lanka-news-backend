@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Article Processing Worker behavior, edge cases, and integration assumptions.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Trending Story Controller behavior, edge cases, and integration assumptions.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.api;
 
 import static org.mockito.Mockito.verify;

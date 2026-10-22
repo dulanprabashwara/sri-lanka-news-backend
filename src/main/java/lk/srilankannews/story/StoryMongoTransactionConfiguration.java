@@ -1,3 +1,7 @@
+/*
+ * File overview: Registers Spring components and runtime configuration for Story Mongo Transaction.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

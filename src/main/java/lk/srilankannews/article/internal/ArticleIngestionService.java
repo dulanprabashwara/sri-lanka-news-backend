@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Article Ingestion.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.internal;
 
 import lk.srilankannews.article.Article;
@@ -35,9 +39,11 @@ public class ArticleIngestionService {
     }
 
     public ArticleIngestionResponse ingest(ArticleIngestionRequest request) {
+        // Resolve the publisher first so every stored Article references a known Source.
         Source source = sourceService.findBySlug(request.sourceSlug())
                 .orElseThrow(() -> new ResourceNotFoundException("Source"));
 
+        // Accept publisher images only when their host is explicitly allowed by that Source.
         lk.srilankannews.article.ArticleLeadMedia validLeadMedia = null;
         if (source.imagePolicy().enabled() && request.leadMedia() != null) {
             try {
@@ -68,6 +74,7 @@ public class ArticleIngestionService {
             }
         }
 
+        // URL matching is cheapest; content hashing catches exact copies published at another URL.
         Article existing = articleService.findByCanonicalUrl(request.canonicalUrl()).orElse(null);
         boolean isUrlDuplicate = existing != null;
         if (existing == null) {
@@ -110,9 +117,12 @@ public class ArticleIngestionService {
                 validLeadMedia);
 
         try {
+            // MongoDB uniqueness remains authoritative if two ingestion requests race each other.
             Article created = articleService.create(command);
             invalidateFeedCache(created.id());
             try {
+                // Downstream translation and enrichment are asynchronous; the Article stays saved
+                // even if Redis is temporarily unavailable.
                 discoveredNotifier.notifyDiscovered(created);
             } catch (RuntimeException exception) {
                 LOGGER.warn("article_event_notification_failed articleId={} reason={}",

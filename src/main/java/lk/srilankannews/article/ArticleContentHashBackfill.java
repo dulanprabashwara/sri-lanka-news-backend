@@ -1,3 +1,7 @@
+/*
+ * File overview: Updates existing records that are missing current Article Content Hash data.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article;
 
 import java.util.List;

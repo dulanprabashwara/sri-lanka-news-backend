@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines data returned by Text Search API operations.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.search;
 
 import java.util.List;

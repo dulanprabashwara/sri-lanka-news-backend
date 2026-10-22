@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Pending Article Recovery.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing;
 
 import java.time.Duration;

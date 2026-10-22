@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Gemini.
+ * Area: AI enrichment and embedding integrations.
+ */
 package lk.srilankannews.ai;
 
 import jakarta.validation.constraints.Max;

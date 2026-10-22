@@ -1,3 +1,7 @@
+/*
+ * File overview: Consumes and safely processes Article Event events.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing;
 
 import java.util.concurrent.Executor;
@@ -40,7 +44,9 @@ public class ArticleEventConsumer {
 
     public void consume(String recordId, ArticleDiscoveredEvent event) {
         try {
+            // Persist translations on the listener thread so they do not wait behind slower AI work.
             worker.translate(event);
+            // Enrichment, embedding, clustering, and notification work continue concurrently.
             processingExecutor.execute(() -> completeProcessing(recordId, event));
         } catch (RuntimeException exception) {
             handleFailure(recordId, event, exception);
@@ -72,6 +78,7 @@ public class ArticleEventConsumer {
             logDeadLetter(event, exception, reason);
         }
         if (transferred) {
+            // Acknowledge the old record only after its retry or dead-letter copy is safely stored.
             stream.acknowledge(recordId);
         } else {
             LOGGER.error("article_event_unacknowledged eventId={} articleId={} recordId={}",

@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines the MongoDB document stored for User Bookmark records.
+ * Area: reader preferences and personalization.
+ */
 package lk.srilankannews.user;
 
 import java.time.Instant;

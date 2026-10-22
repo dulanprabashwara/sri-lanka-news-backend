@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Ingestion API Key Authenticator behavior, edge cases, and integration assumptions.
+ * Area: cross-cutting application configuration.
+ */
 package lk.srilankannews.config;
 
 import static org.assertj.core.api.Assertions.assertThatCode;

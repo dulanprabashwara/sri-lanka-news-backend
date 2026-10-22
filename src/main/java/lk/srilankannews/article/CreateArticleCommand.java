@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines immutable Create Article Command data passed between backend components.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article;
 
 import jakarta.validation.constraints.NotBlank;

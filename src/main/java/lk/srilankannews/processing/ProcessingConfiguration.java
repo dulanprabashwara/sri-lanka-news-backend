@@ -1,3 +1,7 @@
+/*
+ * File overview: Registers Spring components and runtime configuration for Processing.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing;
 
 import java.time.Clock;

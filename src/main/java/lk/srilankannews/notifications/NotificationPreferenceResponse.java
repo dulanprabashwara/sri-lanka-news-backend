@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines data returned by Notification Preference API operations.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import java.time.LocalTime;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Redis Stream Startup behavior within the backend.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing;
 
 import java.time.Instant;

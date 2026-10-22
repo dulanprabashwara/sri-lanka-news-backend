@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Admin.
+ * Area: administrative operations and monitoring.
+ */
 package lk.srilankannews.admin;
 
 import java.time.Clock;

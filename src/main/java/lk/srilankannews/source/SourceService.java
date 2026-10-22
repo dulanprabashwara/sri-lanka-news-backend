@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Source.
+ * Area: publisher source registration and APIs.
+ */
 package lk.srilankannews.source;
 
 import jakarta.validation.Valid;

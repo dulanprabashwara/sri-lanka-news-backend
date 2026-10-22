@@ -1,3 +1,7 @@
+/*
+ * File overview: Updates existing records that are missing current Translation data.
+ * Area: multilingual translation.
+ */
 package lk.srilankannews.translation;
 
 import java.time.Instant;

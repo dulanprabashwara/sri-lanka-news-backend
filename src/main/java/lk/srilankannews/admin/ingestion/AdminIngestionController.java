@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Admin Ingestion operations.
+ * Area: administrative operations and monitoring.
+ */
 package lk.srilankannews.admin.ingestion;
 
 import java.time.Clock;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Converts internal Story API data into safe API models.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.api;
 
 import java.util.List;

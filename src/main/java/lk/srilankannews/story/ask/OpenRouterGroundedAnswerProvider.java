@@ -1,3 +1,7 @@
+/*
+ * File overview: Provides the Open Router Grounded Answer integration behind an internal abstraction.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.ask;
 
 import com.fasterxml.jackson.annotation.JsonProperty;

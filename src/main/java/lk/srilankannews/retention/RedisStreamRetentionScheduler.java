@@ -1,3 +1,7 @@
+/*
+ * File overview: Runs scheduled Redis Stream Retention work in the background.
+ * Area: MongoDB and Redis data retention.
+ */
 package lk.srilankannews.retention;
 
 import java.time.Duration;

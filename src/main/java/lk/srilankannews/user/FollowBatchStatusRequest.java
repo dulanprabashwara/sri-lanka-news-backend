@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines and validates input accepted by Follow Batch Status operations.
+ * Area: reader preferences and personalization.
+ */
 package lk.srilankannews.user;
 
 import jakarta.validation.constraints.NotBlank;

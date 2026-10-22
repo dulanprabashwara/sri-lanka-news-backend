@@ -1,3 +1,7 @@
+/*
+ * File overview: Represents a specific Semantic Search Unavailable failure.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.search;
 
 public class SemanticSearchUnavailableException extends RuntimeException {

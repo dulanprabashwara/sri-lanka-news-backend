@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Admin Stories operations.
+ * Area: administrative operations and monitoring.
+ */
 package lk.srilankannews.admin;
 
 import org.springframework.data.domain.Page;

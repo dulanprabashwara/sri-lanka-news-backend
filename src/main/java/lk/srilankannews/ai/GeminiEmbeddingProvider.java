@@ -1,3 +1,7 @@
+/*
+ * File overview: Provides the Gemini Embedding integration behind an internal abstraction.
+ * Area: AI enrichment and embedding integrations.
+ */
 package lk.srilankannews.ai;
 
 import com.google.genai.Client;

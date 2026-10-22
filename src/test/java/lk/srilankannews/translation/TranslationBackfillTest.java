@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Translation Backfill behavior, edge cases, and integration assumptions.
+ * Area: multilingual translation.
+ */
 package lk.srilankannews.translation;
 
 import static org.mockito.ArgumentMatchers.any;

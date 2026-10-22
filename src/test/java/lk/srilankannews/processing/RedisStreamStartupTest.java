@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Redis Stream Startup behavior, edge cases, and integration assumptions.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing;
 
 import static org.mockito.ArgumentMatchers.any;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines immutable Lead Media Input data passed between backend components.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.internal;
 
 import jakarta.validation.constraints.NotBlank;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for For You.
+ * Area: reader preferences and personalization.
+ */
 package lk.srilankannews.user;
 
 import jakarta.validation.constraints.Max;

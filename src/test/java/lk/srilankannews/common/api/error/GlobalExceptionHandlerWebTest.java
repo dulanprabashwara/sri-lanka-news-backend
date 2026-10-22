@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Global Exception Handler Web behavior, edge cases, and integration assumptions.
+ * Area: shared API and domain utilities.
+ */
 package lk.srilankannews.common.api.error;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Ask Story.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.ask;
 
 import java.util.ArrayList;

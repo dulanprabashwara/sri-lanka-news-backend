@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Redis Stream ID behavior within the backend.
+ * Area: MongoDB and Redis data retention.
+ */
 package lk.srilankannews.retention;
 
 import java.util.Objects;

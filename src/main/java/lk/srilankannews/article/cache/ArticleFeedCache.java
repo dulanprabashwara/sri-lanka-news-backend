@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines the contract implemented by Article Feed Cache components.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.cache;
 
 import java.util.Optional;

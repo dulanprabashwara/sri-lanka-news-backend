@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Article Embedding.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import java.time.Clock;

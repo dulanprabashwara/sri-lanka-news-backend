@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Trending Article.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.trending;
 
 import jakarta.validation.constraints.Max;

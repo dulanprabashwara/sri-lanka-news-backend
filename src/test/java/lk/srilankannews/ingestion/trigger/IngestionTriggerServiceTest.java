@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Ingestion Trigger Service behavior, edge cases, and integration assumptions.
+ * Area: ingestion coordination and run tracking.
+ */
 package lk.srilankannews.ingestion.trigger;
 
 import static org.assertj.core.api.Assertions.assertThat;

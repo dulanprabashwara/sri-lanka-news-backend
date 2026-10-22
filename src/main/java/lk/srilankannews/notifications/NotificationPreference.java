@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines the MongoDB document stored for Notification Preference records.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import java.time.Instant;

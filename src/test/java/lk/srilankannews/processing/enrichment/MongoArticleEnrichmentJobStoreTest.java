@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Mongo Article Enrichment Job Store behavior, edge cases, and integration assumptions.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing.enrichment;
 
 import static org.assertj.core.api.Assertions.assertThat;

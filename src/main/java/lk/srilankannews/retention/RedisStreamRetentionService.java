@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Redis Stream Retention.
+ * Area: MongoDB and Redis data retention.
+ */
 package lk.srilankannews.retention;
 
 import java.nio.charset.StandardCharsets;

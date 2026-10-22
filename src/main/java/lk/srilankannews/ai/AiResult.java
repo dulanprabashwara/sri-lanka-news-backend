@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines immutable AI Result data passed between backend components.
+ * Area: AI enrichment and embedding integrations.
+ */
 package lk.srilankannews.ai;
 
 import java.util.List;

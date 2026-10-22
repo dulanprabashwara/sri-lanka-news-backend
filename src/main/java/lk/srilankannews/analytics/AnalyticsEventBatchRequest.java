@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines and validates input accepted by Analytics Event Batch operations.
+ * Area: privacy-conscious analytics.
+ */
 package lk.srilankannews.analytics;
 
 import jakarta.validation.Valid;

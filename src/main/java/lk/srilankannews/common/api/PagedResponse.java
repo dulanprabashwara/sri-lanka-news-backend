@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines data returned by Paged API operations.
+ * Area: shared API and domain utilities.
+ */
 package lk.srilankannews.common.api;
 
 import java.util.List;

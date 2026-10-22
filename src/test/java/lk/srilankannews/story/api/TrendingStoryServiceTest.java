@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Trending Story Service behavior, edge cases, and integration assumptions.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.api;
 
 import static org.assertj.core.api.Assertions.assertThat;

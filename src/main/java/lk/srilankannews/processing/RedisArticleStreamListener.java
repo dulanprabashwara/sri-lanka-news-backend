@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Redis Article Stream Listener behavior within the backend.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing;
 
 import org.slf4j.Logger;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Represents a Analytics event exchanged between components.
+ * Area: privacy-conscious analytics.
+ */
 package lk.srilankannews.analytics;
 
 import org.springframework.data.annotation.Id;

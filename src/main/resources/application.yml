@@ -1,3 +1,4 @@
+# Main runtime configuration. Environment variables supply credentials and deployment-specific values.
 spring:
   config:
     import: optional:file:./application-local.yml

@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Source operations.
+ * Area: publisher source registration and APIs.
+ */
 package lk.srilankannews.source.api;
 
 import jakarta.validation.constraints.Pattern;

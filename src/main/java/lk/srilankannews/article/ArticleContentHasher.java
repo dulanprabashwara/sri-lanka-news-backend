@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Article Content Hasher behavior within the backend.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article;
 
 import java.nio.charset.StandardCharsets;

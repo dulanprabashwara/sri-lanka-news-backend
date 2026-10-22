@@ -1,3 +1,7 @@
+/*
+ * File overview: Provides the Open Router AI integration behind an internal abstraction.
+ * Area: AI enrichment and embedding integrations.
+ */
 package lk.srilankannews.ai.openrouter;
 
 import com.fasterxml.jackson.annotation.JsonProperty;

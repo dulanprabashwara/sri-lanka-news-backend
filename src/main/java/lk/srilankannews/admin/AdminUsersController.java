@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Admin Users operations.
+ * Area: administrative operations and monitoring.
+ */
 package lk.srilankannews.admin;
 
 import org.springframework.security.access.prepost.PreAuthorize;

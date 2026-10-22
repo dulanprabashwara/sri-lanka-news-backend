@@ -1,3 +1,7 @@
+/*
+ * File overview: Converts external values into the internal Language type.
+ * Area: cross-cutting application configuration.
+ */
 package lk.srilankannews.config;
 
 import lk.srilankannews.common.domain.Language;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Article Localization.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.api;
 
 import lk.srilankannews.article.Article;

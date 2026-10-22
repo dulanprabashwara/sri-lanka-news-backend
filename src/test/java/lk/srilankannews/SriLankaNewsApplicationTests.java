@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Sri Lanka News Application Tests behavior, edge cases, and integration assumptions.
+ * Area: SriLankaNewsApplicationTests.java functionality.
+ */
 package lk.srilankannews;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

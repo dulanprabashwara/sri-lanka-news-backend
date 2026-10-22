@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Ingestion Source Settings.
+ * Area: ingestion coordination and run tracking.
+ */
 package lk.srilankannews.ingestion.settings;
 
 import jakarta.annotation.PostConstruct;

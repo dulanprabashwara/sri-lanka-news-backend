@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Email Delivery Worker behavior, edge cases, and integration assumptions.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import org.junit.jupiter.api.BeforeEach;

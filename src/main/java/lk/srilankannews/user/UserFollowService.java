@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for User Follow.
+ * Area: reader preferences and personalization.
+ */
 package lk.srilankannews.user;
 
 import java.time.Clock;

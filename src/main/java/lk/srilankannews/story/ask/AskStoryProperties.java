@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Ask Story.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.ask;
 
 import jakarta.validation.constraints.Max;

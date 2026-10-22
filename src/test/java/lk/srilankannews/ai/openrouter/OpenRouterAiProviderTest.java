@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Open Router AI Provider behavior, edge cases, and integration assumptions.
+ * Area: AI enrichment and embedding integrations.
+ */
 package lk.srilankannews.ai.openrouter;
 
 import static org.assertj.core.api.Assertions.assertThat;

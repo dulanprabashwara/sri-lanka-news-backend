@@ -1,3 +1,7 @@
+/*
+ * File overview: Provides the Resilient Grounded Answer integration behind an internal abstraction.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.ask;
 
 import lk.srilankannews.ai.AiProviderException;

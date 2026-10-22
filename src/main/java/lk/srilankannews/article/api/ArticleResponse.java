@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines data returned by Article API operations.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;

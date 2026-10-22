@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines data returned by Source Coverage API operations.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.api;
 
 import java.time.Instant;

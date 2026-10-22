@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Story Semantic Matcher behavior, edge cases, and integration assumptions.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import static org.assertj.core.api.Assertions.assertThat;

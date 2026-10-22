@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Trending.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import jakarta.validation.constraints.DecimalMin;

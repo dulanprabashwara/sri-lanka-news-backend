@@ -1,3 +1,7 @@
+/*
+ * File overview: Registers Spring components and runtime configuration for Time.
+ * Area: cross-cutting application configuration.
+ */
 package lk.srilankannews.config;
 
 import java.time.Clock;

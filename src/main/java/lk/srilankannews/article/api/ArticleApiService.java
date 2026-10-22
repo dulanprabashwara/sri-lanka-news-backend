@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Article API.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.api;
 
 import java.util.Map;

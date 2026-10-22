@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Admin AI Controller behavior, edge cases, and integration assumptions.
+ * Area: administrative operations and monitoring.
+ */
 package lk.srilankannews.admin;
 
 import static org.mockito.Mockito.when;

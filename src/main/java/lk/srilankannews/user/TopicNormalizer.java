@@ -1,3 +1,7 @@
+/*
+ * File overview: Normalizes Topic values for consistent comparison and storage.
+ * Area: reader preferences and personalization.
+ */
 package lk.srilankannews.user;
 
 import java.text.Normalizer;

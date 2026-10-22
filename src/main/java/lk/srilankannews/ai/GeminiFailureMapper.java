@@ -1,3 +1,7 @@
+/*
+ * File overview: Converts internal Gemini Failure data into safe API models.
+ * Area: AI enrichment and embedding integrations.
+ */
 package lk.srilankannews.ai;
 
 import com.google.genai.errors.ApiException;

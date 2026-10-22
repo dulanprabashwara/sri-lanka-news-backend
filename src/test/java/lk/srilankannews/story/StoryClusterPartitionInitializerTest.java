@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Story Cluster Partition Initializer behavior, edge cases, and integration assumptions.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import static org.mockito.Mockito.verify;

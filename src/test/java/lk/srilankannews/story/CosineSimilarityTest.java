@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Cosine Similarity behavior, edge cases, and integration assumptions.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import static org.assertj.core.api.Assertions.assertThat;

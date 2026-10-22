@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Mongo Db Expiry Lifecycle behavior, edge cases, and integration assumptions.
+ * Area: MongoDB and Redis data retention.
+ */
 package lk.srilankannews.retention;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;

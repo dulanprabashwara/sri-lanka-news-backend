@@ -1,3 +1,7 @@
+/*
+ * File overview: Authenticates Ingestion API Key credentials.
+ * Area: cross-cutting application configuration.
+ */
 package lk.srilankannews.config;
 
 import java.nio.charset.StandardCharsets;

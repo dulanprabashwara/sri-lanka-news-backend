@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Pending Notification Event Recovery behavior within the backend.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import java.time.Duration;

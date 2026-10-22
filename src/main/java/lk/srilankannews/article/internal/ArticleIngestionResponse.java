@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines data returned by Article Ingestion API operations.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.internal;
 
 public record ArticleIngestionResponse(

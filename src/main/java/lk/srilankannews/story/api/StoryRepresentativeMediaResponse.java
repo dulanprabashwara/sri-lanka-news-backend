@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines data returned by Story Representative Media API operations.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.api;
 
 import lk.srilankannews.article.MediaType;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Runs the Update Policies maintenance task during application startup.
+ * Area: publisher source registration and APIs.
+ */
 package lk.srilankannews.source;
 
 import org.slf4j.Logger;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Redis Article Feed Cache behavior within the backend.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.cache;
 
 import com.fasterxml.jackson.core.JsonProcessingException;

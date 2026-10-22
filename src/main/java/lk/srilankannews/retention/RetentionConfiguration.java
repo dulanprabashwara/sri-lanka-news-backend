@@ -1,3 +1,7 @@
+/*
+ * File overview: Registers Spring components and runtime configuration for Retention.
+ * Area: MongoDB and Redis data retention.
+ */
 package lk.srilankannews.retention;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

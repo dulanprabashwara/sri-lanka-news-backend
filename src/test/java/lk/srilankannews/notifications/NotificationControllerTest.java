@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Notification Controller behavior, edge cases, and integration assumptions.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import lk.srilankannews.retention.RetentionPolicyService;

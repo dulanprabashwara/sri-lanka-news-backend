@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Story operations.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.api;
 
 import jakarta.validation.constraints.Max;

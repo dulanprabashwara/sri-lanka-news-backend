@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports No Op Article Feed Cache behavior within the backend.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.cache;
 
 import lk.srilankannews.article.api.ArticleResponse;

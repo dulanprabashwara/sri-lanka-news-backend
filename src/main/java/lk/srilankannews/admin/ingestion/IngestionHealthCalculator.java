@@ -1,3 +1,7 @@
+/*
+ * File overview: Calculates Ingestion Health results without owning persistence.
+ * Area: administrative operations and monitoring.
+ */
 package lk.srilankannews.admin.ingestion;
 
 import java.time.Instant;

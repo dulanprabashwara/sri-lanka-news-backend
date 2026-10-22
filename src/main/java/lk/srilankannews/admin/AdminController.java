@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Admin operations.
+ * Area: administrative operations and monitoring.
+ */
 package lk.srilankannews.admin;
 
 import jakarta.validation.constraints.Max;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Analytics Recorder behavior within the backend.
+ * Area: privacy-conscious analytics.
+ */
 package lk.srilankannews.analytics;
 
 import org.slf4j.Logger;

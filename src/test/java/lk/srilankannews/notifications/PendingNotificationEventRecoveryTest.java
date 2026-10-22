@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Pending Notification Event Recovery behavior, edge cases, and integration assumptions.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import static org.assertj.core.api.Assertions.assertThat;

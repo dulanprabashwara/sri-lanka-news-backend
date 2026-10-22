@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines the rules used by Redis Stream Retention.
+ * Area: MongoDB and Redis data retention.
+ */
 package lk.srilankannews.retention;
 
 import java.time.Duration;

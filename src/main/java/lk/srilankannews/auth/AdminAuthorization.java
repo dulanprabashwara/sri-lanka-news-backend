@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Admin Authorization behavior within the backend.
+ * Area: authentication and authorization.
+ */
 package lk.srilankannews.auth;
 
 import java.util.Set;

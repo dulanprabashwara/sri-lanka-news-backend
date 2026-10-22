@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Analytics Rollup.
+ * Area: privacy-conscious analytics.
+ */
 package lk.srilankannews.analytics;
 
 import org.slf4j.Logger;

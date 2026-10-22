@@ -1,3 +1,7 @@
+/*
+ * File overview: Builds deterministic Semantic Embedding Input values.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import java.nio.charset.StandardCharsets;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Retention TTL Activation Service behavior, edge cases, and integration assumptions.
+ * Area: MongoDB and Redis data retention.
+ */
 package lk.srilankannews.retention;
 
 import static org.junit.jupiter.api.Assertions.*;

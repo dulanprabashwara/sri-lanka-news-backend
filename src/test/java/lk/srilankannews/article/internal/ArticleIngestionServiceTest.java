@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Article Ingestion Service behavior, edge cases, and integration assumptions.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.internal;
 
 import static org.assertj.core.api.Assertions.assertThat;

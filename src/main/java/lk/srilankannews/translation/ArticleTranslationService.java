@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Article Translation.
+ * Area: multilingual translation.
+ */
 package lk.srilankannews.translation;
 
 import java.time.Clock;

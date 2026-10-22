@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines MongoDB persistence and query operations for Analytics Event.
+ * Area: privacy-conscious analytics.
+ */
 package lk.srilankannews.analytics;
 
 import org.springframework.data.mongodb.repository.MongoRepository;

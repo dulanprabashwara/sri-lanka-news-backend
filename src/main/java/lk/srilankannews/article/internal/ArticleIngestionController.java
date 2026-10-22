@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Article Ingestion operations.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.internal;
 
 import jakarta.validation.Valid;

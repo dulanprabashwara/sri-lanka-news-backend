@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Semantic Similarity Embedding Input behavior within the backend.
+ * Area: AI enrichment and embedding integrations.
+ */
 package lk.srilankannews.ai;
 
 public final class SemanticSimilarityEmbeddingInput {

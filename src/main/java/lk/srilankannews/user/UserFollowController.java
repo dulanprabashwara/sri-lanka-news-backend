@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for User Follow operations.
+ * Area: reader preferences and personalization.
+ */
 package lk.srilankannews.user;
 
 import jakarta.validation.Valid;

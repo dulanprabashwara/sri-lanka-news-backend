@@ -1,3 +1,7 @@
+/*
+ * File overview: Initializes required Story Cluster Partition state when the application starts.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import java.time.Clock;

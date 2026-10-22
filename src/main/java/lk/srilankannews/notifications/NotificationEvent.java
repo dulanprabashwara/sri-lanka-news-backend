@@ -1,3 +1,7 @@
+/*
+ * File overview: Represents a Notification event exchanged between components.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;

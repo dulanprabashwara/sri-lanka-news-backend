@@ -1,3 +1,7 @@
+/*
+ * File overview: Converts internal Source API data into safe API models.
+ * Area: publisher source registration and APIs.
+ */
 package lk.srilankannews.source.api;
 
 import lk.srilankannews.source.Source;

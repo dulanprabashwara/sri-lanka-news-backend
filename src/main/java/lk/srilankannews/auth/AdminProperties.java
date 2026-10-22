@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Admin.
+ * Area: authentication and authorization.
+ */
 package lk.srilankannews.auth;
 
 import java.util.Arrays;

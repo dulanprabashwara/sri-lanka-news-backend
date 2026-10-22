@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines MongoDB persistence and query operations for Notification Event.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import java.time.Instant;

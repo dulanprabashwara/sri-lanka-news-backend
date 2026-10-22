@@ -1,3 +1,7 @@
+/*
+ * File overview: Provides the Resilient Translation integration behind an internal abstraction.
+ * Area: multilingual translation.
+ */
 package lk.srilankannews.translation;
 
 import java.time.Duration;

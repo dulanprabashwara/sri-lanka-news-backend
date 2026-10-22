@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Open Router.
+ * Area: AI enrichment and embedding integrations.
+ */
 package lk.srilankannews.ai.openrouter;
 
 import java.time.Duration;

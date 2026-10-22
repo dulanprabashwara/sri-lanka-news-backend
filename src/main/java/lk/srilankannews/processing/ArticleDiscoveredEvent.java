@@ -1,3 +1,7 @@
+/*
+ * File overview: Represents a Article Discovered event exchanged between components.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing;
 
 import java.time.Instant;

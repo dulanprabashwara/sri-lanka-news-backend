@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines the MongoDB document stored for Article records.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article;
 
 import java.time.Instant;

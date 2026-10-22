@@ -1,3 +1,7 @@
+/*
+ * File overview: Filters or intercepts Public AI Rate Limit data and requests.
+ * Area: cross-cutting application configuration.
+ */
 package lk.srilankannews.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;

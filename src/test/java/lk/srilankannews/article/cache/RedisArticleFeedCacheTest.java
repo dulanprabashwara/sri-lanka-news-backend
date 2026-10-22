@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Redis Article Feed Cache behavior, edge cases, and integration assumptions.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.cache;
 
 import static org.assertj.core.api.Assertions.assertThat;

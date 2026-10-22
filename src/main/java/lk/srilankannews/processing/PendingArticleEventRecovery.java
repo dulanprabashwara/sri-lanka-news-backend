@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Pending Article Event Recovery behavior within the backend.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing;
 
 import java.time.Clock;

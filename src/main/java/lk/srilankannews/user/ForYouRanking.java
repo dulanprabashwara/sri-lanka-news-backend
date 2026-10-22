@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports For You Ranking behavior within the backend.
+ * Area: reader preferences and personalization.
+ */
 package lk.srilankannews.user;
 
 import java.util.ArrayList;

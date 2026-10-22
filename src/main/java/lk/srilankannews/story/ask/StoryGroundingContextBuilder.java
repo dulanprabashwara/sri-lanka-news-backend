@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Story Grounding Context Builder behavior within the backend.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.ask;
 
 import java.util.ArrayList;

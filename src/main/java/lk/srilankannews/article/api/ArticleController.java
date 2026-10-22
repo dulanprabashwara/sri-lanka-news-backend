@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Article operations.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.api;
 
 import jakarta.validation.constraints.Max;

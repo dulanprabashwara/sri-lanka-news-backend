@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Deferred Enrichment Scheduler behavior, edge cases, and integration assumptions.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing.enrichment;
 
 import static org.mockito.Mockito.verify;

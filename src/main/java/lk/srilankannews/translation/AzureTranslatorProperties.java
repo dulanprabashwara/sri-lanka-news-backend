@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Azure Translator.
+ * Area: multilingual translation.
+ */
 package lk.srilankannews.translation;
 
 import jakarta.validation.constraints.Min;

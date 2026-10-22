@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines immutable Article Lead Media data passed between backend components.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article;
 
 public record ArticleLeadMedia(

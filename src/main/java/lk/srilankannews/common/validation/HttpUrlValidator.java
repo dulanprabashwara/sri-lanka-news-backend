@@ -1,3 +1,7 @@
+/*
+ * File overview: Validates HTTP URL data before it is accepted or persisted.
+ * Area: shared API and domain utilities.
+ */
 package lk.srilankannews.common.validation;
 
 import jakarta.validation.ConstraintValidator;

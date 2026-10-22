@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements custom MongoDB queries for Article Query.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article;
 
 import java.time.Instant;

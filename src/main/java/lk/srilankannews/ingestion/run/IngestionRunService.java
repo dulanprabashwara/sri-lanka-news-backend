@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Ingestion Run.
+ * Area: ingestion coordination and run tracking.
+ */
 package lk.srilankannews.ingestion.run;
 
 import java.time.Clock;

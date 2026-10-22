@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Internal Ingestion Config operations.
+ * Area: ingestion coordination and run tracking.
+ */
 package lk.srilankannews.ingestion.api;
 
 import java.util.List;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines MongoDB persistence and query operations for Article.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article;
 
 import java.util.List;

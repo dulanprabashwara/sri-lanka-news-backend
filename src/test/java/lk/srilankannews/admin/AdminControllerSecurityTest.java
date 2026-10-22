@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Admin Controller Security behavior, edge cases, and integration assumptions.
+ * Area: administrative operations and monitoring.
+ */
 package lk.srilankannews.admin;
 
 import static org.mockito.Mockito.when;

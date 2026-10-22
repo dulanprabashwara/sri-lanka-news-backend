@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Retention Redis Health.
+ * Area: MongoDB and Redis data retention.
+ */
 package lk.srilankannews.retention;
 
 import java.time.Clock;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Consumes and safely processes Notification Event events.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import java.time.Duration;

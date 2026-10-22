@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Admin Authorization behavior, edge cases, and integration assumptions.
+ * Area: authentication and authorization.
+ */
 package lk.srilankannews.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;

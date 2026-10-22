@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines MongoDB persistence and query operations for Source.
+ * Area: publisher source registration and APIs.
+ */
 package lk.srilankannews.source;
 
 import java.util.Collection;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Source API Mapper behavior, edge cases, and integration assumptions.
+ * Area: publisher source registration and APIs.
+ */
 package lk.srilankannews.source.api;
 
 import static org.assertj.core.api.Assertions.assertThat;

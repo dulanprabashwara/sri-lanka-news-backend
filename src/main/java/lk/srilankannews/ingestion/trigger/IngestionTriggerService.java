@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Ingestion Trigger.
+ * Area: ingestion coordination and run tracking.
+ */
 package lk.srilankannews.ingestion.trigger;
 
 import java.time.Clock;

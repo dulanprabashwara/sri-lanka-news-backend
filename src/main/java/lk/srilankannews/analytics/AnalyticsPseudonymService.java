@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Analytics Pseudonym.
+ * Area: privacy-conscious analytics.
+ */
 package lk.srilankannews.analytics;
 
 import org.springframework.beans.factory.annotation.Value;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines immutable Create Source Command data passed between backend components.
+ * Area: publisher source registration and APIs.
+ */
 package lk.srilankannews.source;
 
 import jakarta.validation.constraints.NotBlank;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Notification Redis.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import java.time.Duration;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines MongoDB persistence and query operations for Ingestion Trigger Request.
+ * Area: ingestion coordination and run tracking.
+ */
 package lk.srilankannews.ingestion.trigger;
 
 import java.util.Optional;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Stores and updates Article Enrichment Job state.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing.enrichment;
 
 import java.time.Duration;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Registers Spring components and runtime configuration for Ask Story.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.ask;
 
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Validates Translation Output data before it is accepted or persisted.
+ * Area: multilingual translation.
+ */
 package lk.srilankannews.translation;
 
 import java.util.EnumMap;

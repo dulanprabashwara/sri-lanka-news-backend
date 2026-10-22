@@ -1,3 +1,7 @@
+/*
+ * File overview: Represents a specific Ingestion Run Conflict failure.
+ * Area: ingestion coordination and run tracking.
+ */
 package lk.srilankannews.ingestion.run;
 
 import org.springframework.http.HttpStatus;

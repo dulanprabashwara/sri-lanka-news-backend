@@ -1,3 +1,7 @@
+/*
+ * File overview: Filters or intercepts Request Correlation data and requests.
+ * Area: cross-cutting application configuration.
+ */
 package lk.srilankannews.config;
 
 import jakarta.servlet.FilterChain;

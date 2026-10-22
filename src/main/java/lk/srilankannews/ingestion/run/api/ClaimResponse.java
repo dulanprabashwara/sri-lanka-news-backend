@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines data returned by Claim API operations.
+ * Area: ingestion coordination and run tracking.
+ */
 package lk.srilankannews.ingestion.run.api;
 
 import java.time.Instant;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Validates AI Output data before it is accepted or persisted.
+ * Area: AI enrichment and embedding integrations.
+ */
 package lk.srilankannews.ai;
 
 import java.util.LinkedHashSet;

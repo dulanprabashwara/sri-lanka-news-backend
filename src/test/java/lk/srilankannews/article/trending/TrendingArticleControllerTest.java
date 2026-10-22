@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Trending Article Controller behavior, edge cases, and integration assumptions.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.trending;
 
 import static org.mockito.Mockito.verify;

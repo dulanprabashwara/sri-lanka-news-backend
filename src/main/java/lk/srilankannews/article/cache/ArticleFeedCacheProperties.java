@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Article Feed Cache.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.cache;
 
 import jakarta.validation.constraints.NotNull;

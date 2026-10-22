@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Story Embedding.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import jakarta.validation.constraints.DecimalMax;

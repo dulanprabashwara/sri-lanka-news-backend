@@ -1,3 +1,7 @@
+/*
+ * File overview: Converts internal Article API data into safe API models.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.api;
 
 import java.util.List;

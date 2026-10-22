@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines immutable API Error data passed between backend components.
+ * Area: shared API and domain utilities.
+ */
 package lk.srilankannews.common.api.error;
 
 import java.time.Instant;

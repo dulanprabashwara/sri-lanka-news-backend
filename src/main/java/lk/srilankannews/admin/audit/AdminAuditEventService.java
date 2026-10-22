@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Admin Audit Event.
+ * Area: administrative operations and monitoring.
+ */
 package lk.srilankannews.admin.audit;
 
 import java.time.Clock;

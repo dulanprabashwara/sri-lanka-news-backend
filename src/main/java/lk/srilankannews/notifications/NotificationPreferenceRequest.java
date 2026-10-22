@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines and validates input accepted by Notification Preference operations.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import java.time.LocalTime;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Ingestion Run operations.
+ * Area: ingestion coordination and run tracking.
+ */
 package lk.srilankannews.ingestion.run;
 
 import jakarta.validation.Valid;

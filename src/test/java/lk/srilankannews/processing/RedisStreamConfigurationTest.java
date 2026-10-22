@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Redis Stream Configuration behavior, edge cases, and integration assumptions.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;

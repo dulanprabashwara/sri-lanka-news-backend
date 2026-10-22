@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines the contract implemented by HTTP URL components.
+ * Area: shared API and domain utilities.
+ */
 package lk.srilankannews.common.validation;
 
 import jakarta.validation.Constraint;

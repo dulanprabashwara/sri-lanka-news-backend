@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Admin Ingestion Controller Security behavior, edge cases, and integration assumptions.
+ * Area: administrative operations and monitoring.
+ */
 package lk.srilankannews.admin.ingestion;
 
 import static org.mockito.ArgumentMatchers.any;

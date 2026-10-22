@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines data returned by User Preferences API operations.
+ * Area: reader preferences and personalization.
+ */
 package lk.srilankannews.user;
 
 import java.time.Instant;

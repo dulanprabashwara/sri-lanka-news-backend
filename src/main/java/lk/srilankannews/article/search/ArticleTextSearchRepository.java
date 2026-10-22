@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines MongoDB persistence and query operations for Article Text Search.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.search;
 
 import java.util.List;

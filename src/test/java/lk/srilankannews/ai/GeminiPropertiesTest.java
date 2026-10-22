@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Gemini Properties behavior, edge cases, and integration assumptions.
+ * Area: AI enrichment and embedding integrations.
+ */
 package lk.srilankannews.ai;
 
 import static org.assertj.core.api.Assertions.assertThat;

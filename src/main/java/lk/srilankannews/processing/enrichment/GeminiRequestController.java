@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Gemini Request operations.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing.enrichment;
 
 import java.time.Clock;

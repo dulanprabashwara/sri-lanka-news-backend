@@ -1,3 +1,7 @@
+/*
+ * File overview: Registers Spring components and runtime configuration for Redis Stream.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing;
 
 import org.slf4j.Logger;

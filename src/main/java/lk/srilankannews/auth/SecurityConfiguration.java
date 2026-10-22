@@ -1,3 +1,7 @@
+/*
+ * File overview: Registers Spring components and runtime configuration for Security.
+ * Area: authentication and authorization.
+ */
 package lk.srilankannews.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,6 +37,7 @@ public class SecurityConfiguration {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper objectMapper) throws Exception {
+        // Public news endpoints are anonymous; account and admin routes require a valid JWT.
         return http
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
@@ -73,6 +78,7 @@ public class SecurityConfiguration {
 
     @Bean
     NimbusJwtDecoder jwtDecoder(SupabaseAuthProperties properties) {
+        // Supabase publishes signing keys through JWKS, so private signing keys never enter this app.
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(properties.jwksUri())
                 .jwsAlgorithms(algorithms -> {
                     algorithms.add(SignatureAlgorithm.ES256);

@@ -1,3 +1,7 @@
+/*
+ * File overview: Registers Spring components and runtime configuration for Gemini.
+ * Area: AI enrichment and embedding integrations.
+ */
 package lk.srilankannews.ai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;

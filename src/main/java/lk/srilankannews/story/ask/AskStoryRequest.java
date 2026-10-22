@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines and validates input accepted by Ask Story operations.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.ask;
 
 import jakarta.validation.constraints.NotBlank;

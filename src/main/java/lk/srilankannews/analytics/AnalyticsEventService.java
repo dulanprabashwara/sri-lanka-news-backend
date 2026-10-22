@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Analytics Event.
+ * Area: privacy-conscious analytics.
+ */
 package lk.srilankannews.analytics;
 
 import lk.srilankannews.user.UserPreferencesService;

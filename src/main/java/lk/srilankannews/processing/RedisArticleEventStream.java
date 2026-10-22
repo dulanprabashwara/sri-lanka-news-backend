@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines or implements the event stream used for Redis Article Event.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing;
 
 import java.time.Clock;

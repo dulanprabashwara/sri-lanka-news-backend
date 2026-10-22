@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Story Persistence behavior within the backend.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import java.time.Instant;

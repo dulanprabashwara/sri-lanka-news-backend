@@ -1,3 +1,7 @@
+/*
+ * File overview: Registers or updates the Newswire publisher source during startup.
+ * Area: publisher source registration and APIs.
+ */
 package lk.srilankannews.source;
 
 import lk.srilankannews.common.domain.Language;

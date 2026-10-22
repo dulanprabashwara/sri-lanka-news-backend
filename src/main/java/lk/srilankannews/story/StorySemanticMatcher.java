@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Story Semantic Matcher behavior within the backend.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import lk.srilankannews.article.Article;

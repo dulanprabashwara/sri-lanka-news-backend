@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Redis Readonly Reconciliation Runner behavior, edge cases, and integration assumptions.
+ * Area: MongoDB and Redis data retention.
+ */
 package lk.srilankannews.retention;
 
 import java.net.URI;

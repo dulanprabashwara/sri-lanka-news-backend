@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Source Controller behavior, edge cases, and integration assumptions.
+ * Area: publisher source registration and APIs.
+ */
 package lk.srilankannews.source.api;
 
 import static org.mockito.Mockito.when;

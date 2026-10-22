@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines data returned by Admin Source API operations.
+ * Area: administrative operations and monitoring.
+ */
 package lk.srilankannews.admin;
 
 import java.time.Instant;

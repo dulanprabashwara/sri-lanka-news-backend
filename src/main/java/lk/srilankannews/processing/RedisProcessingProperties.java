@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Redis Processing.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing;
 
 import java.time.Duration;

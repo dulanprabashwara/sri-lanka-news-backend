@@ -1,3 +1,7 @@
+/*
+ * File overview: Registers Spring components and runtime configuration for Open Router.
+ * Area: AI enrichment and embedding integrations.
+ */
 package lk.srilankannews.ai.openrouter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;

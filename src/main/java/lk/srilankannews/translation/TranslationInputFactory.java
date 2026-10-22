@@ -1,3 +1,7 @@
+/*
+ * File overview: Builds deterministic Translation Input values.
+ * Area: multilingual translation.
+ */
 package lk.srilankannews.translation;
 
 import java.nio.charset.StandardCharsets;

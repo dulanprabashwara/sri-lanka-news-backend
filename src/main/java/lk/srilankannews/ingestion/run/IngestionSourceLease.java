@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines the MongoDB document stored for Ingestion Source Lease records.
+ * Area: ingestion coordination and run tracking.
+ */
 package lk.srilankannews.ingestion.run;
 
 import java.time.Instant;

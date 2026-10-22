@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests User API Security behavior, edge cases, and integration assumptions.
+ * Area: reader preferences and personalization.
+ */
 package lk.srilankannews.user;
 
 import static org.mockito.ArgumentMatchers.any;

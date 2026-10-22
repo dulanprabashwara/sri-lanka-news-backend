@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Retention TTL Activation.
+ * Area: MongoDB and Redis data retention.
+ */
 package lk.srilankannews.retention;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;

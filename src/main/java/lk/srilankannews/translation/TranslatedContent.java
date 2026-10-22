@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines immutable Translated Content data passed between backend components.
+ * Area: multilingual translation.
+ */
 package lk.srilankannews.translation;
 
 import lk.srilankannews.common.domain.Language;

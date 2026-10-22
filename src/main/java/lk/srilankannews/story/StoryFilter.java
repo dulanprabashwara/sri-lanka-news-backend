@@ -1,3 +1,7 @@
+/*
+ * File overview: Filters or intercepts Story data and requests.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import java.time.Instant;

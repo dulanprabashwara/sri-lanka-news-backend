@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines the rules used by AI Input.
+ * Area: AI enrichment and embedding integrations.
+ */
 package lk.srilankannews.ai;
 
 import org.springframework.stereotype.Component;

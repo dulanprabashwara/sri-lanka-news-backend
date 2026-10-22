@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Article Translation Service behavior, edge cases, and integration assumptions.
+ * Area: multilingual translation.
+ */
 package lk.srilankannews.translation;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Ask Story Service Open Router behavior, edge cases, and integration assumptions.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.ask;
 
 import static org.assertj.core.api.Assertions.assertThat;

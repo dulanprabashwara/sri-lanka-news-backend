@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines the MongoDB document stored for Notification records.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;

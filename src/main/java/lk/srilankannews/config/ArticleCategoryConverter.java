@@ -1,3 +1,7 @@
+/*
+ * File overview: Converts external values into the internal Article Category type.
+ * Area: cross-cutting application configuration.
+ */
 package lk.srilankannews.config;
 
 import java.util.Locale;

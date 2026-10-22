@@ -1,3 +1,7 @@
+/*
+ * File overview: Communicates with the external Open Router service.
+ * Area: AI enrichment and embedding integrations.
+ */
 package lk.srilankannews.ai.openrouter;
 
 import com.fasterxml.jackson.databind.JsonNode;

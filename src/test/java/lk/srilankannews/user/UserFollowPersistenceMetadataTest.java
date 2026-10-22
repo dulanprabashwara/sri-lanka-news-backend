@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests User Follow Persistence Metadata behavior, edge cases, and integration assumptions.
+ * Area: reader preferences and personalization.
+ */
 package lk.srilankannews.user;
 
 import static org.assertj.core.api.Assertions.assertThat;

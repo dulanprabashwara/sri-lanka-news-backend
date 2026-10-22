@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Retention TTL Activation.
+ * Area: MongoDB and Redis data retention.
+ */
 package lk.srilankannews.retention;
 
 import java.time.Instant;

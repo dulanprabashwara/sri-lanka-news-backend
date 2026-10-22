@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines the MongoDB document stored for Analytics Daily Visitor records.
+ * Area: privacy-conscious analytics.
+ */
 package lk.srilankannews.analytics;
 
 import org.springframework.data.annotation.Id;

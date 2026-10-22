@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines and validates input accepted by Complete operations.
+ * Area: ingestion coordination and run tracking.
+ */
 package lk.srilankannews.ingestion.run.api;
 
 import jakarta.validation.constraints.Min;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines and validates input accepted by Article Ingestion operations.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.internal;
 
 import jakarta.validation.constraints.NotBlank;

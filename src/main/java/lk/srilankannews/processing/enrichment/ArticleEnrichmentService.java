@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Article Enrichment.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing.enrichment;
 
 import java.time.Clock;

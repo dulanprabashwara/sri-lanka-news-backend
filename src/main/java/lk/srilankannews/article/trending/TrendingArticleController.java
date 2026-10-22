@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Trending Article operations.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.trending;
 
 import jakarta.validation.constraints.Max;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Notification Event Outbox.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import java.time.Clock;

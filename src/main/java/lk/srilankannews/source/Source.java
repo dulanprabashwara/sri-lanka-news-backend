@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines the MongoDB document stored for Source records.
+ * Area: publisher source registration and APIs.
+ */
 package lk.srilankannews.source;
 
 import java.time.Instant;

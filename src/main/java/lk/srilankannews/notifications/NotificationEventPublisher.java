@@ -1,3 +1,7 @@
+/*
+ * File overview: Publishes Notification Event events to downstream processing.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import java.time.Clock;

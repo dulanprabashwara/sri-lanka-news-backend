@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines immutable Story Representative Media data passed between backend components.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import lk.srilankannews.article.MediaType;

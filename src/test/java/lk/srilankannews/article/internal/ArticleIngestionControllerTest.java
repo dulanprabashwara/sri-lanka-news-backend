@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Article Ingestion Controller behavior, edge cases, and integration assumptions.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.internal;
 
 import static org.mockito.ArgumentMatchers.any;

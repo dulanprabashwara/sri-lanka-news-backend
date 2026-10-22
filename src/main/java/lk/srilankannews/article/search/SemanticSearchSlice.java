@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines immutable Semantic Search Slice data passed between backend components.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.search;
 
 import java.util.List;

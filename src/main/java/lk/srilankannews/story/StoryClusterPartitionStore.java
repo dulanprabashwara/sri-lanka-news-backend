@@ -1,3 +1,7 @@
+/*
+ * File overview: Stores and updates Story Cluster Partition state.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import java.time.Instant;

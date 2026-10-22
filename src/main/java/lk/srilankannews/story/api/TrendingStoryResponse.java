@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines data returned by Trending Story API operations.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;

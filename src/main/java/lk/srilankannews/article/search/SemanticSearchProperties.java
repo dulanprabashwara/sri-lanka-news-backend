@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Semantic Search.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.search;
 
 import jakarta.validation.constraints.DecimalMax;

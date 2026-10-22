@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Story Clustering.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import java.time.Clock;
@@ -70,12 +74,14 @@ public class StoryClusteringService {
     }
 
     public String cluster(String articleId) {
+        // Retry the complete MongoDB transaction when Atlas reports a transient write conflict.
         return transactionExecutor.execute(
                 () -> clusterInTransaction(articleId, StoryClusterPartition.activeId()));
     }
 
     private String clusterInTransaction(String articleId, String partitionId) {
         Instant now = clock.instant();
+        // Writing the shared partition before reading candidates serializes competing decisions.
         partitionStore.advance(partitionId, now);
 
         Article article = loadEnrichedArticle(articleId);
@@ -84,6 +90,7 @@ public class StoryClusteringService {
             return article.storyId();
         }
 
+        // Re-read and score candidates inside the transaction after acquiring the partition write.
         Story target = selectCandidate(article);
         StoryPersistence.Creation creation = null;
         if (target == null) {
@@ -91,6 +98,7 @@ public class StoryClusteringService {
             target = creation.story();
         }
 
+        // The set-if-null update prevents an Article from being assigned to two Stories.
         String assignedStoryId = assignment.assignIfAbsent(article.id(), target.id(), now);
         if (assignedStoryId.equals(target.id())) {
             persistence.addArticleIfAbsent(target.id(), article, now);

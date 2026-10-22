@@ -1,3 +1,7 @@
+/*
+ * File overview: Updates existing records that are missing current Story Embedding data.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import java.util.List;

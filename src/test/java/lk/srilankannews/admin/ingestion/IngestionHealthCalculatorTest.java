@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Ingestion Health Calculator behavior, edge cases, and integration assumptions.
+ * Area: administrative operations and monitoring.
+ */
 package lk.srilankannews.admin.ingestion;
 
 import static org.assertj.core.api.Assertions.assertThat;

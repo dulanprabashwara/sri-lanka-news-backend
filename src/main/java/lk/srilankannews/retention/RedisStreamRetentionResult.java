@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines immutable Redis Stream Retention Result data passed between backend components.
+ * Area: MongoDB and Redis data retention.
+ */
 package lk.srilankannews.retention;
 
 public record RedisStreamRetentionResult(

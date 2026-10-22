@@ -1,3 +1,7 @@
+/*
+ * File overview: Builds deterministic Grounded Answer Prompt values.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.ask;
 
 import java.util.stream.Collectors;

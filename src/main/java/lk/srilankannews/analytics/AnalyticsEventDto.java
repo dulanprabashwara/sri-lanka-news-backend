@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines immutable Analytics Event DTO data passed between backend components.
+ * Area: privacy-conscious analytics.
+ */
 package lk.srilankannews.analytics;
 
 import jakarta.validation.constraints.Max;

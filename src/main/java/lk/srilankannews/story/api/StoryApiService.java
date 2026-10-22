@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Story API.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.api;
 
 import java.time.Instant;

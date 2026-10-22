@@ -1,3 +1,7 @@
+/*
+ * File overview: Provides the Email Notification integration behind an internal abstraction.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import org.springframework.beans.factory.annotation.Autowired;

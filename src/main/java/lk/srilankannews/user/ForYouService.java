@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for For You.
+ * Area: reader preferences and personalization.
+ */
 package lk.srilankannews.user;
 
 import java.util.ArrayList;

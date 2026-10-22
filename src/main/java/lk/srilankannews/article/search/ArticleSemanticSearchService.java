@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements the business rules and workflow for Article Semantic Search.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.search;
 
 import java.util.List;

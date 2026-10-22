@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Historical Retention Dry Run Unit behavior, edge cases, and integration assumptions.
+ * Area: MongoDB and Redis data retention.
+ */
 package lk.srilankannews.retention;
 
 import lk.srilankannews.ingestion.run.IngestionRunStatus;

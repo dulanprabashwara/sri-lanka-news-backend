@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Publisher Source Seeders behavior, edge cases, and integration assumptions.
+ * Area: publisher source registration and APIs.
+ */
 package lk.srilankannews.source;
 
 import static org.assertj.core.api.Assertions.assertThat;

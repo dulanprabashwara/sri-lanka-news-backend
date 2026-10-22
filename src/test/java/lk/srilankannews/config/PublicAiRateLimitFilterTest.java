@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Public AI Rate Limit Filter behavior, edge cases, and integration assumptions.
+ * Area: cross-cutting application configuration.
+ */
 package lk.srilankannews.config;
 
 import static org.assertj.core.api.Assertions.assertThat;

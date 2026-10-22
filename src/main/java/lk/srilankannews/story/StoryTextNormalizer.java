@@ -1,3 +1,7 @@
+/*
+ * File overview: Normalizes Story Text values for consistent comparison and storage.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import java.text.Normalizer;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Binds and validates external configuration for Public AI Rate Limit.
+ * Area: cross-cutting application configuration.
+ */
 package lk.srilankannews.config;
 
 import jakarta.validation.constraints.Max;

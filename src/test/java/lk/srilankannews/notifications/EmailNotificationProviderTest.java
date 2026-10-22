@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Email Notification Provider behavior, edge cases, and integration assumptions.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import static org.assertj.core.api.Assertions.assertThat;

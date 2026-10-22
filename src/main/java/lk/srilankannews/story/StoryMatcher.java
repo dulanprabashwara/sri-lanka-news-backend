@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Story Matcher behavior within the backend.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import java.util.Set;

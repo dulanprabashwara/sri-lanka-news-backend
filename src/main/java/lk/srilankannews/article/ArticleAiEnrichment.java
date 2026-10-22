@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines immutable Article AI Enrichment data passed between backend components.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article;
 
 import java.time.Instant;

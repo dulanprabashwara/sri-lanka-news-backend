@@ -1,3 +1,7 @@
+/*
+ * File overview: Normalizes Text Search Query values for consistent comparison and storage.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.search;
 
 import java.text.Normalizer;

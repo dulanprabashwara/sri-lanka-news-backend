@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines the MongoDB document stored for Story records.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import java.time.Instant;

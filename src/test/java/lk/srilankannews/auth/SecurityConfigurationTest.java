@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Security Configuration behavior, edge cases, and integration assumptions.
+ * Area: authentication and authorization.
+ */
 package lk.srilankannews.auth;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;

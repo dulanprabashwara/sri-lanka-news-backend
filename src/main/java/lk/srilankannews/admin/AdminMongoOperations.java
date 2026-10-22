@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Admin Mongo Operations behavior within the backend.
+ * Area: administrative operations and monitoring.
+ */
 package lk.srilankannews.admin;
 
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.group;

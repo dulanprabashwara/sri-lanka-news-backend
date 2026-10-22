@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Analytics operations.
+ * Area: privacy-conscious analytics.
+ */
 package lk.srilankannews.analytics;
 
 import jakarta.validation.Valid;

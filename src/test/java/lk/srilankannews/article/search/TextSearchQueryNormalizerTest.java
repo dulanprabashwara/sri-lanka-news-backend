@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Text Search Query Normalizer behavior, edge cases, and integration assumptions.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.search;
 
 import static org.assertj.core.api.Assertions.assertThat;

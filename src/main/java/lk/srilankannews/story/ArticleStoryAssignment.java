@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Article Story Assignment behavior within the backend.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import java.time.Instant;

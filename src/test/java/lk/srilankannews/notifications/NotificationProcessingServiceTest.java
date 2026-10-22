@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Notification Processing Service behavior, edge cases, and integration assumptions.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import lk.srilankannews.article.Article;

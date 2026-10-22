@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines and validates input accepted by Ingestion Trigger operations.
+ * Area: ingestion coordination and run tracking.
+ */
 package lk.srilankannews.ingestion.trigger;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;

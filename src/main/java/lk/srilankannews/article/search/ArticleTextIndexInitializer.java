@@ -1,3 +1,7 @@
+/*
+ * File overview: Initializes required Article Text Index state when the application starts.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article.search;
 
 import java.util.LinkedHashMap;

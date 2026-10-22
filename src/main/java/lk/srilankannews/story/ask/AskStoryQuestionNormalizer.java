@@ -1,3 +1,7 @@
+/*
+ * File overview: Normalizes Ask Story Question values for consistent comparison and storage.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story.ask;
 
 import java.text.Normalizer;

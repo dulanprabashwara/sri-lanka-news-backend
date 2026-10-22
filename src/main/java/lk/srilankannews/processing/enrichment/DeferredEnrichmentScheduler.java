@@ -1,3 +1,7 @@
+/*
+ * File overview: Runs scheduled Deferred Enrichment work in the background.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing.enrichment;
 
 import java.time.Clock;

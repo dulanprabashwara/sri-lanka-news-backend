@@ -1,3 +1,7 @@
+/*
+ * File overview: Defines MongoDB persistence and query operations for Ingestion Source Settings.
+ * Area: ingestion coordination and run tracking.
+ */
 package lk.srilankannews.ingestion.settings;
 
 import org.springframework.data.mongodb.repository.MongoRepository;

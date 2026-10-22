@@ -1,3 +1,7 @@
+/*
+ * File overview: Represents a specific AI Provider failure.
+ * Area: AI enrichment and embedding integrations.
+ */
 package lk.srilankannews.ai;
 
 import java.util.regex.Pattern;

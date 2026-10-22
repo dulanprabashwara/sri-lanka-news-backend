@@ -1,3 +1,7 @@
+/*
+ * File overview: Bootstraps the Spring Boot backend, local environment loading, scheduling, security, and UTC time.
+ * Area: SriLankaNewsApplication.java functionality.
+ */
 package lk.srilankannews;
 
 import lk.srilankannews.auth.SecurityConfiguration;

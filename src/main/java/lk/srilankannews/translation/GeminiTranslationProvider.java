@@ -1,3 +1,7 @@
+/*
+ * File overview: Provides the Gemini Translation integration behind an internal abstraction.
+ * Area: multilingual translation.
+ */
 package lk.srilankannews.translation;
 
 import com.fasterxml.jackson.core.JsonProcessingException;

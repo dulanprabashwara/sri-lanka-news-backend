@@ -1,3 +1,7 @@
+/*
+ * File overview: Performs background Email Delivery work.
+ * Area: in-app and email notifications.
+ */
 package lk.srilankannews.notifications;
 
 import java.time.Clock;

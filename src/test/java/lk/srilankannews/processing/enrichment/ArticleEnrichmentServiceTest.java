@@ -1,3 +1,7 @@
+/*
+ * File overview: Tests Article Enrichment Service behavior, edge cases, and integration assumptions.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing.enrichment;
 
 import static org.assertj.core.api.Assertions.assertThat;

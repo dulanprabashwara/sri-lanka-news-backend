@@ -1,3 +1,7 @@
+/*
+ * File overview: Performs background Article Processing work.
+ * Area: asynchronous article processing.
+ */
 package lk.srilankannews.processing;
 
 import lk.srilankannews.article.Article;
@@ -35,6 +39,7 @@ public class ArticleProcessingWorker {
     }
 
     public void process(ArticleDiscoveredEvent event) {
+        // Translation is intentionally the first user-visible result of processing.
         translate(event);
         processAfterTranslation(event);
     }
@@ -50,13 +55,16 @@ public class ArticleProcessingWorker {
         Article article = articleService.findById(event.articleId())
                 .orElseThrow(() -> new IllegalStateException("Article does not exist"));
         validateEvent(event, article);
+        // Enrichment may improve the summary; refresh translations only when it succeeded.
         ArticleEnrichmentService.Outcome enrichment = enrichmentService.attempt(article.id());
         if (enrichment.enrichmentAvailable()) {
             ensureTranslations(article.id());
         }
+        // Embeddings support semantic matching, then clustering assigns the Article to a Story.
         embeddingService.ensureEmbedding(article.id());
         String storyId = clusteringService.cluster(article.id());
-        
+
+        // Notifications are created only after the Article has a stable Story assignment.
         if (outboxService != null && storyId != null) {
             outboxService.dispatch(article.id(), storyId, article.sourceId(), article.id());
         }

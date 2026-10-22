@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Article Summary Resolver behavior within the backend.
+ * Area: article ingestion, storage, discovery, and search.
+ */
 package lk.srilankannews.article;
 
 import java.text.BreakIterator;

@@ -1,3 +1,7 @@
+/*
+ * File overview: Supports Global Exception Handler behavior within the backend.
+ * Area: shared API and domain utilities.
+ */
 package lk.srilankannews.common.api.error;
 
 import jakarta.servlet.http.HttpServletRequest;

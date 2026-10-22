@@ -1,3 +1,7 @@
+/*
+ * File overview: Implements custom MongoDB queries for Story Query.
+ * Area: story clustering, timelines, comparison, and Q&A.
+ */
 package lk.srilankannews.story;
 
 import java.util.List;

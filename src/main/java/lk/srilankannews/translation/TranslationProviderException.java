@@ -1,3 +1,7 @@
+/*
+ * File overview: Represents a specific Translation Provider failure.
+ * Area: multilingual translation.
+ */
 package lk.srilankannews.translation;
 
 public class TranslationProviderException extends RuntimeException {

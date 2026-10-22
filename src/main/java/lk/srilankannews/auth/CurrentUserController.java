@@ -1,3 +1,7 @@
+/*
+ * File overview: Exposes HTTP endpoints for Current User operations.
+ * Area: authentication and authorization.
+ */
 package lk.srilankannews.auth;
 
 import lk.srilankannews.user.UserPreferencesService;
